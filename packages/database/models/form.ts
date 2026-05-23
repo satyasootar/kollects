@@ -42,6 +42,9 @@ export const formsTable = pgTable(
     passwordHash: varchar("password_hash", { length: 255 }),
     responseLimit: integer("response_limit"),
     expiresAt: timestamp("expires_at"),
+
+    metaTitle: varchar("meta_title", { length: 60 }),
+    metaDescription: text("meta_description"),
     
     totalViews: integer("total_views").default(0).notNull(),
     totalStarts: integer("total_starts").default(0).notNull(),

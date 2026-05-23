@@ -21,7 +21,11 @@ export const registerSchema = z.object({
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
-    .max(128, "Password must be at most 128 characters"),
+    .max(128, "Password must be at most 128 characters")
+    .regex(/(?=.*[a-z])/, "Password must contain at least one lowercase letter")
+    .regex(/(?=.*[A-Z])/, "Password must contain at least one uppercase letter")
+    .regex(/(?=.*\d)/, "Password must contain at least one number")
+    .regex(/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/, "Password must contain at least one special character"),
 });
 
 /**
@@ -36,9 +40,13 @@ export const forgotPasswordSchema = z.object({
  * Reset password input schema.
  */
 export const resetPasswordSchema = z.object({
-  token: z.string().min(1, "Token is required"),
+  token: z.string().length(64, "Invalid reset token format"),
   newPassword: z
     .string()
     .min(8, "Password must be at least 8 characters")
-    .max(128, "Password must be at most 128 characters"),
+    .max(128, "Password must be at most 128 characters")
+    .regex(/(?=.*[a-z])/, "Password must contain at least one lowercase letter")
+    .regex(/(?=.*[A-Z])/, "Password must contain at least one uppercase letter")
+    .regex(/(?=.*\d)/, "Password must contain at least one number")
+    .regex(/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/, "Password must contain at least one special character"),
 });

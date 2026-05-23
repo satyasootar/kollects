@@ -5,13 +5,22 @@
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@types/express": "^5.0.6",
+    "@types/express-serve-static-core": "^5.1.1",
+    "@types/pg": "^8.16.0",
+    "@types/qs": "^6.15.1",
     "dotenv-cli": "^11.0.0",
+    "pg": "^8.16.3",
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@repo/database": "workspace:*",
+    "@repo/logger": "workspace:*",
     "@repo/services": "workspace:*",
     "@trpc/client": "^11.8.1",
     "@trpc/server": "^11.8.1",
+    "drizzle-orm": "^0.45.1",
+    "express": "^5.2.1",
     "trpc-to-openapi": "^3.1.0",
     "zod": "^4.3.5"
   }
