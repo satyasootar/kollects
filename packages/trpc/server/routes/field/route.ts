@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure } from "../../init";
-import { router } from "../../init";
+import { protectedProcedure, router } from "../../trpc";
 import { fieldService } from "../../services";
 import { 
   createFieldSchema, 

@@ -205,10 +205,9 @@ export class FormService {
           slug: newSlug,
           themeId: originalForm.themeId,
           status: "draft",
-          isPasswordProtected: false,
           passwordHash: null,
-          seoTitle: originalForm.seoTitle,
-          seoDescription: originalForm.seoDescription,
+          metaTitle: originalForm.metaTitle,
+          metaDescription: originalForm.metaDescription,
           visibility: originalForm.visibility,
           settings: originalForm.settings,
         })

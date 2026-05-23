@@ -142,10 +142,13 @@ export class FieldService {
 
     await db.transaction(async (tx) => {
       for (let i = 0; i < fieldIds.length; i++) {
-        await tx
-          .update(formFieldsTable)
-          .set({ order: i })
-          .where(and(eq(formFieldsTable.id, fieldIds[i]), eq(formFieldsTable.formId, formId)));
+        const id = fieldIds[i];
+        if (id) {
+          await tx
+            .update(formFieldsTable)
+            .set({ order: i })
+            .where(and(eq(formFieldsTable.id, id), eq(formFieldsTable.formId, formId)));
+        }
       }
     });
   }
