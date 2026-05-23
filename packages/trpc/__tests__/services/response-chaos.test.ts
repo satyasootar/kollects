@@ -97,8 +97,8 @@ describe("TC-DB-001 | Race Conditions | Concurrent Response Limits", () => {
 
     expect(successes.length).toBe(1);
     expect(failures.length).toBe(1);
-    if (failures[0].status === "rejected") {
-      expect(failures[0].reason.message).toBe("Form is full");
+    if (failures[0] && failures[0].status === "rejected") {
+      expect(failures[0].reason?.message).toBe("Form is full");
     }
     
     // The total must not exceed 100

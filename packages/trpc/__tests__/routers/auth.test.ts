@@ -28,8 +28,8 @@ vi.mock("../../server/utils/cookies", () => ({
 import { setSessionCookie, clearSessionCookie } from "../../server/utils/cookies";
 
 describe("Auth Router", () => {
-  const mockCtx = {
-    ipHash: "123.123.123.123-hash",
+  const getMockCtx = () => ({
+    ipHash: `123.123.123.123-hash-${Math.random()}`,
     userAgent: "vitest",
     res: {} as any,
     req: {} as any,
@@ -38,14 +38,15 @@ describe("Auth Router", () => {
     session: null,
     apiKeyScopes: null,
     requestMeta: { startTime: Date.now(), requestId: "test-req" },
-  } as unknown as TRPCContext;
+  } as unknown as TRPCContext);
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("register should call authService and set cookie", async () => {
-    const caller = authRouter.createCaller(mockCtx);
+    const ctx = getMockCtx();
+    const caller = authRouter.createCaller(ctx);
     const mockUser = { id: "u1", name: "Test", email: "test@example.com" };
     
     vi.mocked(authService.register).mockResolvedValueOnce({
@@ -62,15 +63,16 @@ describe("Auth Router", () => {
 
     expect(authService.register).toHaveBeenCalledWith(
       { name: "Test", email: "test@example.com", password: "Password1!" },
-      { ip: mockCtx.ipHash, userAgent: mockCtx.userAgent }
+      { ip: ctx.ipHash, userAgent: ctx.userAgent }
     );
-    expect(setSessionCookie).toHaveBeenCalledWith(mockCtx.res, "secret-token");
+    expect(setSessionCookie).toHaveBeenCalledWith(ctx.res, "secret-token");
     expect(result.token).toBe("secret-token");
     expect(result.user.id).toBe("u1");
   });
 
   it("login should call authService and set cookie", async () => {
-    const caller = authRouter.createCaller(mockCtx);
+    const ctx = getMockCtx();
+    const caller = authRouter.createCaller(ctx);
     const mockUser = { id: "u2", name: "Bob", email: "bob@example.com" };
     
     vi.mocked(authService.login).mockResolvedValueOnce({
@@ -86,15 +88,16 @@ describe("Auth Router", () => {
 
     expect(authService.login).toHaveBeenCalledWith(
       { email: "bob@example.com", password: "Password1!" },
-      { ip: mockCtx.ipHash, userAgent: mockCtx.userAgent }
+      { ip: ctx.ipHash, userAgent: ctx.userAgent }
     );
-    expect(setSessionCookie).toHaveBeenCalledWith(mockCtx.res, "login-token");
+    expect(setSessionCookie).toHaveBeenCalledWith(ctx.res, "login-token");
     expect(result.token).toBe("login-token");
   });
 
   it("logout should clear cookie and call authService if session exists", async () => {
+    const ctx = getMockCtx();
     const authenticatedCtx = {
-      ...mockCtx,
+      ...ctx,
       session: { id: "sess1" },
     } as unknown as TRPCContext;
 
@@ -113,8 +116,9 @@ describe("Auth Router", () => {
   });
 
   it("me should return user from context", async () => {
+    const ctx = getMockCtx();
     const authenticatedCtx = {
-      ...mockCtx,
+      ...ctx,
       user: { id: "u3", name: "Alice", email: "alice@example.com" },
     } as unknown as TRPCContext;
 
@@ -131,7 +135,8 @@ describe("Auth Router", () => {
   });
 
   it("forgotPassword should call authService", async () => {
-    const caller = authRouter.createCaller(mockCtx);
+    const ctx = getMockCtx();
+    const caller = authRouter.createCaller(ctx);
     vi.mocked(authService.forgotPassword).mockResolvedValueOnce(undefined);
 
     const result = await caller.forgotPassword({ email: "test@example.com" });
@@ -141,7 +146,8 @@ describe("Auth Router", () => {
   });
 
   it("resetPassword should call authService", async () => {
-    const caller = authRouter.createCaller(mockCtx);
+    const ctx = getMockCtx();
+    const caller = authRouter.createCaller(ctx);
     vi.mocked(authService.resetPassword).mockResolvedValueOnce(undefined);
 
     // Provide a valid 64-char hex token

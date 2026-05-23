@@ -6,6 +6,7 @@ import path from "path";
  */
 export default defineConfig({
   testDir: "./tests/e2e",
+  testMatch: "**/*.e2e.ts",
   /* Maximum time one test can run for. */
   timeout: 30 * 1000,
   expect: {

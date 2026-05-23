@@ -11,6 +11,7 @@ export const formRouter = router({
   create: protectedProcedure
     .meta({ openapi: { method: "POST", path: "/forms", tags: ["Forms"], summary: "Create a new form" } })
     .input(createFormSchema)
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       return formService.create(ctx.user.id, {
         title: input.title,
@@ -21,6 +22,7 @@ export const formRouter = router({
   update: protectedProcedure
     .meta({ openapi: { method: "PATCH", path: "/forms/{formId}", tags: ["Forms"], summary: "Update a form" } })
     .input(updateFormSchema)
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const { formId, ...data } = input;
       return formService.update(ctx.user.id, formId, data);
@@ -29,6 +31,7 @@ export const formRouter = router({
   delete: protectedProcedure
     .meta({ openapi: { method: "DELETE", path: "/forms/{formId}", tags: ["Forms"], summary: "Delete a form" } })
     .input(z.object({ formId: z.string().uuid() }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       await formService.delete(ctx.user.id, input.formId);
       return { success: true };
@@ -37,6 +40,7 @@ export const formRouter = router({
   publish: protectedProcedure
     .meta({ openapi: { method: "POST", path: "/forms/{formId}/publish", tags: ["Forms"], summary: "Publish a form" } })
     .input(publishFormSchema)
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       return formService.publish(ctx.user.id, input.formId);
     }),
@@ -44,6 +48,7 @@ export const formRouter = router({
   unpublish: protectedProcedure
     .meta({ openapi: { method: "POST", path: "/forms/{formId}/unpublish", tags: ["Forms"], summary: "Unpublish a form" } })
     .input(z.object({ formId: z.string().uuid() }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       return formService.unpublish(ctx.user.id, input.formId);
     }),
@@ -51,6 +56,7 @@ export const formRouter = router({
   archive: protectedProcedure
     .meta({ openapi: { method: "POST", path: "/forms/{formId}/archive", tags: ["Forms"], summary: "Archive a form" } })
     .input(z.object({ formId: z.string().uuid() }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       return formService.archive(ctx.user.id, input.formId);
     }),
@@ -58,6 +64,7 @@ export const formRouter = router({
   clone: protectedProcedure
     .meta({ openapi: { method: "POST", path: "/forms/{formId}/clone", tags: ["Forms"], summary: "Clone a form" } })
     .input(z.object({ formId: z.string().uuid() }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       return formService.clone(ctx.user.id, input.formId);
     }),
@@ -65,6 +72,7 @@ export const formRouter = router({
   list: protectedProcedure
     .meta({ openapi: { method: "GET", path: "/forms", tags: ["Forms"], summary: "List user forms" } })
     .input(z.void())
+    .output(z.any())
     .query(async ({ ctx }) => {
       return formService.list(ctx.user.id);
     }),
@@ -72,6 +80,7 @@ export const formRouter = router({
   getById: protectedProcedure
     .meta({ openapi: { method: "GET", path: "/forms/{formId}", tags: ["Forms"], summary: "Get form by ID" } })
     .input(z.object({ formId: z.string().uuid() }))
+    .output(z.any())
     .query(async ({ ctx, input }) => {
       return formService.getById(input.formId, ctx.user.id);
     }),
