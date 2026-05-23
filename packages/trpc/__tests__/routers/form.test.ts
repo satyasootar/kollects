@@ -30,7 +30,7 @@ const createCaller = (userId: string | null) => {
     apiKeyScopes: null,
     ipHash: "123",
     userAgent: "test",
-    requestMeta: { id: "req-id" },
+    requestMeta: { requestId: "req-id", startTime: Date.now() },
     res: {} as any,
     req: { headers: {} } as any,
   });
@@ -75,13 +75,14 @@ describe("TC-FUN-002 | Form Builder | Deep Cloning a Complex Form", () => {
     });
     
     // We update the mock temporarily for this test
-    const { formService } = await import("../../services");
+    const { formService } = await import("../../server/services");
     formService.clone = mockClone;
 
     const caller = createCaller("user-a");
     const result = await caller.form.clone({ formId: "complex-form-id" });
 
     expect(mockClone).toHaveBeenCalledWith("user-a", "complex-form-id");
+    if (!result) throw new Error("Result is undefined");
     expect(result).toHaveProperty("id", "new-cloned-uuid");
     expect(result).toHaveProperty("slug", "cloned-slug-unique");
     // Ensure it's not returning the exact same ID, meaning foreign keys are isolated
@@ -121,7 +122,7 @@ describe("TC-PERF-001 | Scalability | N+1 Query Prevention on Dashboard", () => 
       return Array.from({ length: 500 }).map((_, i) => ({ id: `f-${i}`, title: `Form ${i}` }));
     });
 
-    const { formService } = await import("../../services");
+    const { formService } = await import("../../server/services");
     formService.list = mockList;
 
     const caller = createCaller("user-a");
