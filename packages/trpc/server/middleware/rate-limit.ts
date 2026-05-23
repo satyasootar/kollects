@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { middleware } from "../trpc";
+import { middleware } from "../init";
 import { db, eq, and, sql } from "@repo/database";
 import { rateLimitEntriesTable } from "@repo/database/models/system";
 

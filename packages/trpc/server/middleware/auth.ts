@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { middleware } from "../trpc";
+import { middleware } from "../init";
 import { authService } from "../services";
 import type { Request } from "express";
 

@@ -40,7 +40,7 @@ const fieldSettingsSchema = z
  */
 export const createFieldSchema = z.object({
   formId: uuidSchema,
-  pageId: uuidSchema.optional(),
+  pageNumber: z.number().int().min(1).default(1).optional(),
   type: z.enum(FIELD_TYPES),
   label: z.string().min(1, "Label is required").max(500).trim(),
   placeholder: z.string().max(255).trim().optional(),

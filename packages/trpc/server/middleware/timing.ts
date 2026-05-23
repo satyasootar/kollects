@@ -1,4 +1,4 @@
-import { middleware } from "../trpc";
+import { middleware } from "../init";
 import { logger } from "@repo/logger";
 
 /**
