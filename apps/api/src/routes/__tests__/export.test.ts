@@ -1,5 +1,5 @@
 import request from "supertest";
-import app from "../../server";
+import express from "express";
 import { describe, it, expect, vi } from "vitest";
 
 // Mocking the router or service that handles CSV export
@@ -21,7 +21,10 @@ vi.mock("@repo/services/response", () => {
 });
 
 // Since the export endpoint doesn't exist yet, we'll mock its existence in the test
-app.get("/api/forms/:formId/export", async (req, res) => {
+const testApp = express();
+
+// Since the export endpoint doesn't exist yet, we'll mock its existence in the test
+testApp.get("/api/forms/:formId/export", async (req, res) => {
   const { ResponseService } = await import("@repo/services/response");
   const service = new ResponseService();
   
@@ -37,7 +40,7 @@ describe("TC-PERF-002 | Large Datasets | Massive CSV Export", () => {
     // Record initial memory usage
     const initialMemory = process.memoryUsage().heapUsed;
 
-    const response = await request(app)
+    const response = await request(testApp)
       .get("/api/forms/test-form-id/export")
       .buffer()
       .parse((res, callback) => {
@@ -58,8 +61,9 @@ describe("TC-PERF-002 | Large Datasets | Massive CSV Export", () => {
     expect(response.headers["content-type"]).toContain("text/csv");
     
     // Check that we actually streamed data
-    expect(response.text).toContain("response_0");
-    expect(response.text).toContain("response_49999");
+    const responseData = response.text || response.body;
+    expect(responseData).toContain("response_0");
+    expect(responseData).toContain("response_49999");
 
     // The core validation: Streaming 50k rows should not bloat memory drastically
     // Usually memory shouldn't spike by more than 50-100MB for a simple stream,

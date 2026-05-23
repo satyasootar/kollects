@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, ErrorRequestHandler } from "express";
 import { upload } from "../middleware/upload";
 import { MediaService } from "@repo/services/media";
 
@@ -26,5 +26,15 @@ router.post("/", upload.single("file"), async (req, res) => {
     return res.status(500).json({ error: error.message || "Failed to upload file" });
   }
 });
+
+// ... [we'll append the error handler before export]
+const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json({ error: "File too large" });
+  }
+  return res.status(500).json({ error: err.message || "Failed to upload file" });
+};
+
+router.use(errorHandler);
 
 export default router;

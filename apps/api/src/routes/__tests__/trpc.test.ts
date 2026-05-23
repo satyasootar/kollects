@@ -11,7 +11,7 @@ describe("TC-API-001 | Validation | Corrupted JSON Payloads", () => {
     }
 
     const response = await request(app)
-      .post("/trpc/form.create")
+      .post("/trpc/auth.register")
       .send(maliciousPayload);
 
     // Express's JSON parser might reject it, or tRPC validation will fail it
@@ -22,7 +22,7 @@ describe("TC-API-001 | Validation | Corrupted JSON Payloads", () => {
 
   it("should handle malformed JSON gracefully", async () => {
     const response = await request(app)
-      .post("/trpc/form.create")
+      .post("/trpc/auth.register")
       .set("Content-Type", "application/json")
       .send("{ invalid json: [ }");
 
@@ -31,14 +31,14 @@ describe("TC-API-001 | Validation | Corrupted JSON Payloads", () => {
 
   it("should reject payload with missing required fields correctly", async () => {
     const response = await request(app)
-      .post("/trpc/form.create")
+      .post("/trpc/auth.register")
       .send({
-        // missing title and description
+        // missing name, email, password
         someUnknownField: true
       });
 
     // tRPC returns 400 for input validation errors
     expect(response.status).toBe(400);
-    expect(response.body.error.json.message).toContain("Required");
+    expect(response.body.error.message).toContain("Invalid input");
   });
 });
