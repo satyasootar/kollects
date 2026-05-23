@@ -1,7 +1,10 @@
 import { z } from "zod";
 
-const envSchema = z.object({
+export const envSchema = z.object({
   DATABASE_URL: z.string().describe("DB URL"),
+  IMAGEKIT_PUBLIC_KEY: z.string().optional(),
+  IMAGEKIT_PRIVATE_KEY: z.string().optional(),
+  IMAGEKIT_URL_ENDPOINT: z.string().url().optional(),
 });
 
 function createEnv(env: NodeJS.ProcessEnv) {

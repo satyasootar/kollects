@@ -43,6 +43,9 @@ app.get("/openapi.json", (req, res) => {
 logger.debug(`docs: ${env.BASE_URL}/docs`);
 app.use("/docs", apiReference({ url: "/openapi.json" }));
 
+import uploadRouter from "./routes/upload";
+app.use("/api/upload", uploadRouter);
+
 app.use(
   "/api",
   createOpenApiExpressMiddleware({
