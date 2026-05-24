@@ -12,7 +12,7 @@ export class MediaService {
         privateKey: env.IMAGEKIT_PRIVATE_KEY,
         urlEndpoint: env.IMAGEKIT_URL_ENDPOINT,
       });
-    } else {
+    } else if (process.env.NODE_ENV !== "test") {
       console.warn("⚠️ ImageKit is not fully configured in environment variables.");
     }
   }
