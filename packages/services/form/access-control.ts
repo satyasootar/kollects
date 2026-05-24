@@ -26,3 +26,34 @@ export function assertNotDeleted(form: SelectForm) {
     });
   }
 }
+
+/**
+ * Validates public access to a form, enforcing visibility, status, and password checks.
+ */
+export async function resolvePublicForm(
+  form: SelectForm,
+  verifyToken?: (formId: string) => boolean
+): Promise<SelectForm> {
+  // 1. Deleted forms are NEVER accessible publicly
+  assertNotDeleted(form);
+
+  // 2. Draft or Archived forms are NEVER accessible publicly (only via creator portal)
+  if (form.status !== "published") {
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: "Form is not currently accepting responses",
+    });
+  }
+
+  // 3. Password Check
+  if (form.passwordHash) {
+    if (!verifyToken || !verifyToken(form.id)) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "This form is password protected",
+      });
+    }
+  }
+
+  return form;
+}

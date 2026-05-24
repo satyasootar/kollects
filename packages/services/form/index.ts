@@ -6,6 +6,7 @@ import { TRPCError } from "@trpc/server";
 import { assertOwnership, assertNotDeleted } from "./access-control";
 import { SlugService } from "../slug";
 import crypto from "crypto";
+import bcrypt from "bcrypt";
 
 const slugService = new SlugService();
 
@@ -237,5 +238,69 @@ export class FormService {
 
       return newForm;
     });
+  }
+
+  /**
+   * Retrieves a form by slug for public access, resolving visibility and password rules.
+   */
+  async getPublicBySlug(slug: string, verifyToken?: (formId: string) => boolean) {
+    const [form] = await db
+      .select()
+      .from(formsTable)
+      .where(eq(formsTable.slug, slug))
+      .limit(1);
+
+    if (!form) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Form not found" });
+    }
+
+    const { resolvePublicForm } = await import("./access-control");
+    return resolvePublicForm(form, verifyToken);
+  }
+
+  /**
+   * Sets or removes password protection for a form.
+   */
+  async setFormPassword(userId: string, formId: string, password?: string) {
+    const form = await this.getById(formId, userId);
+
+    let passwordHash = null;
+    if (password) {
+      passwordHash = await bcrypt.hash(password, 10);
+    }
+
+    await db
+      .update(formsTable)
+      .set({ passwordHash, updatedAt: new Date() })
+      .where(eq(formsTable.id, formId));
+  }
+
+  /**
+   * Validates a password against a form's password hash and returns a signed token.
+   */
+  async validatePassword(slug: string, password: string): Promise<{ token: string }> {
+    const [form] = await db
+      .select({ id: formsTable.id, passwordHash: formsTable.passwordHash, status: formsTable.status, deletedAt: formsTable.deletedAt })
+      .from(formsTable)
+      .where(eq(formsTable.slug, slug))
+      .limit(1);
+
+    if (!form || form.deletedAt !== null || form.status !== "published") {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Form not found" });
+    }
+
+    if (!form.passwordHash) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Form is not password protected" });
+    }
+
+    const isValid = await bcrypt.compare(password, form.passwordHash);
+    if (!isValid) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "Incorrect password" });
+    }
+
+    const { signFormPasswordToken } = await import("../auth/form-token");
+    const token = signFormPasswordToken(form.id);
+    
+    return { token };
   }
 }
