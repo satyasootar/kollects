@@ -1,4 +1,4 @@
-import { db, eq, and, desc } from "@repo/database";
+import { db, eq, and, desc, sql } from "@repo/database";
 import { formsTable, formResponsesTable, responseAnswersTable, formFieldsTable } from "@repo/database/schema";
 import { TRPCError } from "@trpc/server";
 import { generateCsvExport } from "./csv-export";
@@ -51,7 +51,7 @@ export class ResponseService {
 
     return {
       responses,
-      total: totalRes.length > 0 ? Number(totalRes[0].count) : 0,
+      total: totalRes[0]?.count ? Number(totalRes[0].count) : 0,
     };
   }
 
@@ -102,13 +102,9 @@ export class ResponseService {
       
       // 3. Decrement totalSubmissions (if response was complete)
       if (response.isComplete) {
-        // Find form and decrement
-        const form = await tx.query.formsTable.findFirst({ where: eq(formsTable.id, response.formId) });
-        if (form && form.totalSubmissions > 0) {
-           await tx.update(formsTable)
-             .set({ totalSubmissions: form.totalSubmissions - 1 })
-             .where(eq(formsTable.id, response.formId));
-        }
+        await tx.update(formsTable)
+          .set({ totalSubmissions: sql`${formsTable.totalSubmissions} - 1` })
+          .where(and(eq(formsTable.id, response.formId), sql`${formsTable.totalSubmissions} > 0`));
       }
     });
   }

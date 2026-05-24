@@ -62,6 +62,7 @@ export const formsTable = pgTable(
   (table) => ({
     creatorIdx: index("idx_forms_creator").on(table.creatorId),
     slugIdx: index("idx_forms_slug").on(table.slug),
+    themeIdx: index("idx_forms_theme").on(table.themeId),
   })
 );
 
