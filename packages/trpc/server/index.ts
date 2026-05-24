@@ -8,6 +8,7 @@ import { mediaRouter } from "./routes/media/route";
 import { publicFormRouter } from "./routes/public-form/route";
 import { publicExploreRouter } from "./routes/public-explore/route";
 import { publicSubmitRouter } from "./routes/public-submit/route";
+import { responseRouter } from "./routes/response/route";
 
 export const serverRouter = router({
   health: healthRouter,
@@ -18,6 +19,7 @@ export const serverRouter = router({
   publicForm: publicFormRouter,
   publicExplore: publicExploreRouter,
   publicSubmit: publicSubmitRouter,
+  response: responseRouter,
 });
 
 export { createContext } from "./context";
