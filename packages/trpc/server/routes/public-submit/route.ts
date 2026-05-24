@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../../trpc";
-import { submissionService } from "../../services";
+import { submissionService, analyticsService } from "../../services";
 
 export const publicSubmitRouter = router({
   submit: publicProcedure
@@ -35,14 +35,31 @@ export const publicSubmitRouter = router({
     .input(z.object({
       slug: z.string(),
       sessionId: z.string(),
+      currentPage: z.number().int().min(1),
       answers: z.record(z.string(), z.any()),
+      metadata: z.record(z.string(), z.any()).optional(),
     }))
     .output(z.object({
-      responseId: z.string().uuid().optional(),
+      success: z.boolean(),
     }))
+    .mutation(async ({ ctx, input }) => {
+      const fullMetadata = {
+        ...input.metadata,
+        ipHash: ctx.ipHash,
+        userAgent: ctx.userAgent,
+      };
+      await submissionService.saveProgress(input.slug, input.sessionId, input.currentPage, input.answers, fullMetadata);
+      return { success: true };
+    }),
+
+  recordStart: publicProcedure
+    .meta({ openapi: { method: "POST", path: "/public/submit/{formId}/start", tags: ["Public Submit"], summary: "Record a form start event" } })
+    .input(z.object({
+      formId: z.string().uuid(),
+    }))
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ input }) => {
-      // Stub implementation for Phase 10
-      // In a real scenario, this would use UPSERT logic in SubmissionService
-      return { responseId: undefined };
+      await analyticsService.recordStart(input.formId);
+      return { success: true };
     }),
 });

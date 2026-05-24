@@ -17,15 +17,13 @@ const openApiDocument = generateOpenApiDocument(serverRouter, {
   baseUrl: env.BASE_URL.concat("/api"),
 });
 
-if (env.NODE_ENV !== "prod") {
-  app.use(
-    cors({
-      origin: "*",
-    }),
-  );
-}
+import { corsMiddleware } from "./middleware/cors";
+import { securityHeaders } from "./middleware/security-headers";
 
-app.use(express.json());
+app.use(securityHeaders);
+app.use(corsMiddleware);
+
+app.use(express.json({ limit: "1mb" }));
 
 app.get("/", (req, res) => {
   return res.json({ message: "Streamyst is up and running..." });

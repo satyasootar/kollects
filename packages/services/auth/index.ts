@@ -16,6 +16,7 @@ import { validateScope } from "./api-key";
 import { hashIP } from "../ip";
 import crypto from "crypto";
 import { logger } from "@repo/logger";
+import { cache } from "../cache";
 
 export class AuthService {
   /**
@@ -105,7 +106,10 @@ export class AuthService {
   /**
    * Log out a user by invalidating their session.
    */
-  async logout(sessionId: string) {
+  async logout(sessionId: string, sessionToken?: string) {
+    if (sessionToken) {
+      await cache.invalidate(`session:${sessionToken}`);
+    }
     await invalidateSession(sessionId);
   }
 
@@ -197,6 +201,10 @@ export class AuthService {
    */
   async resolveUser(options: { sessionToken?: string; apiKey?: string }) {
     if (options.sessionToken) {
+      const cacheKey = `session:${options.sessionToken}`;
+      const cached = await cache.get(cacheKey);
+      if (cached) return cached;
+
       const tokenHash = crypto.createHash("sha256").update(options.sessionToken).digest("hex");
       const session = await validateSession(tokenHash);
       if (!session) return null;
@@ -209,7 +217,9 @@ export class AuthService {
         
       if (!user) return null;
 
-      return { user: this.sanitizeUser(user), session };
+      const result = { user: this.sanitizeUser(user), session };
+      await cache.set(cacheKey, result, 300); // 5 minutes TTL
+      return result;
     }
 
     if (options.apiKey) {

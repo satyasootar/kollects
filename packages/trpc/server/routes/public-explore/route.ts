@@ -2,6 +2,7 @@ import { z } from "zod";
 import { publicProcedure, router } from "../../trpc";
 import { db, eq, and, desc, isNull } from "@repo/database";
 import { formsTable } from "@repo/database/models/form";
+import { cacheService } from "../../services";
 
 export const publicExploreRouter = router({
   list: publicProcedure
@@ -12,6 +13,10 @@ export const publicExploreRouter = router({
     }))
     .output(z.any())
     .query(async ({ input }) => {
+      const cacheKey = `explore:cursor:${input.cursor}:limit:${input.limit}`;
+      const cached = await cacheService.get(cacheKey);
+      if (cached) return cached;
+
       // CRITICAL: MUST only query status = 'published' AND visibility = 'public'
       const forms = await db
         .select({
@@ -36,9 +41,12 @@ export const publicExploreRouter = router({
         .limit(input.limit)
         .offset(input.cursor);
 
-      return {
+      const result = {
         items: forms,
         nextCursor: forms.length === input.limit ? input.cursor + input.limit : null,
       };
+
+      await cacheService.set(cacheKey, result, 60); // 60 seconds TTL
+      return result;
     }),
 });

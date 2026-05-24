@@ -77,9 +77,9 @@ export const authRouter = router({
     .input(zodUndefinedModel)
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx }) => {
-      if (ctx.session) {
-        await authService.logout(ctx.session.id);
-      }
+      if (!ctx.session) throw new TRPCError({ code: "UNAUTHORIZED" });
+      const token = ctx.req?.headers?.cookie?.match(/session=([^;]+)/)?.[1];
+      await authService.logout(ctx.session.id, token);
       clearSessionCookie(ctx.res);
       return { success: true };
     }),

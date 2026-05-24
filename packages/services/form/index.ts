@@ -7,6 +7,7 @@ import { assertOwnership, assertNotDeleted } from "./access-control";
 import { SlugService } from "../slug";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
+import { cache } from "../cache";
 
 const slugService = new SlugService();
 
@@ -113,6 +114,11 @@ export class FormService {
       .where(eq(formsTable.id, formId))
       .returning();
 
+    await cache.invalidate(`public-form:slug:${form.slug}`);
+    if (data.slug && data.slug !== form.slug) {
+      await cache.invalidate(`public-form:slug:${data.slug}`);
+    }
+
     return updatedForm;
   }
 
@@ -126,6 +132,8 @@ export class FormService {
       .update(formsTable)
       .set({ deletedAt: new Date() })
       .where(eq(formsTable.id, formId));
+
+    await cache.invalidate(`public-form:slug:${form.slug}`);
   }
 
   /**
@@ -143,6 +151,8 @@ export class FormService {
       })
       .where(eq(formsTable.id, formId))
       .returning();
+
+    await cache.invalidate(`public-form:slug:${form.slug}`);
 
     return updatedForm;
   }
@@ -162,6 +172,9 @@ export class FormService {
       .where(eq(formsTable.id, formId))
       .returning();
 
+    const form = await this.getById(formId, userId);
+    await cache.invalidate(`public-form:slug:${form.slug}`);
+
     return updatedForm;
   }
 
@@ -179,6 +192,9 @@ export class FormService {
       })
       .where(eq(formsTable.id, formId))
       .returning();
+
+    const form = await this.getById(formId, userId);
+    await cache.invalidate(`public-form:slug:${form.slug}`);
 
     return updatedForm;
   }
@@ -244,14 +260,24 @@ export class FormService {
    * Retrieves a form by slug for public access, resolving visibility and password rules.
    */
   async getPublicBySlug(slug: string, verifyToken?: (formId: string) => boolean) {
-    const [form] = await db
-      .select()
-      .from(formsTable)
-      .where(eq(formsTable.slug, slug))
-      .limit(1);
+    const cacheKey = `public-form:slug:${slug}`;
+    const cached = await cache.get(cacheKey);
 
-    if (!form) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Form not found" });
+    let form;
+    if (cached) {
+      form = cached;
+    } else {
+      const [dbForm] = await db
+        .select()
+        .from(formsTable)
+        .where(eq(formsTable.slug, slug))
+        .limit(1);
+
+      if (!dbForm) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Form not found" });
+      }
+      form = dbForm;
+      await cache.set(cacheKey, form, 60); // 60s TTL
     }
 
     const { resolvePublicForm } = await import("./access-control");

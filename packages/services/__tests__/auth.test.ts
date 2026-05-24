@@ -85,7 +85,7 @@ describe("AuthService", () => {
   });
 
   it("should log out (invalidate session)", async () => {
-    await authService.logout(testSessionId);
+    await authService.logout(testSessionId, testSessionToken);
 
     // Try to resolve again, should fail
     const result = await authService.resolveUser({ sessionToken: testSessionToken });

@@ -6,6 +6,7 @@ import { responseAnswersTable } from "@repo/database/models/response-answer";
 import { TRPCError } from "@trpc/server";
 import { buildValidationSchema } from "./dynamic-validator";
 import crypto from "crypto";
+import { AnalyticsService } from "../analytics";
 
 export class SubmissionService {
   /**
@@ -102,6 +103,101 @@ export class SubmissionService {
       return id;
     });
 
+    // Fire and forget analytics update
+    const analyticsService = new AnalyticsService();
+    analyticsService.upsertDailyAnalytics(form.id, new Date()).catch(console.error);
+
     return { responseId, successMessage: form.settings?.successMessage || "Thank you for your submission!" };
+  }
+
+  /**
+   * Saves partial progress for multi-page forms to track drop-offs.
+   */
+  async saveProgress(slug: string, sessionId: string, currentPage: number, answers: Record<string, any>, metadata?: Record<string, any>) {
+    // 1. Fetch form
+    const [form] = await db
+      .select()
+      .from(formsTable)
+      .where(eq(formsTable.slug, slug))
+      .limit(1);
+
+    if (!form || form.deletedAt !== null) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Form not found" });
+    }
+
+    if (form.status !== "published") return; // Ignore drafts for analytics
+
+    // 2. Fetch fields to validate
+    const fields = await db
+      .select()
+      .from(formFieldsTable)
+      .where(eq(formFieldsTable.formId, form.id));
+
+    // For partial saves, we validate but don't strictly reject missing required fields on future pages
+    // We'll just build a partial schema or just safely parse what we can to prevent injection
+    const schema = buildValidationSchema(fields);
+    
+    // We only want to save answers that are valid. We filter out invalid ones.
+    const validAnswers: Record<string, any> = {};
+    for (const [key, value] of Object.entries(answers)) {
+       // Deeply partial validation
+       try {
+         const fieldSchema = schema.shape[key];
+         if (fieldSchema) {
+           validAnswers[key] = fieldSchema.parse(value);
+         }
+       } catch (e) {
+         // ignore invalid fields on partial saves
+       }
+    }
+
+    // Upsert response based on sessionId + formId
+    // Since we don't have a strict sessionId unique constraint, we'll try to find an existing incomplete response
+    // Or we just insert if it doesn't exist
+    await db.transaction(async (tx) => {
+      let responseId: string;
+      const [existing] = await tx.select().from(formResponsesTable).where(
+        sql`${formResponsesTable.formId} = ${form.id} AND ${formResponsesTable.isComplete} = false AND ${formResponsesTable.metadata}->>'sessionId' = ${sessionId}`
+      ).limit(1);
+
+      if (existing) {
+        responseId = existing.id;
+        // Update metadata with new page
+        const existingMetadata = existing.metadata || {};
+        await tx.update(formResponsesTable)
+          .set({
+            metadata: { ...existingMetadata, lastCompletedPage: currentPage },
+            updatedAt: new Date()
+          })
+          .where(eq(formResponsesTable.id, responseId));
+          
+        // Delete old answers and reinsert
+        await tx.delete(responseAnswersTable).where(eq(responseAnswersTable.responseId, responseId));
+      } else {
+        responseId = crypto.randomUUID();
+        await tx.insert(formResponsesTable).values({
+          id: responseId,
+          formId: form.id,
+          ipHash: metadata?.ipHash,
+          userAgent: metadata?.userAgent,
+          isComplete: false,
+          completionTimeSeconds: 0,
+          metadata: { sessionId, lastCompletedPage: currentPage, ...metadata?.browserData },
+          submittedAt: new Date(),
+        });
+      }
+
+      // Insert new answers
+      const answerRows = Object.keys(validAnswers).map((fieldId) => ({
+        id: crypto.randomUUID(),
+        responseId,
+        fieldId,
+        value: validAnswers[fieldId],
+      }));
+
+      if (answerRows.length > 0) {
+        await tx.insert(responseAnswersTable).values(answerRows);
+      }
+    });
   }
 }

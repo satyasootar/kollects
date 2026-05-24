@@ -14,6 +14,15 @@ vi.mock("@repo/database", () => {
   };
 });
 
+vi.mock("../../server/services", () => {
+  return {
+    cacheService: {
+      get: vi.fn().mockResolvedValue(null),
+      set: vi.fn().mockResolvedValue(undefined),
+    },
+  };
+});
+
 const createCaller = () => {
   return serverRouter.createCaller({
     db: {} as any,

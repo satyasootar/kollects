@@ -6,6 +6,9 @@ vi.mock("../../server/services", () => {
     formService: {
       getPublicBySlug: vi.fn(),
     },
+    analyticsService: {
+      recordView: vi.fn().mockResolvedValue(undefined),
+    },
   };
 });
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../../trpc";
-import { formService } from "../../services";
+import { formService, analyticsService } from "../../services";
 import { TRPCError } from "@trpc/server";
 
 export const publicFormRouter = router({
@@ -9,9 +9,11 @@ export const publicFormRouter = router({
     .input(z.object({
       slug: z.string(),
       passwordToken: z.string().optional(),
+      sessionId: z.string().optional(),
+      referrer: z.string().url().optional().nullable(),
     }))
     .output(z.any())
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       // getPublicBySlug handles visibility, status, and password checks
       // and throws standard TRPCErrors (404/403) if access is denied.
       const form = await formService.getPublicBySlug(
@@ -21,6 +23,9 @@ export const publicFormRouter = router({
           return verifyFormPasswordToken(input.passwordToken!, formId);
         } : undefined
       );
+
+      // Fire and forget view tracking
+      analyticsService.recordView(form.id, ctx.ipHash, input.sessionId, input.referrer).catch(console.error);
 
       // Return only the necessary public fields to the frontend
       return {

@@ -17,6 +17,9 @@ vi.mock("../../server/services", () => ({
   userService: {
     getAuthenticationMethods: vi.fn(),
   },
+  rateLimitService: {
+    check: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 // Mock cookies utility
@@ -110,7 +113,7 @@ describe("Auth Router", () => {
 
     const result = await caller.logout(undefined);
 
-    expect(authService.logout).toHaveBeenCalledWith("sess1");
+    expect(authService.logout).toHaveBeenCalledWith("sess1", undefined);
     expect(clearSessionCookie).toHaveBeenCalledWith(authenticatedCtx.res);
     expect(result.success).toBe(true);
   });
