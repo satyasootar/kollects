@@ -35,7 +35,7 @@ const createCaller = () => {
     apiKeyScopes: null,
     ipHash: "concurrent-ip", // Same IP to trigger rate limit
     userAgent: "test",
-    requestMeta: { id: "req-id" },
+    requestMeta: { requestId: "req-id", startTime: Date.now() },
     res: {} as any,
     req: { headers: {} } as any,
   });

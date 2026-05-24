@@ -25,7 +25,7 @@ export const publicFormRouter = router({
       );
 
       // Fire and forget view tracking
-      analyticsService.recordView(form.id, ctx.ipHash, input.sessionId, input.referrer).catch(console.error);
+      analyticsService.recordView(form.id, ctx.ipHash, input.sessionId, input.referrer ?? undefined).catch(console.error);
 
       // Return only the necessary public fields to the frontend
       return {

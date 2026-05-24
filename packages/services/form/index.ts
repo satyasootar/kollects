@@ -261,7 +261,7 @@ export class FormService {
    */
   async getPublicBySlug(slug: string, verifyToken?: (formId: string) => boolean) {
     const cacheKey = `public-form:slug:${slug}`;
-    const cached = await cache.get(cacheKey);
+    const cached = await cache.get<typeof formsTable.$inferSelect>(cacheKey);
 
     let form;
     if (cached) {

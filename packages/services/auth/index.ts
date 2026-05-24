@@ -202,7 +202,7 @@ export class AuthService {
   async resolveUser(options: { sessionToken?: string; apiKey?: string }) {
     if (options.sessionToken) {
       const cacheKey = `session:${options.sessionToken}`;
-      const cached = await cache.get(cacheKey);
+      const cached = await cache.get<{ user: any; session: any }>(cacheKey);
       if (cached) return cached;
 
       const tokenHash = crypto.createHash("sha256").update(options.sessionToken).digest("hex");

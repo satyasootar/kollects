@@ -11,6 +11,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
 } from "@repo/database/schemas/auth";
+import { TRPCError } from "@trpc/server";
 
 const TAGS = ["Authentication"];
 const getPath = generatePath("/authentication");

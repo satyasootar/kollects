@@ -18,6 +18,7 @@ export function signFormPasswordToken(formId: string): string {
 export function verifyFormPasswordToken(token: string, expectedFormId: string): boolean {
   try {
     const [formId, expiresAtStr, signature] = token.split(".");
+    if (!formId || !expiresAtStr || !signature) return false;
     if (formId !== expectedFormId) return false;
     if (Date.now() > parseInt(expiresAtStr, 10)) return false;
     

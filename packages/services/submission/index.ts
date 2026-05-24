@@ -107,7 +107,7 @@ export class SubmissionService {
     const analyticsService = new AnalyticsService();
     analyticsService.upsertDailyAnalytics(form.id, new Date()).catch(console.error);
 
-    return { responseId, successMessage: form.settings?.successMessage || "Thank you for your submission!" };
+    return { responseId, successMessage: (form.settings as any)?.successMessage || "Thank you for your submission!" };
   }
 
   /**

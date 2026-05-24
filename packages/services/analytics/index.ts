@@ -34,7 +34,7 @@ export class AnalyticsService {
    */
   async getOverview(userId: string, formId: string) {
     const cacheKey = `analytics:overview:${formId}`;
-    const cached = await cache.get(cacheKey);
+    const cached = await cache.get<{ totalViews: number; totalStarts: number; totalSubmissions: number; completionRate: number; }>(cacheKey);
     if (cached) return cached;
 
     // Verify ownership
