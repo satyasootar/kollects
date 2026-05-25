@@ -20,6 +20,7 @@ const getPath = generatePath("/authentication");
 const loginRateLimit = createRateLimitMiddleware("login", 10, 15 * 60 * 1000);
 const registerRateLimit = createRateLimitMiddleware("register", 5, 15 * 60 * 1000);
 const forgotPasswordRateLimit = createRateLimitMiddleware("forgot-password", 3, 60 * 60 * 1000);
+const resetPasswordRateLimit = createRateLimitMiddleware("reset-password", 5, 15 * 60 * 1000);
 
 export const authRouter = router({
   getSupportedAuthenticationProviders: publicProcedure
@@ -110,6 +111,7 @@ export const authRouter = router({
     }),
 
   resetPassword: publicProcedure
+    .use(resetPasswordRateLimit)
     .meta({ openapi: { method: "POST", path: getPath("/reset-password"), tags: TAGS } })
     .input(resetPasswordSchema)
     .output(z.object({ success: z.boolean() }))

@@ -2,6 +2,7 @@ import { db } from "@repo/database";
 import { usersTable, SelectUser } from "@repo/database/models/user";
 import { passwordResetTokensTable } from "@repo/database/models/password-reset-token";
 import { apiKeysTable } from "@repo/database/models/system";
+import { sessionsTable } from "@repo/database/models/session";
 import { eq } from "drizzle-orm";
 import {
   loginSchema,
@@ -196,7 +197,8 @@ export class AuthService {
       .set({ usedAt: new Date() })
       .where(eq(passwordResetTokensTable.id, resetToken.id));
 
-    // Optional: Invalidate all existing sessions here if we had a direct user_id reference utility
+    // Invalidate all existing sessions for this user
+    await db.delete(sessionsTable).where(eq(sessionsTable.userId, resetToken.userId));
   }
 
   /**

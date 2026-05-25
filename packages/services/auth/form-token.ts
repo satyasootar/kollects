@@ -1,6 +1,7 @@
 import crypto from "crypto";
+import { env } from "../env";
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret_do_not_use_in_prod";
+const JWT_SECRET = env.JWT_SECRET;
 
 /**
  * Creates a short-lived (15 min) signed token for accessing password-protected forms.

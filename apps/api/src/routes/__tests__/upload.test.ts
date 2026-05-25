@@ -18,9 +18,32 @@ vi.mock("@repo/services/media", () => {
   };
 });
 
+// Mock AuthService
+vi.mock("@repo/services/auth", () => {
+  return {
+    AuthService: vi.fn().mockImplementation(() => {
+      return {
+        resolveUser: vi.fn().mockImplementation(async ({ sessionToken, apiKey }) => {
+          if (sessionToken === "valid-session") {
+            return { user: { id: "test-user" } };
+          }
+          return null;
+        }),
+      };
+    }),
+  };
+});
+
 describe("Upload Route", () => {
-  it("should return 400 if no file is provided", async () => {
+  it("should return 401 if unauthenticated", async () => {
     const response = await request(app).post("/api/upload");
+    expect(response.status).toBe(401);
+  });
+
+  it("should return 400 if no file is provided but authenticated", async () => {
+    const response = await request(app)
+      .post("/api/upload")
+      .set("Cookie", "session=valid-session");
     expect(response.status).toBe(400);
     expect(response.body).toHaveProperty("error", "No file provided");
   });
@@ -30,6 +53,7 @@ describe("Upload Route", () => {
     
     const response = await request(app)
       .post("/api/upload")
+      .set("Cookie", "session=valid-session")
       .attach("file", fileBuffer, "test-image.jpg");
 
     expect(response.status).toBe(200);
@@ -44,6 +68,7 @@ describe("Upload Route", () => {
 
     const responseLarge = await request(app)
       .post("/api/upload")
+      .set("Cookie", "session=valid-session")
       .attach("file", largeBuffer, "large-image.jpg");
 
     // Express/Multer should reject it before even hitting ImageKit
@@ -54,6 +79,7 @@ describe("Upload Route", () => {
     
     const responseMalicious = await request(app)
       .post("/api/upload")
+      .set("Cookie", "session=valid-session")
       .attach("file", maliciousBuffer, {
         filename: "avatar.jpg",
         contentType: "image/jpeg",

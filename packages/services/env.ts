@@ -13,6 +13,7 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
+  JWT_SECRET: z.string().min(32),
 });
 
 function createEnv(env: NodeJS.ProcessEnv) {
