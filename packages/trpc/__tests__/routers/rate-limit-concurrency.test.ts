@@ -11,15 +11,13 @@ vi.mock("@repo/database", async (importOriginal) => {
     db: {
       insert: vi.fn().mockReturnValue({
         values: vi.fn().mockReturnValue({
-          onConflictDoUpdate: vi.fn().mockImplementation(async () => {
-            // Simulate network/DB delay to increase race condition window
-            await new Promise((resolve) => setTimeout(resolve, 50));
-            rateLimitCounter += 1;
-            
-            if (rateLimitCounter > 5) {
-              throw new Error("Rate limit exceeded");
-            }
-            return [];
+          onConflictDoUpdate: vi.fn().mockReturnValue({
+            returning: vi.fn().mockImplementation(async () => {
+              // Simulate network/DB delay to increase race condition window
+              await new Promise((resolve) => setTimeout(resolve, 50));
+              rateLimitCounter += 1;
+              return [{ count: rateLimitCounter }];
+            })
           })
         })
       })
@@ -47,8 +45,8 @@ describe("TC-EDG-001 | Rate Limiting | Distributed High-Concurrency Spam", () =>
     rateLimitCounter = 0;
     const caller = createCaller();
 
-    // Fire 10 parallel login attempts (limit is 5)
-    const attempts = Array.from({ length: 10 }).map(() => 
+    // Fire 15 parallel login attempts (limit is 10)
+    const attempts = Array.from({ length: 15 }).map(() => 
       caller.auth.login({
         email: "test@example.com",
         password: "password123",
@@ -57,7 +55,7 @@ describe("TC-EDG-001 | Rate Limiting | Distributed High-Concurrency Spam", () =>
 
     const results = await Promise.all(attempts);
 
-    // We expect the first 5 to pass the rate limiter (though they might fail auth)
+    // We expect the first 10 to pass the rate limiter (though they might fail auth)
     // We expect the next 5 to be strictly rejected by the rate limiter
     const rateLimitErrors = results.filter(r => r instanceof Error && r.message === "Rate limit exceeded");
     
