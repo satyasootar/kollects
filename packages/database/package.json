@@ -4,11 +4,13 @@
   "scripts": {
     "db:migrate": "dotenv -- drizzle-kit migrate",
     "db:generate": "dotenv -- drizzle-kit generate",
-    "dev": "dotenv -- drizzle-kit studio"
+    "dev": "dotenv -- drizzle-kit studio",
+    "seed": "dotenv -- tsx seed.ts"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
+    "@types/bcrypt": "^6.0.0",
     "@types/pg": "^8.16.0",
     "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.8",
@@ -16,6 +18,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "pg": "^8.16.3",
