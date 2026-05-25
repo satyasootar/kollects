@@ -15,8 +15,8 @@ export class RateLimitService {
   async check(identifier: string, action: string, limit: number, windowMs: number): Promise<void> {
     const windowStart = new Date(Math.floor(Date.now() / windowMs) * windowMs);
 
-    // Upsert rate limit entry
-    await db
+    // Upsert rate limit entry and return the updated count atomically
+    const [entry] = await db
       .insert(rateLimitEntriesTable)
       .values({ identifier, action, windowStart, count: 1 })
       .onConflictDoUpdate({
@@ -26,20 +26,8 @@ export class RateLimitService {
           rateLimitEntriesTable.windowStart,
         ],
         set: { count: sql`${rateLimitEntriesTable.count} + 1` },
-      });
-
-    // Read current count
-    const [entry] = await db
-      .select({ count: rateLimitEntriesTable.count })
-      .from(rateLimitEntriesTable)
-      .where(
-        and(
-          eq(rateLimitEntriesTable.identifier, identifier),
-          eq(rateLimitEntriesTable.action, action),
-          eq(rateLimitEntriesTable.windowStart, windowStart)
-        )
-      )
-      .limit(1);
+      })
+      .returning({ count: rateLimitEntriesTable.count });
 
     if (entry && entry.count > limit) {
       throw new TRPCError({

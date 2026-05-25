@@ -54,10 +54,13 @@ export class FormService {
       throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
     }
 
-    // 2. Check limits (Stubbed for now, simple validation)
-    // TODO (Phase 13): Actually count current forms and enforce formLimit
-    const currentFormsCount = 0; // STUB
-    if (currentFormsCount >= user.formLimit) {
+    // 2. Check limits
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(formsTable)
+      .where(and(eq(formsTable.creatorId, userId), sql`${formsTable.deletedAt} IS NULL`));
+
+    if (count >= user.formLimit) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "Form limit reached for your plan. Please upgrade to create more forms.",
@@ -68,24 +71,31 @@ export class FormService {
     const slug = await slugService.generateSlug(data.title);
 
     // 4. Insert Form and Default Page in transaction
-    return await db.transaction(async (tx) => {
-      const formId = crypto.randomUUID();
+    try {
+      return await db.transaction(async (tx) => {
+        const formId = crypto.randomUUID();
 
-      const [newForm] = await tx
-        .insert(formsTable)
-        .values({
-          id: formId,
-          creatorId: userId,
-          title: data.title,
-          description: data.description,
-          slug,
-          themeId: data.themeId,
-          status: "draft",
-        })
-        .returning();
+        const [newForm] = await tx
+          .insert(formsTable)
+          .values({
+            id: formId,
+            creatorId: userId,
+            title: data.title,
+            description: data.description,
+            slug,
+            themeId: data.themeId,
+            status: "draft",
+          })
+          .returning();
 
-      return newForm;
-    });
+        return newForm;
+      });
+    } catch (error: any) {
+      if (error.code === '23505') {
+        throw new TRPCError({ code: "CONFLICT", message: "Slug is already taken. Please try another one." });
+      }
+      throw error;
+    }
   }
 
   /**
@@ -105,21 +115,28 @@ export class FormService {
       }
     }
 
-    const [updatedForm] = await db
-      .update(formsTable)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
-      .where(eq(formsTable.id, formId))
-      .returning();
+    try {
+      const [updatedForm] = await db
+        .update(formsTable)
+        .set({
+          ...data,
+          updatedAt: new Date(),
+        })
+        .where(eq(formsTable.id, formId))
+        .returning();
 
-    await cache.invalidate(`public-form:slug:${form.slug}`);
-    if (data.slug && data.slug !== form.slug) {
-      await cache.invalidate(`public-form:slug:${data.slug}`);
+      await cache.invalidate(`public-form:slug:${form.slug}`);
+      if (data.slug && data.slug !== form.slug) {
+        await cache.invalidate(`public-form:slug:${data.slug}`);
+      }
+
+      return updatedForm;
+    } catch (error: any) {
+      if (error.code === '23505') {
+        throw new TRPCError({ code: "CONFLICT", message: "This slug is already taken" });
+      }
+      throw error;
     }
-
-    return updatedForm;
   }
 
   /**

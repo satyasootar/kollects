@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../../trpc";
 import { submissionService, analyticsService } from "../../services";
+import { db, eq, and, isNull } from "@repo/database";
+import { formsTable } from "@repo/database/models/form";
+import { TRPCError } from "@trpc/server";
 
 export const publicSubmitRouter = router({
   submit: publicProcedure
@@ -59,6 +62,15 @@ export const publicSubmitRouter = router({
     }))
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ input }) => {
+      const [form] = await db.select({ id: formsTable.id, status: formsTable.status })
+        .from(formsTable)
+        .where(and(eq(formsTable.id, input.formId), isNull(formsTable.deletedAt)))
+        .limit(1);
+
+      if (!form || form.status !== "published") {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Form not found or not published" });
+      }
+
       await analyticsService.recordStart(input.formId);
       return { success: true };
     }),
