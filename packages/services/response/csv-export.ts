@@ -12,13 +12,16 @@ export interface ExportResponseData {
   answers: ResponseAnswerMap;
 }
 
-export function generateCsvExport(fields: SelectFormField[], responses: ExportResponseData[]): string {
-  // Build header row: Metadata columns first, then field labels
+export function generateCsvHeaders(fields: SelectFormField[]): string {
   const metadataHeaders = ["Response ID", "Submitted At", "Completion Time (s)", "IP Hash", "User Agent"];
   const fieldHeaders = fields.map((f) => f.label || f.type);
   const headers = [...metadataHeaders, ...fieldHeaders];
+  return Papa.unparse([headers]);
+}
 
-  // Map each response to a row array
+export function generateCsvRows(fields: SelectFormField[], responses: ExportResponseData[]): string {
+  if (responses.length === 0) return "";
+  
   const data = responses.map((response) => {
     const row: any[] = [];
     
@@ -52,8 +55,11 @@ export function generateCsvExport(fields: SelectFormField[], responses: ExportRe
     return row;
   });
 
-  return Papa.unparse({
-    fields: headers,
-    data: data,
-  });
+  return Papa.unparse(data, { header: false });
+}
+
+export function generateCsvExport(fields: SelectFormField[], responses: ExportResponseData[]): string {
+  const headers = generateCsvHeaders(fields);
+  const rows = generateCsvRows(fields, responses);
+  return rows ? `${headers}\n${rows}` : headers;
 }

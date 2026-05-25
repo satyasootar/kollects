@@ -134,27 +134,21 @@ export class AnalyticsService {
       throw new TRPCError({ code: "NOT_FOUND", message: "Field not found" });
     }
 
-    // 2. Fetch all completed responses for this form to filter answers
-    const completedResponses = await db.select({ id: formResponsesTable.id })
-      .from(formResponsesTable)
-      .where(and(eq(formResponsesTable.formId, formId), eq(formResponsesTable.isComplete, true)));
-
-    if (completedResponses.length === 0) {
-      return { type: field.type, stats: null, totalAnswers: 0 };
-    }
-
-    const responseIds = completedResponses.map(r => r.id);
-
-    // 3. Fetch answers for this field that belong to completed responses
-    const answers = await db.query.responseAnswersTable.findMany({
-      where: and(
-        eq(responseAnswersTable.fieldId, fieldId),
-        inArray(responseAnswersTable.responseId, responseIds)
-      ),
-      columns: {
-        value: true,
-      }
-    });
+    // 2. Fetch answers for this field that belong to completed responses using an INNER JOIN
+    const answers = await db
+      .select({ value: responseAnswersTable.value })
+      .from(responseAnswersTable)
+      .innerJoin(
+        formResponsesTable,
+        eq(responseAnswersTable.responseId, formResponsesTable.id)
+      )
+      .where(
+        and(
+          eq(responseAnswersTable.fieldId, fieldId),
+          eq(formResponsesTable.formId, formId),
+          eq(formResponsesTable.isComplete, true)
+        )
+      );
 
     const totalAnswers = answers.length;
     if (totalAnswers === 0) {

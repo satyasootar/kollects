@@ -121,34 +121,64 @@ export class ResponseService {
       orderBy: (fields, { asc }) => [asc(fields.order)],
     });
 
-    // Get all completed responses with answers
-    const responses = await db.query.formResponsesTable.findMany({
-      where: and(
-        eq(formResponsesTable.formId, formId),
-        eq(formResponsesTable.isComplete, true)
-      ),
-      with: {
-        answers: true,
-      },
-      orderBy: [desc(formResponsesTable.submittedAt)],
-    });
+    let csvResult = "";
+    
+    // Using dynamic import so we don't break existing imports if they weren't exposed
+    const { generateCsvHeaders, generateCsvRows } = await import("./csv-export");
+    
+    csvResult += generateCsvHeaders(fields);
 
-    const exportData: ExportResponseData[] = responses.map((r) => {
-      const answersMap: Record<string, any> = {};
-      for (const answer of r.answers) {
-        answersMap[answer.fieldId] = answer.value;
+    const limit = 500;
+    let offset = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      // Get all completed responses with answers in chunks
+      const responses = await db.query.formResponsesTable.findMany({
+        where: and(
+          eq(formResponsesTable.formId, formId),
+          eq(formResponsesTable.isComplete, true)
+        ),
+        with: {
+          answers: true,
+        },
+        orderBy: [desc(formResponsesTable.submittedAt)],
+        limit,
+        offset,
+      });
+
+      if (responses.length === 0) {
+        hasMore = false;
+        break;
       }
 
-      return {
-        id: r.id,
-        submittedAt: r.submittedAt || new Date(), // fallback if null
-        completionTimeSeconds: r.completionTimeSeconds,
-        ipHash: r.ipHash,
-        userAgent: r.userAgent,
-        answers: answersMap,
-      };
-    });
+      const exportData: ExportResponseData[] = responses.map((r) => {
+        const answersMap: Record<string, any> = {};
+        for (const answer of r.answers) {
+          answersMap[answer.fieldId] = answer.value;
+        }
 
-    return generateCsvExport(fields, exportData);
+        return {
+          id: r.id,
+          submittedAt: r.submittedAt || new Date(), // fallback if null
+          completionTimeSeconds: r.completionTimeSeconds,
+          ipHash: r.ipHash,
+          userAgent: r.userAgent,
+          answers: answersMap,
+        };
+      });
+
+      const rowsChunk = generateCsvRows(fields, exportData);
+      if (rowsChunk) {
+        csvResult += "\n" + rowsChunk;
+      }
+
+      offset += limit;
+      if (responses.length < limit) {
+        hasMore = false;
+      }
+    }
+
+    return csvResult;
   }
 }

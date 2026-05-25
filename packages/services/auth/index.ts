@@ -109,7 +109,8 @@ export class AuthService {
    */
   async logout(sessionId: string, sessionToken?: string) {
     if (sessionToken) {
-      await cache.invalidate(`session:${sessionToken}`);
+      const tokenHash = crypto.createHash("sha256").update(sessionToken).digest("hex");
+      await cache.invalidate(`session:${tokenHash}`);
     }
     await invalidateSession(sessionId);
   }
@@ -206,11 +207,11 @@ export class AuthService {
    */
   async resolveUser(options: { sessionToken?: string; apiKey?: string }) {
     if (options.sessionToken) {
-      const cacheKey = `session:${options.sessionToken}`;
+      const tokenHash = crypto.createHash("sha256").update(options.sessionToken).digest("hex");
+      const cacheKey = `session:${tokenHash}`;
       const cached = await cache.get<{ user: any; session: any }>(cacheKey);
       if (cached) return cached;
 
-      const tokenHash = crypto.createHash("sha256").update(options.sessionToken).digest("hex");
       const session = await validateSession(tokenHash);
       if (!session) return null;
 
