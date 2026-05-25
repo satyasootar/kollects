@@ -13,6 +13,7 @@ import { env } from "./env";
 import { jobQueue } from "@repo/services/jobs";
 
 export const app = express();
+app.set("trust proxy", 1); // Trust first-hop reverse proxy (Cloudflare, Nginx, Load Balancer)
 const openApiDocument = generateOpenApiDocument(serverRouter, {
   title: "KOLLECTS.TECH OpenAPI",
   version: "1.0.0",

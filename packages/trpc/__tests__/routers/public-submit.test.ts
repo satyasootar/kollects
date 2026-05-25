@@ -6,6 +6,9 @@ vi.mock("../../server/services", () => {
     submissionService: {
       submit: vi.fn(),
     },
+    rateLimitService: {
+      check: vi.fn().mockResolvedValue(undefined),
+    },
   };
 });
 

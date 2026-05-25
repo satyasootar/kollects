@@ -77,12 +77,21 @@ export class CacheService {
    */
   async invalidatePattern(pattern: string): Promise<void> {
     if (this.redisClient) {
-      // We convert the pattern to Redis wildcard format
       const redisPattern = pattern.replace(/\*/g, "*");
-      const keys = await this.redisClient.keys(redisPattern);
-      if (keys.length > 0) {
-        await this.redisClient.del(...keys);
-      }
+      let cursor = "0";
+      do {
+        const [newCursor, keys] = await this.redisClient.scan(
+          cursor,
+          "MATCH",
+          redisPattern,
+          "COUNT",
+          100,
+        );
+        cursor = newCursor;
+        if (keys.length > 0) {
+          await this.redisClient.del(...keys);
+        }
+      } while (cursor !== "0");
       return;
     }
 

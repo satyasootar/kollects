@@ -4,9 +4,14 @@ import { submissionService, analyticsService } from "../../services";
 import { db, eq, and, isNull } from "@repo/database";
 import { formsTable } from "@repo/database/models/form";
 import { TRPCError } from "@trpc/server";
+import { createRateLimitMiddleware } from "../../middleware/rate-limit";
+
+const submitRateLimit = createRateLimitMiddleware("public-submit", 60, 60 * 1000);
+const progressRateLimit = createRateLimitMiddleware("public-progress", 120, 60 * 1000);
 
 export const publicSubmitRouter = router({
   submit: publicProcedure
+    .use(submitRateLimit)
     .meta({
       openapi: {
         method: "POST",
@@ -47,6 +52,7 @@ export const publicSubmitRouter = router({
     }),
 
   saveProgress: publicProcedure
+    .use(progressRateLimit)
     .meta({
       openapi: {
         method: "POST",

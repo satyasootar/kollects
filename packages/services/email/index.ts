@@ -61,7 +61,7 @@ export class EmailService {
         <h3>Response Details:</h3>
         {{response.answersTable}}
         <br/>
-        <a href="https://kollects.tech/forms/{{form.id}}/responses">View all responses</a>
+        <a href="${env.BASE_URL}/forms/{{form.id}}/responses">View all responses</a>
       `;
 
       const subject = renderTemplate(settings.creatorEmailSubject || defaultSubject, variables);

@@ -94,43 +94,20 @@ export class AnalyticsService {
   async getDropoffByPage(userId: string, formId: string) {
     await this.enforceFormOwnership(userId, formId);
 
-    const dropoffs: Record<number, number> = {};
-    const limit = 500;
-    let offset = 0;
-    let hasMore = true;
+    const stats = await db
+      .select({
+        page: sql<number>`CAST(COALESCE(${formResponsesTable.metadata}->>'lastCompletedPage', '1') AS INTEGER)`,
+        dropoffs: sql<number>`count(*)::int`,
+      })
+      .from(formResponsesTable)
+      .where(and(eq(formResponsesTable.formId, formId), eq(formResponsesTable.isComplete, false)))
+      .groupBy(
+        sql`CAST(COALESCE(${formResponsesTable.metadata}->>'lastCompletedPage', '1') AS INTEGER)`,
+      );
 
-    while (hasMore) {
-      const incompleteResponses = await db.query.formResponsesTable.findMany({
-        where: and(eq(formResponsesTable.formId, formId), eq(formResponsesTable.isComplete, false)),
-        columns: {
-          id: true,
-          metadata: true,
-        },
-        limit,
-        offset,
-      });
-
-      if (incompleteResponses.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      for (const res of incompleteResponses) {
-        const metadata = (res.metadata as Record<string, any>) || {};
-        const page =
-          typeof metadata.lastCompletedPage === "number" ? metadata.lastCompletedPage : 1;
-        dropoffs[page] = (dropoffs[page] || 0) + 1;
-      }
-
-      offset += limit;
-      if (incompleteResponses.length < limit) {
-        hasMore = false;
-      }
-    }
-
-    return Object.entries(dropoffs).map(([page, count]) => ({
-      page: parseInt(page, 10),
-      dropoffs: count,
+    return stats.map((s) => ({
+      page: s.page,
+      dropoffs: s.dropoffs,
     }));
   }
 

@@ -28,6 +28,8 @@ export class JobQueue {
   private handlers = new Map<string, JobHandler<any>>();
   private running = false;
   private queue: { type: string; payload: any; attempts?: number }[] = [];
+  private isSaving = false;
+  private savePending = false;
 
   constructor() {
     this.registerHandlers();
@@ -46,11 +48,24 @@ export class JobQueue {
     this.handlers.set(type, handler);
   }
 
-  private saveQueue() {
+  private async saveQueue() {
+    if (this.isSaving) {
+      this.savePending = true;
+      return;
+    }
+    this.isSaving = true;
     try {
-      fs.writeFileSync(PERSISTENCE_FILE, JSON.stringify(this.queue, null, 2), "utf8");
+      const tempFile = `${PERSISTENCE_FILE}.tmp`;
+      await fs.promises.writeFile(tempFile, JSON.stringify(this.queue, null, 2), "utf8");
+      await fs.promises.rename(tempFile, PERSISTENCE_FILE);
     } catch (error) {
       logger.error("Failed to save background jobs to disk", { error });
+    } finally {
+      this.isSaving = false;
+      if (this.savePending) {
+        this.savePending = false;
+        this.saveQueue();
+      }
     }
   }
 

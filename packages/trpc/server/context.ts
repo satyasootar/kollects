@@ -28,10 +28,7 @@ export interface TRPCContext {
 export async function createContext(opts: CreateExpressContextOptions): Promise<TRPCContext> {
   const { req, res } = opts;
 
-  const rawIp =
-    (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ??
-    req.socket.remoteAddress ??
-    "unknown";
+  const rawIp = req.ip ?? "unknown";
 
   return {
     db,
