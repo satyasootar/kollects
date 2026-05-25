@@ -26,7 +26,7 @@ async function main() {
       })
       .returning();
 
-    console.log(`✅ Demo User seeded: ${demoUser.email} (ID: ${demoUser.id})`);
+    console.log(`✅ Demo User seeded: ${demoUser!.email} (ID: ${demoUser!.id})`);
 
     // 2. Create System Themes
     const themesData = [
@@ -37,7 +37,7 @@ async function main() {
         isSystem: true,
         isPublic: true,
         colorScheme: "light" as const,
-        creatorId: demoUser.id,
+        creatorId: demoUser!.id,
         config: {},
       },
       {
@@ -47,7 +47,7 @@ async function main() {
         isSystem: true,
         isPublic: true,
         colorScheme: "dark" as const,
-        creatorId: demoUser.id,
+        creatorId: demoUser!.id,
         config: {},
       },
     ];
@@ -62,11 +62,11 @@ async function main() {
           set: theme,
         })
         .returning();
-      themes.push(insertedTheme);
-      console.log(`✅ System Theme seeded: ${insertedTheme.name}`);
+      themes.push(insertedTheme!);
+      console.log(`✅ System Theme seeded: ${insertedTheme!.name}`);
     }
 
-    const lightTheme = themes.find((t) => t.slug === "system-light")!;
+    const lightTheme = themes.find((t) => t!.slug === "system-light")!;
 
     // 3. Create System Templates
     const templatesData = [
