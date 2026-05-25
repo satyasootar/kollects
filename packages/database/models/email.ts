@@ -20,11 +20,7 @@ export const emailLogTypeEnum = pgEnum("email_log_type", [
   "password_reset",
 ]);
 
-export const emailLogStatusEnum = pgEnum("email_log_status", [
-  "pending",
-  "sent",
-  "failed",
-]);
+export const emailLogStatusEnum = pgEnum("email_log_status", ["pending", "sent", "failed"]);
 
 export const emailNotificationSettingsTable = pgTable("email_notification_settings", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -32,52 +28,65 @@ export const emailNotificationSettingsTable = pgTable("email_notification_settin
     .notNull()
     .unique()
     .references(() => formsTable.id, { onDelete: "cascade" }),
-    
+
   creatorNotifyOnSubmission: boolean("creator_notify_on_submission").default(false).notNull(),
   creatorNotifyEmail: varchar("creator_notify_email", { length: 255 }),
   creatorEmailSubject: text("creator_email_subject"),
   creatorEmailTemplate: text("creator_email_template"),
-  
-  respondentConfirmationEnabled: boolean("respondent_confirmation_enabled").default(false).notNull(),
-  respondentEmailFieldId: uuid("respondent_email_field_id").references(() => formFieldsTable.id, { onDelete: "set null" }),
+
+  respondentConfirmationEnabled: boolean("respondent_confirmation_enabled")
+    .default(false)
+    .notNull(),
+  respondentEmailFieldId: uuid("respondent_email_field_id").references(() => formFieldsTable.id, {
+    onDelete: "set null",
+  }),
   respondentEmailSubject: text("respondent_email_subject"),
   respondentEmailTemplate: text("respondent_email_template"),
-  
+
   weeklyDigestEnabled: boolean("weekly_digest_enabled").default(false).notNull(),
-  
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),
 });
 
-export const emailLogsTable = pgTable("email_logs", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  formId: uuid("form_id").references(() => formsTable.id, { onDelete: "set null" }),
-  responseId: uuid("response_id").references(() => formResponsesTable.id, { onDelete: "set null" }),
-  
-  type: emailLogTypeEnum("type").notNull(),
-  toEmail: varchar("to_email", { length: 255 }).notNull(),
-  subject: text("subject"),
-  htmlContent: text("html_content"), // Storing full HTML per user request
-  
-  status: emailLogStatusEnum("status").default("pending").notNull(),
-  errorMessage: text("error_message"),
-  
-  sentAt: timestamp("sent_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => ({
-  formIdx: index("idx_email_logs_form").on(table.formId),
-}));
+export const emailLogsTable = pgTable(
+  "email_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    formId: uuid("form_id").references(() => formsTable.id, { onDelete: "set null" }),
+    responseId: uuid("response_id").references(() => formResponsesTable.id, {
+      onDelete: "set null",
+    }),
 
-export const emailNotificationSettingsRelations = relations(emailNotificationSettingsTable, ({ one }) => ({
-  form: one(formsTable, {
-    fields: [emailNotificationSettingsTable.formId],
-    references: [formsTable.id],
+    type: emailLogTypeEnum("type").notNull(),
+    toEmail: varchar("to_email", { length: 255 }).notNull(),
+    subject: text("subject"),
+    htmlContent: text("html_content"), // Storing full HTML per user request
+
+    status: emailLogStatusEnum("status").default("pending").notNull(),
+    errorMessage: text("error_message"),
+
+    sentAt: timestamp("sent_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    formIdx: index("idx_email_logs_form").on(table.formId),
   }),
-  respondentEmailField: one(formFieldsTable, {
-    fields: [emailNotificationSettingsTable.respondentEmailFieldId],
-    references: [formFieldsTable.id],
+);
+
+export const emailNotificationSettingsRelations = relations(
+  emailNotificationSettingsTable,
+  ({ one }) => ({
+    form: one(formsTable, {
+      fields: [emailNotificationSettingsTable.formId],
+      references: [formsTable.id],
+    }),
+    respondentEmailField: one(formFieldsTable, {
+      fields: [emailNotificationSettingsTable.respondentEmailFieldId],
+      references: [formFieldsTable.id],
+    }),
   }),
-}));
+);
 
 export const emailLogsRelations = relations(emailLogsTable, ({ one }) => ({
   form: one(formsTable, {

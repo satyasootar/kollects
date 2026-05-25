@@ -63,7 +63,10 @@ export class SlugService {
     }
 
     if (!/^[a-z0-9-]+$/.test(slug)) {
-      return { valid: false, error: "Slug can only contain lowercase letters, numbers, and hyphens" };
+      return {
+        valid: false,
+        error: "Slug can only contain lowercase letters, numbers, and hyphens",
+      };
     }
 
     if (this.reservedSlugs.has(slug)) {

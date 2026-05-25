@@ -10,9 +10,7 @@ describe("TC-API-001 | Validation | Corrupted JSON Payloads", () => {
       maliciousPayload = { nested: maliciousPayload };
     }
 
-    const response = await request(app)
-      .post("/trpc/auth.register")
-      .send(maliciousPayload);
+    const response = await request(app).post("/trpc/auth.register").send(maliciousPayload);
 
     // Express's JSON parser might reject it, or tRPC validation will fail it
     // The important part is that the server doesn't crash
@@ -30,12 +28,10 @@ describe("TC-API-001 | Validation | Corrupted JSON Payloads", () => {
   });
 
   it("should reject payload with missing required fields correctly", async () => {
-    const response = await request(app)
-      .post("/trpc/auth.register")
-      .send({
-        // missing name, email, password
-        someUnknownField: true
-      });
+    const response = await request(app).post("/trpc/auth.register").send({
+      // missing name, email, password
+      someUnknownField: true,
+    });
 
     // tRPC returns 400 for input validation errors
     expect(response.status).toBe(400);

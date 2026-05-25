@@ -34,27 +34,27 @@ export const formFieldsTable = pgTable(
     formId: uuid("form_id")
       .notNull()
       .references(() => formsTable.id, { onDelete: "cascade" }),
-      
+
     type: fieldTypeEnum("type").notNull(),
     label: text("label").notNull(),
     placeholder: text("placeholder"),
     helpText: text("help_text"),
-    
+
     required: boolean("required").default(false).notNull(),
     order: integer("order").notNull(),
     pageNumber: integer("page_number").default(1).notNull(),
-    
+
     options: jsonb("options").$type<Record<string, any>[]>(),
     logic: jsonb("logic").$type<Record<string, any>[]>(),
     settings: jsonb("settings").$type<Record<string, any>>(),
     validations: jsonb("validations").$type<Record<string, any>>(),
-    
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),
   },
   (table) => ({
     formOrderIdx: index("idx_form_fields_order").on(table.formId, table.order),
-  })
+  }),
 );
 
 export const formFieldsRelations = relations(formFieldsTable, ({ one, many }) => ({

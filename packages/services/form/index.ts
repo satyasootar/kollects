@@ -92,8 +92,11 @@ export class FormService {
         return newForm;
       });
     } catch (error: any) {
-      if (error.code === '23505') {
-        throw new TRPCError({ code: "CONFLICT", message: "Slug is already taken. Please try another one." });
+      if (error.code === "23505") {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Slug is already taken. Please try another one.",
+        });
       }
       throw error;
     }
@@ -102,7 +105,11 @@ export class FormService {
   /**
    * Updates basic form settings (title, description, slug, theme).
    */
-  async update(userId: string, formId: string, data: { title?: string; description?: string; slug?: string; themeId?: string }) {
+  async update(
+    userId: string,
+    formId: string,
+    data: { title?: string; description?: string; slug?: string; themeId?: string },
+  ) {
     const form = await this.getById(formId, userId);
 
     if (data.slug && data.slug !== form.slug) {
@@ -133,7 +140,7 @@ export class FormService {
 
       return updatedForm;
     } catch (error: any) {
-      if (error.code === '23505') {
+      if (error.code === "23505") {
         throw new TRPCError({ code: "CONFLICT", message: "This slug is already taken" });
       }
       throw error;
@@ -146,10 +153,7 @@ export class FormService {
   async delete(userId: string, formId: string) {
     const form = await this.getById(formId, userId);
 
-    await db
-      .update(formsTable)
-      .set({ deletedAt: new Date() })
-      .where(eq(formsTable.id, formId));
+    await db.update(formsTable).set({ deletedAt: new Date() }).where(eq(formsTable.id, formId));
 
     await db.insert(auditLogsTable).values({
       userId,
@@ -256,10 +260,13 @@ export class FormService {
         .returning();
 
       // 3. Clone Fields
-      const originalFields = await tx.select().from(formFieldsTable).where(eq(formFieldsTable.formId, formId));
-      
+      const originalFields = await tx
+        .select()
+        .from(formFieldsTable)
+        .where(eq(formFieldsTable.formId, formId));
+
       if (originalFields.length > 0) {
-        const newFields = originalFields.map(oldField => ({
+        const newFields = originalFields.map((oldField) => ({
           id: crypto.randomUUID(),
           formId: newFormId,
           type: oldField.type,
@@ -284,7 +291,10 @@ export class FormService {
   /**
    * Retrieves a form by slug for public access, resolving visibility and password rules.
    */
-  async getPublicBySlug(slug: string, verifyToken?: (formId: string) => Promise<boolean> | boolean) {
+  async getPublicBySlug(
+    slug: string,
+    verifyToken?: (formId: string) => Promise<boolean> | boolean,
+  ) {
     const cacheKey = `public-form:slug:${slug}`;
     const cached = await cache.get<typeof formsTable.$inferSelect>(cacheKey);
 
@@ -292,11 +302,7 @@ export class FormService {
     if (cached) {
       form = cached;
     } else {
-      const [dbForm] = await db
-        .select()
-        .from(formsTable)
-        .where(eq(formsTable.slug, slug))
-        .limit(1);
+      const [dbForm] = await db.select().from(formsTable).where(eq(formsTable.slug, slug)).limit(1);
 
       if (!dbForm) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Form not found" });
@@ -331,7 +337,12 @@ export class FormService {
    */
   async validatePassword(slug: string, password: string): Promise<{ token: string }> {
     const [form] = await db
-      .select({ id: formsTable.id, passwordHash: formsTable.passwordHash, status: formsTable.status, deletedAt: formsTable.deletedAt })
+      .select({
+        id: formsTable.id,
+        passwordHash: formsTable.passwordHash,
+        status: formsTable.status,
+        deletedAt: formsTable.deletedAt,
+      })
       .from(formsTable)
       .where(eq(formsTable.slug, slug))
       .limit(1);
@@ -351,7 +362,7 @@ export class FormService {
 
     const { signFormPasswordToken } = await import("../auth/form-token");
     const token = signFormPasswordToken(form.id);
-    
+
     return { token };
   }
 }

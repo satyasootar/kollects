@@ -26,7 +26,7 @@ export class AuthService {
    */
   async register(
     data: z.infer<typeof registerSchema>,
-    reqContext?: { ip?: string; userAgent?: string }
+    reqContext?: { ip?: string; userAgent?: string },
   ) {
     const validData = registerSchema.parse(data);
 
@@ -70,10 +70,7 @@ export class AuthService {
   /**
    * Log in an existing user.
    */
-  async login(
-    data: z.infer<typeof loginSchema>,
-    reqContext?: { ip?: string; userAgent?: string }
-  ) {
+  async login(data: z.infer<typeof loginSchema>, reqContext?: { ip?: string; userAgent?: string }) {
     const validData = loginSchema.parse(data);
 
     const [user] = await db
@@ -163,7 +160,7 @@ export class AuthService {
     const { EmailService } = await import("../email");
     const emailService = new EmailService();
     await emailService.sendPasswordResetEmail(user.email, token);
-    
+
     logger.info(`Password reset email queued`, { userId: user.id });
   }
 
@@ -238,7 +235,7 @@ export class AuthService {
         .from(usersTable)
         .where(eq(usersTable.id, session.userId))
         .limit(1);
-        
+
       if (!user) return null;
 
       const result = { user: this.sanitizeUser(user), session };
@@ -248,7 +245,7 @@ export class AuthService {
 
     if (options.apiKey) {
       const keyHash = crypto.createHash("sha256").update(options.apiKey).digest("hex");
-      
+
       const [key] = await db
         .select()
         .from(apiKeysTable)
@@ -256,7 +253,9 @@ export class AuthService {
         .limit(1);
 
       if (!key || !key.isActive || (key.expiresAt && Date.now() > key.expiresAt.getTime())) {
-        logger.warn("API key lookup failed — invalid or expired", { keyPrefix: options.apiKey.slice(0, 12) });
+        logger.warn("API key lookup failed — invalid or expired", {
+          keyPrefix: options.apiKey.slice(0, 12),
+        });
         return null;
       }
 

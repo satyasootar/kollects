@@ -36,14 +36,18 @@ export const authRouter = router({
     .use(registerRateLimit)
     .meta({ openapi: { method: "POST", path: getPath("/register"), tags: TAGS } })
     .input(registerSchema)
-    .output(z.object({
-      user: z.object({
-        id: z.string(),
-        name: z.string(),
-        email: z.string().email(),
-      }).passthrough(),
-      token: z.string(),
-    }))
+    .output(
+      z.object({
+        user: z
+          .object({
+            id: z.string(),
+            name: z.string(),
+            email: z.string().email(),
+          })
+          .passthrough(),
+        token: z.string(),
+      }),
+    )
     .mutation(async ({ input, ctx }) => {
       const { user, token } = await authService.register(input, {
         ip: ctx.ipHash,
@@ -57,14 +61,18 @@ export const authRouter = router({
     .use(loginRateLimit)
     .meta({ openapi: { method: "POST", path: getPath("/login"), tags: TAGS } })
     .input(loginSchema)
-    .output(z.object({
-      user: z.object({
-        id: z.string(),
-        name: z.string(),
-        email: z.string().email(),
-      }).passthrough(),
-      token: z.string(),
-    }))
+    .output(
+      z.object({
+        user: z
+          .object({
+            id: z.string(),
+            name: z.string(),
+            email: z.string().email(),
+          })
+          .passthrough(),
+        token: z.string(),
+      }),
+    )
     .mutation(async ({ input, ctx }) => {
       const { user, token } = await authService.login(input, {
         ip: ctx.ipHash,
@@ -89,13 +97,17 @@ export const authRouter = router({
   me: protectedProcedure
     .meta({ openapi: { method: "GET", path: getPath("/me"), tags: TAGS } })
     .input(zodUndefinedModel)
-    .output(z.object({
-      user: z.object({
-        id: z.string(),
-        name: z.string(),
-        email: z.string().email(),
-      }).passthrough(),
-    }))
+    .output(
+      z.object({
+        user: z
+          .object({
+            id: z.string(),
+            name: z.string(),
+            email: z.string().email(),
+          })
+          .passthrough(),
+      }),
+    )
     .query(async ({ ctx }) => {
       return { user: ctx.user! };
     }),

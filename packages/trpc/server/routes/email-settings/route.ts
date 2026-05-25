@@ -34,7 +34,7 @@ export const emailSettingsRouter = router({
       z.object({
         formId: z.string().uuid(),
         data: updateEmailSettingsSchema,
-      })
+      }),
     )
     .output(z.any())
     .mutation(async ({ ctx, input }) => {

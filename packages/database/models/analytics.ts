@@ -32,7 +32,7 @@ export const formAnalyticsDailyTable = pgTable(
   },
   (table) => ({
     uniqueFormDate: uniqueIndex("idx_analytics_form_date").on(table.formId, table.date),
-  })
+  }),
 );
 
 export const formViewsTable = pgTable(
@@ -50,7 +50,7 @@ export const formViewsTable = pgTable(
   },
   (table) => ({
     formIdx: index("idx_form_views_form").on(table.formId),
-  })
+  }),
 );
 
 export const formAnalyticsDailyRelations = relations(formAnalyticsDailyTable, ({ one }) => ({

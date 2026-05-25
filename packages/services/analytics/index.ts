@@ -1,11 +1,11 @@
 import { db, eq, and, sql, desc, inArray, gte, lte } from "@repo/database";
-import { 
-  formsTable, 
-  formAnalyticsDailyTable, 
+import {
+  formsTable,
+  formAnalyticsDailyTable,
   formViewsTable,
   formResponsesTable,
   responseAnswersTable,
-  formFieldsTable
+  formFieldsTable,
 } from "@repo/database/schema";
 import { TRPCError } from "@trpc/server";
 import { cache } from "../cache";
@@ -16,16 +16,16 @@ export class AnalyticsService {
    */
   private async enforceFormOwnership(userId: string, formId: string) {
     const form = await db.query.formsTable.findFirst({
-      where: and(
-        eq(formsTable.id, formId),
-        eq(formsTable.creatorId, userId)
-      ),
+      where: and(eq(formsTable.id, formId), eq(formsTable.creatorId, userId)),
     });
 
     if (!form) {
-      throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to access this form's analytics" });
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "You do not have permission to access this form's analytics",
+      });
     }
-    
+
     return form;
   }
 
@@ -34,7 +34,12 @@ export class AnalyticsService {
    */
   async getOverview(userId: string, formId: string) {
     const cacheKey = `analytics:overview:${formId}`;
-    const cached = await cache.get<{ totalViews: number; totalStarts: number; totalSubmissions: number; completionRate: number; }>(cacheKey);
+    const cached = await cache.get<{
+      totalViews: number;
+      totalStarts: number;
+      totalSubmissions: number;
+      completionRate: number;
+    }>(cacheKey);
     if (cached) return cached;
 
     // Verify ownership
@@ -48,9 +53,8 @@ export class AnalyticsService {
       throw new TRPCError({ code: "NOT_FOUND", message: "Form not found or access denied" });
     }
 
-    const completionRate = form.totalStarts > 0
-      ? (form.totalSubmissions / form.totalStarts) * 100
-      : 0;
+    const completionRate =
+      form.totalStarts > 0 ? (form.totalSubmissions / form.totalStarts) * 100 : 0;
 
     const result = {
       totalViews: form.totalViews,
@@ -73,12 +77,12 @@ export class AnalyticsService {
       where: and(
         eq(formAnalyticsDailyTable.formId, formId),
         gte(formAnalyticsDailyTable.date, startDate),
-        lte(formAnalyticsDailyTable.date, endDate)
+        lte(formAnalyticsDailyTable.date, endDate),
       ),
       orderBy: [desc(formAnalyticsDailyTable.date)],
     });
 
-    return stats.map(stat => ({
+    return stats.map((stat) => ({
       ...stat,
       completionRate: stat.completionRate / 100, // convert back to percentage representation if stored as integer * 100
     }));
@@ -97,10 +101,7 @@ export class AnalyticsService {
 
     while (hasMore) {
       const incompleteResponses = await db.query.formResponsesTable.findMany({
-        where: and(
-          eq(formResponsesTable.formId, formId),
-          eq(formResponsesTable.isComplete, false)
-        ),
+        where: and(eq(formResponsesTable.formId, formId), eq(formResponsesTable.isComplete, false)),
         columns: {
           id: true,
           metadata: true,
@@ -115,8 +116,9 @@ export class AnalyticsService {
       }
 
       for (const res of incompleteResponses) {
-        const metadata = res.metadata as Record<string, any> || {};
-        const page = typeof metadata.lastCompletedPage === 'number' ? metadata.lastCompletedPage : 1;
+        const metadata = (res.metadata as Record<string, any>) || {};
+        const page =
+          typeof metadata.lastCompletedPage === "number" ? metadata.lastCompletedPage : 1;
         dropoffs[page] = (dropoffs[page] || 0) + 1;
       }
 
@@ -140,10 +142,7 @@ export class AnalyticsService {
 
     // 1. Verify field exists on this form
     const field = await db.query.formFieldsTable.findFirst({
-      where: and(
-        eq(formFieldsTable.id, fieldId),
-        eq(formFieldsTable.formId, formId)
-      )
+      where: and(eq(formFieldsTable.id, fieldId), eq(formFieldsTable.formId, formId)),
     });
 
     if (!field) {
@@ -154,16 +153,13 @@ export class AnalyticsService {
     const answers = await db
       .select({ value: responseAnswersTable.value })
       .from(responseAnswersTable)
-      .innerJoin(
-        formResponsesTable,
-        eq(responseAnswersTable.responseId, formResponsesTable.id)
-      )
+      .innerJoin(formResponsesTable, eq(responseAnswersTable.responseId, formResponsesTable.id))
       .where(
         and(
           eq(responseAnswersTable.fieldId, fieldId),
           eq(formResponsesTable.formId, formId),
-          eq(formResponsesTable.isComplete, true)
-        )
+          eq(formResponsesTable.isComplete, true),
+        ),
       );
 
     const totalAnswers = answers.length;
@@ -267,7 +263,8 @@ export class AnalyticsService {
       });
 
       // 2. Increment totalViews atomically
-      await tx.update(formsTable)
+      await tx
+        .update(formsTable)
         .set({ totalViews: sql`${formsTable.totalViews} + 1` })
         .where(eq(formsTable.id, formId));
     });
@@ -277,7 +274,8 @@ export class AnalyticsService {
    * Records a form start (user interacts with first field).
    */
   async recordStart(formId: string) {
-    await db.update(formsTable)
+    await db
+      .update(formsTable)
       .set({ totalStarts: sql`${formsTable.totalStarts} + 1` })
       .where(eq(formsTable.id, formId));
   }
@@ -291,7 +289,8 @@ export class AnalyticsService {
     strippedDate.setUTCHours(0, 0, 0, 0);
 
     // In a real high-throughput system this could be queued, but we use atomic upsert here.
-    await db.insert(formAnalyticsDailyTable)
+    await db
+      .insert(formAnalyticsDailyTable)
       .values({
         formId,
         date: strippedDate,
@@ -303,8 +302,8 @@ export class AnalyticsService {
         target: [formAnalyticsDailyTable.formId, formAnalyticsDailyTable.date],
         set: {
           submissions: sql`${formAnalyticsDailyTable.submissions} + 1`,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
   }
 }

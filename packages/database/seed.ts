@@ -142,13 +142,10 @@ async function main() {
     ];
 
     for (const tpl of templatesData) {
-      await db
-        .insert(formTemplatesTable)
-        .values(tpl)
-        .onConflictDoUpdate({
-          target: formTemplatesTable.slug,
-          set: tpl,
-        });
+      await db.insert(formTemplatesTable).values(tpl).onConflictDoUpdate({
+        target: formTemplatesTable.slug,
+        set: tpl,
+      });
       console.log(`✅ System Template seeded: ${tpl.name}`);
     }
 

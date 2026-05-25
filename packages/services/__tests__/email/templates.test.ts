@@ -12,7 +12,7 @@ describe("Email Templates", () => {
     const template = "Your form '{{form.title}}' received a response from {{user.email}}.";
     const variables = {
       form: { title: "Survey 2026" },
-      user: { email: "test@example.com" }
+      user: { email: "test@example.com" },
     };
     const result = renderTemplate(template, variables);
     expect(result).toBe("Your form 'Survey 2026' received a response from test@example.com.");
@@ -29,16 +29,16 @@ describe("Email Templates", () => {
     const variables = {
       fields: [
         { id: "f1", label: "What is your name?" },
-        { id: "f2", label: "Do you agree?" }
+        { id: "f2", label: "Do you agree?" },
       ],
       response: {
         answers: [
           { fieldId: "f1", value: "Bob" },
-          { fieldId: "f2", value: true }
-        ]
-      }
+          { fieldId: "f2", value: true },
+        ],
+      },
     };
-    
+
     const result = renderTemplate(template, variables);
     expect(result).toContain("What is your name?");
     expect(result).toContain("Bob");

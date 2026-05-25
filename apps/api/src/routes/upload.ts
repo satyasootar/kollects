@@ -38,7 +38,9 @@ router.post("/", upload.single("file"), validateFileMagicBytes, async (req, res)
   } catch (error: any) {
     console.error("Upload error:", error);
     // Sanitize error to avoid leaking ImageKit/SDK credential details
-    return res.status(500).json({ error: "Failed to upload file due to an internal server error." });
+    return res
+      .status(500)
+      .json({ error: "Failed to upload file due to an internal server error." });
   }
 });
 

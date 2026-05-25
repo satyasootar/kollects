@@ -8,8 +8,8 @@ describe("TC-EDG-002 | Transactions | Database Connection Drop During Form Submi
     // Mock the database transaction
     const mockRollback = vi.fn();
     const mockCommit = vi.fn();
-    
-    // Simulate inserting the primary response row successfully, 
+
+    // Simulate inserting the primary response row successfully,
     // but throwing an error when inserting the 50 answers
     const mockTx = {
       insert: vi.fn().mockImplementation((table) => {
@@ -21,7 +21,7 @@ describe("TC-EDG-002 | Transactions | Database Connection Drop During Form Submi
             }
             // Primary response row insert succeeds
             return { returning: () => [{ id: "response-id-123" }] };
-          })
+          }),
         };
       }),
       rollback: mockRollback,
@@ -37,7 +37,7 @@ describe("TC-EDG-002 | Transactions | Database Connection Drop During Form Submi
           mockRollback();
           throw error;
         }
-      })
+      }),
     };
 
     // The hypothetical service method
@@ -45,19 +45,24 @@ describe("TC-EDG-002 | Transactions | Database Connection Drop During Form Submi
       return db.transaction(async (tx: any) => {
         // 1. Insert primary row
         const [response] = await tx.insert("responses").values({ formId }).returning();
-        
+
         // 2. Insert answers
-        await tx.insert("answers").values(answers.map(a => ({ responseId: response.id, ...a })));
-        
+        await tx.insert("answers").values(answers.map((a) => ({ responseId: response.id, ...a })));
+
         return response;
       });
     };
 
     // Generate 50 answers
-    const answers = Array.from({ length: 50 }).map((_, i) => ({ fieldId: `f-${i}`, value: "test" }));
+    const answers = Array.from({ length: 50 }).map((_, i) => ({
+      fieldId: `f-${i}`,
+      value: "test",
+    }));
 
     // Expect the submission to fail due to the connection drop
-    await expect(submitFormResponse(mockDb, "form-1", answers)).rejects.toThrow("Connection terminated unexpectedly");
+    await expect(submitFormResponse(mockDb, "form-1", answers)).rejects.toThrow(
+      "Connection terminated unexpectedly",
+    );
 
     // The rollback MUST have been called to prevent orphaned records
     expect(mockRollback).toHaveBeenCalled();
@@ -73,8 +78,8 @@ describe("TC-DB-001 | Race Conditions | Concurrent Response Limits", () => {
     // Simulate database atomic increment or SELECT FOR UPDATE
     const submitWithLimit = async () => {
       // Simulate network jitter
-      await new Promise(res => setTimeout(res, Math.random() * 20));
-      
+      await new Promise((res) => setTimeout(res, Math.random() * 20));
+
       // Atomic increment block
       if (currentTotal < 100) {
         currentTotal++;
@@ -86,21 +91,18 @@ describe("TC-DB-001 | Race Conditions | Concurrent Response Limits", () => {
     };
 
     // Fire 2 submissions at the EXACT same time
-    const attempts = await Promise.allSettled([
-      submitWithLimit(),
-      submitWithLimit()
-    ]);
+    const attempts = await Promise.allSettled([submitWithLimit(), submitWithLimit()]);
 
     // We expect exactly ONE to succeed, and ONE to fail
-    const successes = attempts.filter(a => a.status === "fulfilled");
-    const failures = attempts.filter(a => a.status === "rejected");
+    const successes = attempts.filter((a) => a.status === "fulfilled");
+    const failures = attempts.filter((a) => a.status === "rejected");
 
     expect(successes.length).toBe(1);
     expect(failures.length).toBe(1);
     if (failures[0] && failures[0].status === "rejected") {
       expect(failures[0].reason?.message).toBe("Form is full");
     }
-    
+
     // The total must not exceed 100
     expect(currentTotal).toBe(100);
   });

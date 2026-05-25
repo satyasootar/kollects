@@ -15,20 +15,18 @@ vi.mock("../../server/services", () => {
         if (sessionToken === "user-b") return { user: { id: "user-b" }, session: {} };
         return null;
       }),
-    }
+    },
   };
 });
 
-
 // Removed @repo/services/form mock as we use ../../server/services mock now
-
 
 // Create a helper to instantiate tRPC caller with a mocked user context
 const createCaller = (userId: string | null) => {
   return serverRouter.createCaller({
     db: {} as any,
-    user: userId ? { id: userId } as any : null,
-    session: userId ? { id: "session_id", user_id: userId } as any : null,
+    user: userId ? ({ id: userId } as any) : null,
+    session: userId ? ({ id: "session_id", user_id: userId } as any) : null,
     apiKeyScopes: null,
     ipHash: "123",
     userAgent: "test",
@@ -53,10 +51,12 @@ describe("TC-SEC-001 | Authorization | IDOR on Forms", () => {
     // User B attempting to edit a form owned by User A
     const callerB = createCaller("user-b");
 
-    await expect(callerB.form.update({
-      formId: "123e4567-e89b-12d3-a456-426614174000",
-      title: "Hacked Title",
-    })).rejects.toThrowError(/permission|forbidden/i);
+    await expect(
+      callerB.form.update({
+        formId: "123e4567-e89b-12d3-a456-426614174000",
+        title: "Hacked Title",
+      }),
+    ).rejects.toThrowError(/permission|forbidden/i);
   });
 
   it("should allow User A to update their own form", async () => {
@@ -90,7 +90,7 @@ describe("TC-FUN-002 | Form Builder | Deep Cloning a Complex Form", () => {
         _originalId: formId,
       };
     });
-    
+
     // We update the mock temporarily for this test
     const { formService } = await import("../../server/services");
     formService.clone = mockClone;
@@ -123,13 +123,16 @@ describe("TC-PERF-001 | Scalability | N+1 Query Prevention on Dashboard", () => 
                 leftJoin: vi.fn().mockReturnValue({
                   groupBy: vi.fn().mockImplementation(() => {
                     queryCount++; // E.g., main query with JOINs
-                    return Array.from({ length: 500 }).map((_, i) => ({ id: `f-${i}`, title: `Form ${i}` }));
-                  })
-                })
-              })
-            })
-          })
-        }
+                    return Array.from({ length: 500 }).map((_, i) => ({
+                      id: `f-${i}`,
+                      title: `Form ${i}`,
+                    }));
+                  }),
+                }),
+              }),
+            }),
+          }),
+        },
       };
     });
 

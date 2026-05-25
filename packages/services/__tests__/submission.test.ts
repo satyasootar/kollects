@@ -29,7 +29,7 @@ vi.mock("../submission/dynamic-validator", () => {
 
 describe("SubmissionService", () => {
   let submissionService: SubmissionService;
-  
+
   beforeEach(() => {
     vi.clearAllMocks();
     submissionService = new SubmissionService();
@@ -37,7 +37,7 @@ describe("SubmissionService", () => {
 
   it("should throw NOT_FOUND if form does not exist", async () => {
     const { db } = await import("@repo/database");
-    
+
     db.select = vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
@@ -46,13 +46,14 @@ describe("SubmissionService", () => {
       }),
     }) as any;
 
-    await expect(submissionService.submit("non-existent-slug", {}))
-      .rejects.toThrowError(new TRPCError({ code: "NOT_FOUND", message: "Form not found" }));
+    await expect(submissionService.submit("non-existent-slug", {})).rejects.toThrowError(
+      new TRPCError({ code: "NOT_FOUND", message: "Form not found" }),
+    );
   });
 
   it("should throw FORBIDDEN if form is not published", async () => {
     const { db } = await import("@repo/database");
-    
+
     db.select = vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
@@ -61,19 +62,23 @@ describe("SubmissionService", () => {
       }),
     }) as any;
 
-    await expect(submissionService.submit("draft-form", {}))
-      .rejects.toThrowError(new TRPCError({ code: "FORBIDDEN", message: "Form is not accepting responses" }));
+    await expect(submissionService.submit("draft-form", {})).rejects.toThrowError(
+      new TRPCError({ code: "FORBIDDEN", message: "Form is not accepting responses" }),
+    );
   });
 
   it("should successfully process a submission within a transaction", async () => {
     const { db } = await import("@repo/database");
-    
+
     // Mock the db.select to first return the form, then return the fields
-    db.select = vi.fn()
+    db.select = vi
+      .fn()
       .mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
           where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([{ id: "form1", status: "published", deletedAt: null }]),
+            limit: vi
+              .fn()
+              .mockResolvedValue([{ id: "form1", status: "published", deletedAt: null }]),
           }),
         }),
       })
@@ -87,7 +92,7 @@ describe("SubmissionService", () => {
     db.transaction = vi.fn().mockResolvedValue("mocked-response-uuid");
 
     const result = await submissionService.submit("valid-form", { field1: "value" });
-    
+
     expect(result.responseId).toBe("mocked-response-uuid");
     expect(db.transaction).toHaveBeenCalled();
   });

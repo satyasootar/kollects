@@ -15,7 +15,7 @@ export const submitResponseSchema = z.object({
       z.boolean(),
       z.array(z.string()), // multi_select
       z.null(),
-    ])
+    ]),
   ),
   metadata: z
     .object({

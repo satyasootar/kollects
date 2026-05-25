@@ -1,5 +1,5 @@
 export function escapeHtml(unsafe: string): string {
-  if (typeof unsafe !== 'string') return String(unsafe);
+  if (typeof unsafe !== "string") return String(unsafe);
   return unsafe
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -16,7 +16,7 @@ export function renderTemplate(template: string, variables: Record<string, any>)
     if (trimmedKey === "response.answersTable" && variables.response && variables.fields) {
       return generateAnswersTable(variables.response.answers, variables.fields);
     }
-    
+
     // Resolve nested dot notation (e.g., user.name)
     const keys = trimmedKey.split(".");
     let value = variables;
@@ -24,7 +24,7 @@ export function renderTemplate(template: string, variables: Record<string, any>)
       if (value === null || value === undefined) break;
       value = value[k];
     }
-    
+
     return value !== undefined && value !== null ? escapeHtml(String(value)) : match;
   });
 }

@@ -14,10 +14,13 @@ describe("Form Domain Models", () => {
   let testResponseId: string;
 
   beforeAll(async () => {
-    const user = await db.insert(usersTable).values({
-      name: "Form Test User",
-      email: "form-test@example.com",
-    }).returning();
+    const user = await db
+      .insert(usersTable)
+      .values({
+        name: "Form Test User",
+        email: "form-test@example.com",
+      })
+      .returning();
     testUserId = user[0]!.id;
   });
 
@@ -39,11 +42,11 @@ describe("Form Domain Models", () => {
     };
 
     const inserted = await db.insert(formsTable).values(newForm).returning();
-    
+
     expect(inserted).toHaveLength(1);
     expect(inserted[0]!.title).toBe(newForm.title);
     expect(inserted[0]!.settings).toHaveProperty("showProgressBar", true);
-    
+
     testFormId = inserted[0]!.id;
   });
 
@@ -59,18 +62,18 @@ describe("Form Domain Models", () => {
         { label: "Social Media", value: "social" },
       ],
       logic: [
-        { operator: "equals", value: "social", action: "skip_to", targetId: "some-other-uuid" }
+        { operator: "equals", value: "social", action: "skip_to", targetId: "some-other-uuid" },
       ],
       required: true,
     };
 
     const inserted = await db.insert(formFieldsTable).values(newField).returning();
-    
+
     expect(inserted).toHaveLength(1);
     expect(inserted[0]!.type).toBe("single_select");
     expect(inserted[0]!.options).toHaveLength(2);
     expect(inserted[0]!.logic).toHaveLength(1);
-    
+
     testFieldId = inserted[0]!.id;
   });
 
@@ -83,10 +86,10 @@ describe("Form Domain Models", () => {
     };
 
     const inserted = await db.insert(formResponsesTable).values(newResponse).returning();
-    
+
     expect(inserted).toHaveLength(1);
     expect(inserted[0]!.isComplete).toBe(true);
-    
+
     testResponseId = inserted[0]!.id;
   });
 
@@ -98,7 +101,7 @@ describe("Form Domain Models", () => {
     };
 
     const inserted = await db.insert(responseAnswersTable).values(newAnswer).returning();
-    
+
     expect(inserted).toHaveLength(1);
     expect(inserted[0]!.value).toHaveProperty("selected");
   });

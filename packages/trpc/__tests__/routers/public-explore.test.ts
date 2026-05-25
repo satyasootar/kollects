@@ -41,14 +41,14 @@ describe("Public Explore Router", () => {
   it("should query only published and public forms", async () => {
     // We update the mock temporarily for this test
     const { db } = await import("@repo/database");
-    
+
     // Create a mock chain
     const mockChain = {
       orderBy: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
       offset: vi.fn().mockResolvedValue([{ id: "form-1", title: "Public Form" }]),
     };
-    
+
     db.select = vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue(mockChain),
@@ -57,7 +57,7 @@ describe("Public Explore Router", () => {
 
     const caller = createCaller();
     const result = await caller.publicExplore.list({ limit: 10 });
-    
+
     // We mainly want to ensure it doesn't crash and returns the mock
     expect(result.items).toHaveLength(1);
     expect(result.items[0]).toHaveProperty("title", "Public Form");

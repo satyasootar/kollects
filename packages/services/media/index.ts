@@ -37,7 +37,7 @@ export class MediaService {
    */
   async deleteFile(fileId: string) {
     if (!this.imagekit) return;
-    
+
     try {
       await this.imagekit.deleteFile(fileId);
     } catch (error) {
@@ -48,7 +48,10 @@ export class MediaService {
   /**
    * Uploads a file buffer directly from the backend to ImageKit.
    */
-  async uploadFile(file: Buffer | string, fileName: string): Promise<{ url: string, fileId: string, name: string, size: number }> {
+  async uploadFile(
+    file: Buffer | string,
+    fileName: string,
+  ): Promise<{ url: string; fileId: string; name: string; size: number }> {
     if (!this.imagekit) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",

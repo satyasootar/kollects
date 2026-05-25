@@ -25,9 +25,7 @@ export interface TRPCContext {
   res: Response;
 }
 
-export async function createContext(
-  opts: CreateExpressContextOptions
-): Promise<TRPCContext> {
+export async function createContext(opts: CreateExpressContextOptions): Promise<TRPCContext> {
   const { req, res } = opts;
 
   const rawIp =
@@ -37,8 +35,8 @@ export async function createContext(
 
   return {
     db,
-    user: null,         // Populated by authMiddleware
-    session: null,      // Populated by authMiddleware
+    user: null, // Populated by authMiddleware
+    session: null, // Populated by authMiddleware
     apiKeyScopes: null, // Populated by authMiddleware for API key auth
     ipHash: hashIP(rawIp),
     userAgent: req.headers["user-agent"] ?? "unknown",

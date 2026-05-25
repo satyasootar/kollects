@@ -6,27 +6,11 @@ import { z } from "zod";
 export const createThemeSchema = z.object({
   name: z.string().min(1, "Name is required").max(100).trim(),
   description: z.string().max(500).trim().optional(),
-  category: z.enum([
-    "movies",
-    "anime",
-    "os",
-    "startups",
-    "communities",
-    "games",
-    "minimal",
-  ]),
-  primaryColor: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
-  backgroundColor: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
-  surfaceColor: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
-  textColor: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
+  category: z.enum(["movies", "anime", "os", "startups", "communities", "games", "minimal"]),
+  primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
+  backgroundColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
+  surfaceColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
+  textColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color"),
   accentColor: z
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color")

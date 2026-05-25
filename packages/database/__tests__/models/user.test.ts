@@ -20,11 +20,11 @@ describe("User Model Tests", () => {
     };
 
     const inserted = await db.insert(usersTable).values(newUser).returning();
-    
+
     expect(inserted).toHaveLength(1);
     expect(inserted[0]!.email).toBe(newUser.email);
     expect(inserted[0]!.plan).toBe("free");
-    
+
     createdUserId = inserted[0]!.id;
   });
 
@@ -35,8 +35,6 @@ describe("User Model Tests", () => {
       passwordHash: "hash",
     };
 
-    await expect(
-      db.insert(usersTable).values(duplicateUser)
-    ).rejects.toThrow();
+    await expect(db.insert(usersTable).values(duplicateUser)).rejects.toThrow();
   });
 });

@@ -20,45 +20,80 @@ const responseSchema = z.object({
 
 export const responseRouter = router({
   list: protectedProcedure
-    .meta({ openapi: { method: "GET", path: getPath("/{formId}"), tags: TAGS, summary: "List responses for a form" } })
-    .input(z.object({
-      formId: z.string().uuid(),
-      ...paginationSchema.shape,
-    }))
-    .output(z.object({
-      responses: z.array(responseSchema),
-      total: z.number(),
-    }))
+    .meta({
+      openapi: {
+        method: "GET",
+        path: getPath("/{formId}"),
+        tags: TAGS,
+        summary: "List responses for a form",
+      },
+    })
+    .input(
+      z.object({
+        formId: z.string().uuid(),
+        ...paginationSchema.shape,
+      }),
+    )
+    .output(
+      z.object({
+        responses: z.array(responseSchema),
+        total: z.number(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       return responseService.list(ctx.user!.id, input.formId, input.page, input.limit);
     }),
 
   getById: protectedProcedure
-    .meta({ openapi: { method: "GET", path: getPath("/{responseId}/details"), tags: TAGS, summary: "Get a specific response with answers" } })
-    .input(z.object({
-      responseId: z.string().uuid(),
-    }))
-    .output(responseSchema.extend({
-      answers: z.array(z.object({
-        id: z.string().uuid(),
-        fieldId: z.string().uuid(),
-        value: z.any(),
-        field: z.object({
-          id: z.string().uuid(),
-          type: z.string(),
-          label: z.string(),
-        }).optional(),
-      })),
-    }))
+    .meta({
+      openapi: {
+        method: "GET",
+        path: getPath("/{responseId}/details"),
+        tags: TAGS,
+        summary: "Get a specific response with answers",
+      },
+    })
+    .input(
+      z.object({
+        responseId: z.string().uuid(),
+      }),
+    )
+    .output(
+      responseSchema.extend({
+        answers: z.array(
+          z.object({
+            id: z.string().uuid(),
+            fieldId: z.string().uuid(),
+            value: z.any(),
+            field: z
+              .object({
+                id: z.string().uuid(),
+                type: z.string(),
+                label: z.string(),
+              })
+              .optional(),
+          }),
+        ),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       return responseService.getById(ctx.user!.id, input.responseId);
     }),
 
   delete: scopedProcedure("write:all")
-    .meta({ openapi: { method: "DELETE", path: getPath("/{responseId}"), tags: TAGS, summary: "Delete a response" } })
-    .input(z.object({
-      responseId: z.string().uuid(),
-    }))
+    .meta({
+      openapi: {
+        method: "DELETE",
+        path: getPath("/{responseId}"),
+        tags: TAGS,
+        summary: "Delete a response",
+      },
+    })
+    .input(
+      z.object({
+        responseId: z.string().uuid(),
+      }),
+    )
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       await responseService.delete(ctx.user!.id, input.responseId);
@@ -66,10 +101,19 @@ export const responseRouter = router({
     }),
 
   exportCsv: protectedProcedure
-    .meta({ openapi: { method: "GET", path: getPath("/{formId}/export"), tags: TAGS, summary: "Export all responses as CSV" } })
-    .input(z.object({
-      formId: z.string().uuid(),
-    }))
+    .meta({
+      openapi: {
+        method: "GET",
+        path: getPath("/{formId}/export"),
+        tags: TAGS,
+        summary: "Export all responses as CSV",
+      },
+    })
+    .input(
+      z.object({
+        formId: z.string().uuid(),
+      }),
+    )
     .output(z.string())
     .query(async ({ ctx, input }) => {
       return responseService.exportCsv(ctx.user!.id, input.formId);

@@ -30,20 +30,20 @@ export const themesTable = pgTable("themes", {
   name: varchar("name", { length: 100 }).notNull(),
   slug: varchar("slug", { length: 64 }).notNull().unique(),
   description: text("description"),
-  
+
   category: themeCategoryEnum("category").default("other").notNull(),
   isSystem: boolean("is_system").default(false).notNull(),
   isCustomizable: boolean("is_customizable").default(true).notNull(),
   colorScheme: colorSchemeEnum("color_scheme").default("system").notNull(),
-  
+
   creatorId: uuid("creator_id").references(() => usersTable.id, { onDelete: "set null" }),
-  
+
   config: jsonb("config").notNull().$type<Record<string, any>>(),
-  
+
   thumbnailUrl: text("thumbnail_url"),
   isPublic: boolean("is_public").default(false).notNull(),
   usageCount: integer("usage_count").default(0).notNull(),
-  
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),
 });

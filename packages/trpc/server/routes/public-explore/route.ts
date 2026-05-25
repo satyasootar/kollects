@@ -6,11 +6,20 @@ import { cacheService } from "../../services";
 
 export const publicExploreRouter = router({
   list: publicProcedure
-    .meta({ openapi: { method: "GET", path: "/public/explore", tags: ["Public Explore"], summary: "List public forms for explore feed" } })
-    .input(z.object({
-      cursor: z.number().optional().default(0),
-      limit: z.number().min(1).max(50).default(20),
-    }))
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/public/explore",
+        tags: ["Public Explore"],
+        summary: "List public forms for explore feed",
+      },
+    })
+    .input(
+      z.object({
+        cursor: z.number().optional().default(0),
+        limit: z.number().min(1).max(50).default(20),
+      }),
+    )
     .output(z.any())
     .query(async ({ input }) => {
       const cacheKey = `explore:cursor:${input.cursor}:limit:${input.limit}`;
@@ -34,8 +43,8 @@ export const publicExploreRouter = router({
           and(
             eq(formsTable.status, "published"),
             eq(formsTable.visibility, "public"),
-            isNull(formsTable.deletedAt) // Explicitly ensure it's not soft-deleted
-          )
+            isNull(formsTable.deletedAt), // Explicitly ensure it's not soft-deleted
+          ),
         )
         .orderBy(desc(formsTable.totalSubmissions), desc(formsTable.createdAt))
         .limit(input.limit)

@@ -1,9 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  varchar,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, timestamp } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { usersTable } from "./user";
 
@@ -18,15 +13,12 @@ export const passwordResetTokensTable = pgTable("password_reset_tokens", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const passwordResetTokensRelations = relations(
-  passwordResetTokensTable,
-  ({ one }) => ({
-    user: one(usersTable, {
-      fields: [passwordResetTokensTable.userId],
-      references: [usersTable.id],
-    }),
-  })
-);
+export const passwordResetTokensRelations = relations(passwordResetTokensTable, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [passwordResetTokensTable.userId],
+    references: [usersTable.id],
+  }),
+}));
 
 export type SelectPasswordResetToken = typeof passwordResetTokensTable.$inferSelect;
 export type InsertPasswordResetToken = typeof passwordResetTokensTable.$inferInsert;

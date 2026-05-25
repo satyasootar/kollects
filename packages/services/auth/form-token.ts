@@ -22,15 +22,15 @@ export function verifyFormPasswordToken(token: string, expectedFormId: string): 
     if (!formId || !expiresAtStr || !signature) return false;
     if (formId !== expectedFormId) return false;
     if (Date.now() > parseInt(expiresAtStr, 10)) return false;
-    
+
     const payload = `${formId}.${expiresAtStr}`;
     const expectedSignature = crypto.createHmac("sha256", JWT_SECRET).update(payload).digest("hex");
-    
+
     // Timing safe comparison requires equal length buffers
     const sigBuf = Buffer.from(signature);
     const expectedBuf = Buffer.from(expectedSignature);
     if (sigBuf.length !== expectedBuf.length) return false;
-    
+
     return crypto.timingSafeEqual(sigBuf, expectedBuf);
   } catch {
     return false;

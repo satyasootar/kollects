@@ -15,7 +15,7 @@ export const slugSchema = z
   .max(64, "Slug must be at most 64 characters")
   .regex(
     /^[a-z0-9][a-z0-9-]{2,62}[a-z0-9]$/,
-    "Slug must contain only lowercase letters, numbers, and hyphens, and cannot start or end with a hyphen"
+    "Slug must contain only lowercase letters, numbers, and hyphens, and cannot start or end with a hyphen",
   );
 
 /**

@@ -17,11 +17,11 @@ vi.mock("@repo/database", async (importOriginal) => {
               await new Promise((resolve) => setTimeout(resolve, 50));
               rateLimitCounter += 1;
               return [{ count: rateLimitCounter }];
-            })
-          })
-        })
-      })
-    }
+            }),
+          }),
+        }),
+      }),
+    },
   };
 });
 
@@ -46,19 +46,23 @@ describe("TC-EDG-001 | Rate Limiting | Distributed High-Concurrency Spam", () =>
     const caller = createCaller();
 
     // Fire 15 parallel login attempts (limit is 10)
-    const attempts = Array.from({ length: 15 }).map(() => 
-      caller.auth.login({
-        email: "test@example.com",
-        password: "password123",
-      }).catch(e => e)
+    const attempts = Array.from({ length: 15 }).map(() =>
+      caller.auth
+        .login({
+          email: "test@example.com",
+          password: "password123",
+        })
+        .catch((e) => e),
     );
 
     const results = await Promise.all(attempts);
 
     // We expect the first 10 to pass the rate limiter (though they might fail auth)
     // We expect the next 5 to be strictly rejected by the rate limiter
-    const rateLimitErrors = results.filter(r => r instanceof Error && r.message === "Rate limit exceeded");
-    
+    const rateLimitErrors = results.filter(
+      (r) => r instanceof Error && r.message === "Rate limit exceeded",
+    );
+
     // Exactly 5 should fail due to rate limit, proving the counter was atomic
     expect(rateLimitErrors.length).toBe(5);
   });

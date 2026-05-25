@@ -1,5 +1,12 @@
 import { db, eq } from "@repo/database";
-import { emailLogsTable, formsTable, usersTable, formFieldsTable, formResponsesTable, emailNotificationSettingsTable } from "@repo/database/schema";
+import {
+  emailLogsTable,
+  formsTable,
+  usersTable,
+  formFieldsTable,
+  formResponsesTable,
+  emailNotificationSettingsTable,
+} from "@repo/database/schema";
 import { emailClient } from "../clients/email";
 import { renderTemplate } from "./templates";
 import { logger } from "@repo/logger";
@@ -60,12 +67,12 @@ export class EmailService {
       const subject = renderTemplate(settings.creatorEmailSubject || defaultSubject, variables);
       let htmlContent = renderTemplate(settings.creatorEmailTemplate || defaultTemplate, variables);
       htmlContent = sanitizeHtml(htmlContent, {
-        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
         allowedAttributes: {
           ...sanitizeHtml.defaults.allowedAttributes,
-          'a': ['href', 'target', 'rel'],
-          'img': ['src', 'alt', 'width', 'height']
-        }
+          a: ["href", "target", "rel"],
+          img: ["src", "alt", "width", "height"],
+        },
       });
 
       // 4. Send email
@@ -87,7 +94,6 @@ export class EmailService {
         errorMessage: result.error,
         sentAt: result.success ? new Date() : null,
       });
-
     } catch (error) {
       logger.error("Error in sendCreatorNotification", { error });
     }
@@ -108,7 +114,8 @@ export class EmailService {
         where: eq(emailNotificationSettingsTable.formId, formId),
       });
 
-      if (!settings || !settings.respondentConfirmationEnabled || !settings.respondentEmailFieldId) return;
+      if (!settings || !settings.respondentConfirmationEnabled || !settings.respondentEmailFieldId)
+        return;
 
       const response = await db.query.formResponsesTable.findFirst({
         where: eq(formResponsesTable.id, responseId),
@@ -119,7 +126,9 @@ export class EmailService {
 
       if (!response) return;
 
-      const emailAnswer = response.answers.find(a => a.fieldId === settings.respondentEmailFieldId);
+      const emailAnswer = response.answers.find(
+        (a) => a.fieldId === settings.respondentEmailFieldId,
+      );
       const respondentEmail = emailAnswer?.value as string;
 
       if (!respondentEmail || !respondentEmail.includes("@")) return;
@@ -140,14 +149,17 @@ export class EmailService {
       `;
 
       const subject = renderTemplate(settings.respondentEmailSubject || defaultSubject, variables);
-      let htmlContent = renderTemplate(settings.respondentEmailTemplate || defaultTemplate, variables);
+      let htmlContent = renderTemplate(
+        settings.respondentEmailTemplate || defaultTemplate,
+        variables,
+      );
       htmlContent = sanitizeHtml(htmlContent, {
-        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]),
         allowedAttributes: {
           ...sanitizeHtml.defaults.allowedAttributes,
-          'a': ['href', 'target', 'rel'],
-          'img': ['src', 'alt', 'width', 'height']
-        }
+          a: ["href", "target", "rel"],
+          img: ["src", "alt", "width", "height"],
+        },
       });
 
       const result = await emailClient.sendEmail({
@@ -167,7 +179,6 @@ export class EmailService {
         errorMessage: result.error,
         sentAt: result.success ? new Date() : null,
       });
-
     } catch (error) {
       logger.error("Error in sendRespondentConfirmation", { error });
     }
@@ -176,7 +187,7 @@ export class EmailService {
   async sendPasswordResetEmail(email: string, token: string) {
     try {
       const resetLink = `${env.BASE_URL}/auth/reset-password?token=${token}`;
-      
+
       const subject = "Reset your KOLLECTS.TECH password";
       const htmlContent = `
         <h2>Password Reset Request</h2>
@@ -202,7 +213,6 @@ export class EmailService {
         errorMessage: result.error,
         sentAt: result.success ? new Date() : null,
       });
-
     } catch (error) {
       logger.error("Error in sendPasswordResetEmail", { error });
     }

@@ -6,7 +6,7 @@ export class RateLimitService {
   /**
    * Enforces a rate limit using a sliding window strategy.
    * Throws TRPCError if the limit is exceeded.
-   * 
+   *
    * @param identifier Unique string identifying the requester (e.g., hashed IP)
    * @param action Action being performed (e.g., "login", "register")
    * @param limit Max allowed requests within the window
@@ -46,7 +46,7 @@ export class RateLimitService {
       .delete(rateLimitEntriesTable)
       .where(lt(rateLimitEntriesTable.windowStart, olderThan))
       .returning({ id: rateLimitEntriesTable.id });
-      
+
     return deleted.length;
   }
 }

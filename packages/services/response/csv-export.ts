@@ -13,18 +13,27 @@ export interface ExportResponseData {
 }
 
 export function generateCsvHeaders(fields: SelectFormField[]): string {
-  const metadataHeaders = ["Response ID", "Submitted At", "Completion Time (s)", "IP Hash", "User Agent"];
+  const metadataHeaders = [
+    "Response ID",
+    "Submitted At",
+    "Completion Time (s)",
+    "IP Hash",
+    "User Agent",
+  ];
   const fieldHeaders = fields.map((f) => f.label || f.type);
   const headers = [...metadataHeaders, ...fieldHeaders];
   return Papa.unparse([headers]);
 }
 
-export function generateCsvRows(fields: SelectFormField[], responses: ExportResponseData[]): string {
+export function generateCsvRows(
+  fields: SelectFormField[],
+  responses: ExportResponseData[],
+): string {
   if (responses.length === 0) return "";
-  
+
   const data = responses.map((response) => {
     const row: any[] = [];
-    
+
     // 1. Metadata
     row.push(response.id);
     row.push(response.submittedAt.toISOString());
@@ -58,7 +67,10 @@ export function generateCsvRows(fields: SelectFormField[], responses: ExportResp
   return Papa.unparse(data, { header: false });
 }
 
-export function generateCsvExport(fields: SelectFormField[], responses: ExportResponseData[]): string {
+export function generateCsvExport(
+  fields: SelectFormField[],
+  responses: ExportResponseData[],
+): string {
   const headers = generateCsvHeaders(fields);
   const rows = generateCsvRows(fields, responses);
   return rows ? `${headers}\n${rows}` : headers;

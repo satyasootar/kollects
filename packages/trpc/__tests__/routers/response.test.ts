@@ -37,27 +37,38 @@ describe("Response Router", () => {
     responseService.list = vi.fn().mockResolvedValue({ responses: [], total: 0 });
 
     const caller = createCaller();
-    const result = await caller.response.list({ formId: "123e4567-e89b-12d3-a456-426614174000", page: 1, limit: 10 });
+    const result = await caller.response.list({
+      formId: "123e4567-e89b-12d3-a456-426614174000",
+      page: 1,
+      limit: 10,
+    });
 
     expect(result.responses).toEqual([]);
-    expect(responseService.list).toHaveBeenCalledWith("user-1", "123e4567-e89b-12d3-a456-426614174000", 1, 10);
+    expect(responseService.list).toHaveBeenCalledWith(
+      "user-1",
+      "123e4567-e89b-12d3-a456-426614174000",
+      1,
+      10,
+    );
   });
 
   it("should get response by id", async () => {
     const { responseService } = await import("../../server/services");
-    responseService.getById = vi.fn().mockResolvedValue({ 
-      id: "123e4567-e89b-12d3-a456-426614174000", 
+    responseService.getById = vi.fn().mockResolvedValue({
+      id: "123e4567-e89b-12d3-a456-426614174000",
       formId: "123e4567-e89b-12d3-a456-426614174001",
       submittedAt: new Date(),
       isComplete: true,
       completionTimeSeconds: 10,
       ipHash: "hash",
       userAgent: "agent",
-      answers: [] 
+      answers: [],
     });
 
     const caller = createCaller();
-    const result = await caller.response.getById({ responseId: "123e4567-e89b-12d3-a456-426614174000" });
+    const result = await caller.response.getById({
+      responseId: "123e4567-e89b-12d3-a456-426614174000",
+    });
 
     expect(result.id).toBe("123e4567-e89b-12d3-a456-426614174000");
   });
@@ -67,7 +78,9 @@ describe("Response Router", () => {
     responseService.delete = vi.fn().mockResolvedValue(undefined);
 
     const caller = createCaller();
-    const result = await caller.response.delete({ responseId: "123e4567-e89b-12d3-a456-426614174000" });
+    const result = await caller.response.delete({
+      responseId: "123e4567-e89b-12d3-a456-426614174000",
+    });
 
     expect(result.success).toBe(true);
   });
@@ -77,7 +90,9 @@ describe("Response Router", () => {
     responseService.exportCsv = vi.fn().mockResolvedValue("id,col1\n1,val1");
 
     const caller = createCaller();
-    const result = await caller.response.exportCsv({ formId: "123e4567-e89b-12d3-a456-426614174000" });
+    const result = await caller.response.exportCsv({
+      formId: "123e4567-e89b-12d3-a456-426614174000",
+    });
 
     expect(result).toBe("id,col1\n1,val1");
   });

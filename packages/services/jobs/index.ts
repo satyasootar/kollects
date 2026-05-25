@@ -93,13 +93,13 @@ export class JobQueue {
       if (handler) {
         try {
           // Implement a timeout to prevent stalled jobs from hanging the queue
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("Job processing timeout")), 30000)
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Job processing timeout")), 30000),
           );
           await Promise.race([handler(job.payload), timeoutPromise]);
         } catch (error) {
           logger.error(`Job execution failed: ${job.type}`, { error, payload: job.payload });
-          
+
           const attempts = job.attempts || 1;
           if (attempts < 3) {
             logger.info(`Re-enqueuing job for retry (attempt ${attempts + 1}/3): ${job.type}`);
@@ -141,19 +141,28 @@ export class JobQueue {
 
   startCronTasks() {
     // RATE_LIMIT_CLEANUP: Every 2 hours
-    setInterval(() => {
-      this.cleanupRateLimits();
-    }, 2 * 60 * 60 * 1000);
+    setInterval(
+      () => {
+        this.cleanupRateLimits();
+      },
+      2 * 60 * 60 * 1000,
+    );
 
     // SESSION_CLEANUP: Daily
-    setInterval(() => {
-      this.cleanupSessions();
-    }, 24 * 60 * 60 * 1000);
-    
+    setInterval(
+      () => {
+        this.cleanupSessions();
+      },
+      24 * 60 * 60 * 1000,
+    );
+
     // EMAIL_LOGS_CLEANUP: Daily
-    setInterval(() => {
-      this.cleanupEmailLogs();
-    }, 24 * 60 * 60 * 1000);
+    setInterval(
+      () => {
+        this.cleanupEmailLogs();
+      },
+      24 * 60 * 60 * 1000,
+    );
 
     // Run an initial cleanup on startup
     this.cleanupRateLimits();
@@ -165,7 +174,8 @@ export class JobQueue {
     try {
       // Delete entries older than 2 hours
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-      const res = await db.delete(rateLimitEntriesTable)
+      const res = await db
+        .delete(rateLimitEntriesTable)
         .where(sql`${rateLimitEntriesTable.windowStart} < ${twoHoursAgo}`);
       logger.info(`Cleaned up old rate limit entries`);
     } catch (error) {
@@ -177,8 +187,7 @@ export class JobQueue {
     try {
       // Delete expired sessions
       const now = new Date();
-      await db.delete(sessionsTable)
-        .where(sql`${sessionsTable.expiresAt} < ${now}`);
+      await db.delete(sessionsTable).where(sql`${sessionsTable.expiresAt} < ${now}`);
       logger.info(`Cleaned up expired sessions`);
     } catch (error) {
       logger.error("Failed to clean up sessions", { error });
@@ -189,9 +198,12 @@ export class JobQueue {
     try {
       // Clear HTML content from email logs older than 7 days to save space
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      await db.update(emailLogsTable)
+      await db
+        .update(emailLogsTable)
         .set({ htmlContent: null })
-        .where(sql`${emailLogsTable.createdAt} < ${sevenDaysAgo} AND ${emailLogsTable.htmlContent} IS NOT NULL`);
+        .where(
+          sql`${emailLogsTable.createdAt} < ${sevenDaysAgo} AND ${emailLogsTable.htmlContent} IS NOT NULL`,
+        );
       logger.info(`Cleaned up old email log HTML content`);
     } catch (error) {
       logger.error("Failed to clean up email logs", { error });

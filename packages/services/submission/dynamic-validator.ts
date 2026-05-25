@@ -17,8 +17,10 @@ export function buildValidationSchema(fields: SelectFormField[]): z.ZodObject<an
       case "short_text":
       case "long_text": {
         let strSchema = z.string();
-        if (validations.minLength !== undefined) strSchema = strSchema.min(Number(validations.minLength));
-        if (validations.maxLength !== undefined) strSchema = strSchema.max(Number(validations.maxLength));
+        if (validations.minLength !== undefined)
+          strSchema = strSchema.min(Number(validations.minLength));
+        if (validations.maxLength !== undefined)
+          strSchema = strSchema.max(Number(validations.maxLength));
         if (validations.pattern) {
           const patternStr = String(validations.pattern);
           if (safeRegex(patternStr)) {

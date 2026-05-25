@@ -1,7 +1,9 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("TC-USR-001 | Submissions | The 'Double-Click' Submission", () => {
-  test("submitting a form rapidly multiple times only sends one network request", async ({ page }) => {
+  test("submitting a form rapidly multiple times only sends one network request", async ({
+    page,
+  }) => {
     // Navigate to a public form submission page
     await page.goto("/f/public-form-123");
 
@@ -10,7 +12,7 @@ test.describe("TC-USR-001 | Submissions | The 'Double-Click' Submission", () => 
     await page.route("**/api/submit**", async (route) => {
       submitRequestCount++;
       // Simulate network delay to give user time to double click
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 800));
       await route.fulfill({ status: 200, json: { success: true } });
     });
 
@@ -36,13 +38,15 @@ test.describe("TC-USR-001 | Submissions | The 'Double-Click' Submission", () => 
 });
 
 test.describe("TC-USR-002 | Multi-Tab | Cross-Tab Authentication State", () => {
-  test("logging out in Tab A redirects unauthorized requests in Tab B to login", async ({ context }) => {
+  test("logging out in Tab A redirects unauthorized requests in Tab B to login", async ({
+    context,
+  }) => {
     // Tab A: Log in
     const pageA = await context.newPage();
     await pageA.goto("/dashboard");
-    
+
     // Setup a mock to represent "we are logged in" initially
-    await pageA.route("**/trpc/auth.me**", async route => {
+    await pageA.route("**/trpc/auth.me**", async (route) => {
       await route.fulfill({ status: 200, json: { result: { data: { id: "user-1" } } } });
     });
 
@@ -54,9 +58,9 @@ test.describe("TC-USR-002 | Multi-Tab | Cross-Tab Authentication State", () => {
 
     // Tab A: Log out
     await pageA.getByRole("button", { name: "Logout" }).click();
-    
+
     // Now any subsequent requests should return 401 Unauthorized
-    await pageB.route("**/trpc/**", async route => {
+    await pageB.route("**/trpc/**", async (route) => {
       await route.fulfill({ status: 401, json: { error: { message: "UNAUTHORIZED" } } });
     });
 

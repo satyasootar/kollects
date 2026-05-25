@@ -24,7 +24,7 @@ export const usersTable = pgTable("users", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   emailVerified: boolean("email_verified").default(false),
   avatarUrl: text("avatar_url"),
-  
+
   passwordHash: varchar("password_hash", { length: 255 }),
   plan: userPlanEnum("plan").default("free").notNull(),
   billingCustomerId: varchar("billing_customer_id", { length: 255 }),

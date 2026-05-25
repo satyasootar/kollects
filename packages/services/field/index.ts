@@ -35,11 +35,7 @@ export class FieldService {
    * Verifies the form ownership.
    */
   async getFormWithOwnership(formId: string, userId: string) {
-    const [form] = await db
-      .select()
-      .from(formsTable)
-      .where(eq(formsTable.id, formId))
-      .limit(1);
+    const [form] = await db.select().from(formsTable).where(eq(formsTable.id, formId)).limit(1);
 
     if (!form) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Form not found" });
@@ -54,18 +50,32 @@ export class FieldService {
   /**
    * Creates a new field inside a form.
    */
-  async create(userId: string, data: {
-    formId: string;
-    type: "short_text" | "long_text" | "email" | "number" | "date" | "single_select" | "multi_select" | "checkbox" | "rating" | "url" | "phone";
-    label: string;
-    helpText?: string;
-    placeholder?: string;
-    required?: boolean;
-    pageNumber?: number;
-    options?: any[];
-    validations?: any;
-    settings?: any;
-  }) {
+  async create(
+    userId: string,
+    data: {
+      formId: string;
+      type:
+        | "short_text"
+        | "long_text"
+        | "email"
+        | "number"
+        | "date"
+        | "single_select"
+        | "multi_select"
+        | "checkbox"
+        | "rating"
+        | "url"
+        | "phone";
+      label: string;
+      helpText?: string;
+      placeholder?: string;
+      required?: boolean;
+      pageNumber?: number;
+      options?: any[];
+      validations?: any;
+      settings?: any;
+    },
+  ) {
     // 1. Verify ownership of the form
     await this.getFormWithOwnership(data.formId, userId);
 
@@ -105,16 +115,20 @@ export class FieldService {
   /**
    * Updates an existing field.
    */
-  async update(userId: string, fieldId: string, data: {
-    label?: string;
-    helpText?: string;
-    placeholder?: string;
-    required?: boolean;
-    pageNumber?: number;
-    options?: any[];
-    validations?: any;
-    settings?: any;
-  }) {
+  async update(
+    userId: string,
+    fieldId: string,
+    data: {
+      label?: string;
+      helpText?: string;
+      placeholder?: string;
+      required?: boolean;
+      pageNumber?: number;
+      options?: any[];
+      validations?: any;
+      settings?: any;
+    },
+  ) {
     await this.getFieldWithOwnership(fieldId, userId);
 
     const [updatedField] = await db

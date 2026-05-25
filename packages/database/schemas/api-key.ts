@@ -11,9 +11,7 @@ export const createApiKeySchema = z.object({
     .min(1, "Name is required")
     .max(100, "Name must be at most 100 characters")
     .trim(),
-  scopes: z
-    .array(z.enum(API_SCOPES))
-    .min(1, "At least one scope is required"),
+  scopes: z.array(z.enum(API_SCOPES)).min(1, "At least one scope is required"),
 });
 
 /**

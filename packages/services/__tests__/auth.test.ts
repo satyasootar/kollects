@@ -28,7 +28,7 @@ describe("AuthService", () => {
     expect(result.user).toHaveProperty("id");
     expect(result.user.email).toBe(testEmail);
     expect(result.user).not.toHaveProperty("passwordHash");
-    
+
     expect(result.token).toBeDefined();
     expect(result.session).toBeDefined();
 
@@ -41,7 +41,7 @@ describe("AuthService", () => {
         name: "Duplicate User",
         email: testEmail,
         password: "AnotherPassword1!",
-      })
+      }),
     ).rejects.toThrow("Email is already registered");
   });
 
@@ -51,7 +51,7 @@ describe("AuthService", () => {
         name: "A", // too short
         email: "not-an-email",
         password: "short",
-      })
+      }),
     ).rejects.toThrow();
   });
 
@@ -73,13 +73,13 @@ describe("AuthService", () => {
       authService.login({
         email: testEmail,
         password: "WrongPassword1!",
-      })
+      }),
     ).rejects.toThrow("Invalid email or password");
   });
 
   it("should resolve user from session token", async () => {
     const result = await authService.resolveUser({ sessionToken: testSessionToken });
-    
+
     expect(result).not.toBeNull();
     expect(result!.user.id).toBe(testUserId);
   });

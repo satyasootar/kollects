@@ -1,10 +1,11 @@
 import type { Response } from "express";
 
-const IS_PROD = String(process.env.NODE_ENV) === "production" || String(process.env.NODE_ENV) === "prod";
+const IS_PROD =
+  String(process.env.NODE_ENV) === "production" || String(process.env.NODE_ENV) === "prod";
 
 /**
  * Sets an HTTP-Only secure cookie for the session token.
- * 
+ *
  * Cookie settings:
  * - `httpOnly`: true (JavaScript cannot access the cookie)
  * - `secure`: true in production (requires HTTPS)

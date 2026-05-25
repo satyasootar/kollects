@@ -1,14 +1,16 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("TC-UI-001 | React State | Stale Closure in Form Builder Drag-and-Drop", () => {
-  test("drag and drop field should update local UI immediately while auto-save resolves in background", async ({ page }) => {
+  test("drag and drop field should update local UI immediately while auto-save resolves in background", async ({
+    page,
+  }) => {
     // Navigate to a mocked form builder page
     await page.goto("/builder/form-1");
 
     // We can simulate network delay to represent "auto-save is resolving"
     await page.route("**/trpc/form.update**", async (route) => {
       // Simulate slow save
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
       await route.fulfill({ status: 200, json: { result: { data: { success: true } } } });
     });
 
@@ -24,10 +26,10 @@ test.describe("TC-UI-001 | React State | Stale Closure in Form Builder Drag-and-
     await expect(page.getByTestId("field-order-indicator")).toHaveText("Field 1 is at Position 5");
 
     // EXPECTATION 2: We wait for the request to ensure it fired
-    const requestPromise = page.waitForRequest(req => req.url().includes("form.update"));
+    const requestPromise = page.waitForRequest((req) => req.url().includes("form.update"));
     const req = await requestPromise;
     expect(req.method()).toBe("POST");
-    
+
     // The state should remain stable and not rollback due to hydration issues
     await expect(page.getByTestId("field-order-indicator")).toHaveText("Field 1 is at Position 5");
   });

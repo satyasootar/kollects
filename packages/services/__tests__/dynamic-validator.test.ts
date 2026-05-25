@@ -30,9 +30,7 @@ describe("Dynamic Zod Validator", () => {
   });
 
   it("should validate emails correctly", () => {
-    const fields: SelectFormField[] = [
-      { id: "emailField", type: "email", required: true } as any,
-    ];
+    const fields: SelectFormField[] = [{ id: "emailField", type: "email", required: true } as any];
     const schema = buildValidationSchema(fields);
 
     expect(schema.safeParse({ emailField: "not-an-email" }).success).toBe(false);
@@ -62,7 +60,10 @@ describe("Dynamic Zod Validator", () => {
         id: "selectField",
         type: "single_select",
         required: true,
-        options: [{ label: "A", value: "a" }, { label: "B", value: "b" }],
+        options: [
+          { label: "A", value: "a" },
+          { label: "B", value: "b" },
+        ],
       } as any,
     ];
     const schema = buildValidationSchema(fields);
@@ -77,7 +78,10 @@ describe("Dynamic Zod Validator", () => {
         id: "multiSelect",
         type: "multi_select",
         required: true,
-        options: [{ label: "Apple", value: "apple" }, { label: "Banana", value: "banana" }],
+        options: [
+          { label: "Apple", value: "apple" },
+          { label: "Banana", value: "banana" },
+        ],
       } as any,
     ];
     const schema = buildValidationSchema(fields);

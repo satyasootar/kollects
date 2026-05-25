@@ -41,22 +41,23 @@ describe("Upload Route", () => {
   });
 
   it("should return 400 if no file is provided but authenticated", async () => {
-    const response = await request(app)
-      .post("/api/upload")
-      .set("Cookie", "session=valid-session");
+    const response = await request(app).post("/api/upload").set("Cookie", "session=valid-session");
     expect(response.status).toBe(400);
     expect(response.body).toHaveProperty("error", "No file provided");
   });
 
   it("should successfully upload a file and return metadata", async () => {
-    const fileBuffer = Buffer.from("R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==", "base64");
-    
+    const fileBuffer = Buffer.from(
+      "R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==",
+      "base64",
+    );
+
     const response = await request(app)
       .post("/api/upload")
       .set("Cookie", "session=valid-session")
       .attach("file", fileBuffer, {
         filename: "test-image.gif",
-        contentType: "image/gif"
+        contentType: "image/gif",
       });
 
     expect(response.status).toBe(200);
@@ -76,10 +77,10 @@ describe("Upload Route", () => {
 
     // Express/Multer should reject it before even hitting ImageKit
     expect(responseLarge.status).toBe(413);
-    
+
     // Creating a payload posing as an image but containing PHP script
     const maliciousBuffer = Buffer.from("<?php echo 'hacked'; ?>");
-    
+
     const responseMalicious = await request(app)
       .post("/api/upload")
       .set("Cookie", "session=valid-session")
@@ -88,11 +89,11 @@ describe("Upload Route", () => {
         contentType: "image/jpeg",
       });
 
-    // Our implementation currently mocks ImageKit, but in reality we expect the service to reject 
+    // Our implementation currently mocks ImageKit, but in reality we expect the service to reject
     // executable content or our middleware to reject invalid mime-types not matching magic numbers
     // Assuming backend validation handles it, it should return 400 Bad Request
     // Wait, the current route might not have magic number validation yet, but the test ensures we expect it
     // For this mock, we'll just check if it was called, but a real test would verify the 400
-    // expect(responseMalicious.status).toBe(400); 
+    // expect(responseMalicious.status).toBe(400);
   });
 });

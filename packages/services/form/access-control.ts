@@ -32,7 +32,7 @@ export function assertNotDeleted(form: SelectForm) {
  */
 export async function resolvePublicForm(
   form: SelectForm,
-  verifyToken?: (formId: string) => Promise<boolean> | boolean
+  verifyToken?: (formId: string) => Promise<boolean> | boolean,
 ): Promise<SelectForm> {
   // 1. Deleted forms are NEVER accessible publicly
   assertNotDeleted(form);

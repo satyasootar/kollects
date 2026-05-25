@@ -1,10 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  timestamp,
-  jsonb,
-  index,
-} from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, jsonb, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { formResponsesTable } from "./form-response";
 import { formFieldsTable } from "./form-field";
@@ -19,15 +13,15 @@ export const responseAnswersTable = pgTable(
     fieldId: uuid("field_id")
       .notNull()
       .references(() => formFieldsTable.id, { onDelete: "cascade" }),
-      
+
     value: jsonb("value").notNull(),
-    
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => ({
     responseIdx: index("idx_response_answers_response").on(table.responseId),
     fieldIdx: index("idx_response_answers_field").on(table.fieldId),
-  })
+  }),
 );
 
 export const responseAnswersRelations = relations(responseAnswersTable, ({ one }) => ({

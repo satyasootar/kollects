@@ -26,36 +26,36 @@ export const formsTable = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     slug: varchar("slug", { length: 64 }).notNull().unique(),
-    
+
     creatorId: uuid("creator_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
     themeId: uuid("theme_id").references(() => themesTable.id, { onDelete: "set null" }),
-    
+
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
     coverImageUrl: text("cover_image_url"),
-    
+
     status: formStatusEnum("status").default("draft").notNull(),
     visibility: formVisibilityEnum("visibility").default("public").notNull(),
-    
+
     passwordHash: varchar("password_hash", { length: 255 }),
     responseLimit: integer("response_limit"),
     expiresAt: timestamp("expires_at"),
 
     metaTitle: varchar("meta_title", { length: 60 }),
     metaDescription: text("meta_description"),
-    
+
     totalViews: integer("total_views").default(0).notNull(),
     totalStarts: integer("total_starts").default(0).notNull(),
     totalSubmissions: integer("total_submissions").default(0).notNull(),
-    
+
     settings: jsonb("settings").notNull().default({}),
-    
+
     publishedAt: timestamp("published_at"),
     archivedAt: timestamp("archived_at"),
     deletedAt: timestamp("deleted_at"),
-    
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").$onUpdate(() => new Date()),
   },
@@ -63,7 +63,7 @@ export const formsTable = pgTable(
     creatorIdx: index("idx_forms_creator").on(table.creatorId),
     slugIdx: index("idx_forms_slug").on(table.slug),
     themeIdx: index("idx_forms_theme").on(table.themeId),
-  })
+  }),
 );
 
 export const formsRelations = relations(formsTable, ({ one, many }) => ({
@@ -79,7 +79,10 @@ export const formsRelations = relations(formsTable, ({ one, many }) => ({
   responses: many(formResponsesTable),
   analyticsDaily: many(formAnalyticsDailyTable),
   views: many(formViewsTable),
-  emailSettings: one(emailNotificationSettingsTable, { fields: [formsTable.id], references: [emailNotificationSettingsTable.formId] }),
+  emailSettings: one(emailNotificationSettingsTable, {
+    fields: [formsTable.id],
+    references: [emailNotificationSettingsTable.formId],
+  }),
   emailLogs: many(emailLogsTable),
 }));
 

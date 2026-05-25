@@ -31,17 +31,18 @@ vi.mock("../../server/utils/cookies", () => ({
 import { setSessionCookie, clearSessionCookie } from "../../server/utils/cookies";
 
 describe("Auth Router", () => {
-  const getMockCtx = () => ({
-    ipHash: `123.123.123.123-hash-${Math.random()}`,
-    userAgent: "vitest",
-    res: {} as any,
-    req: {} as any,
-    db: {} as any,
-    user: null,
-    session: null,
-    apiKeyScopes: null,
-    requestMeta: { startTime: Date.now(), requestId: "test-req" },
-  } as unknown as TRPCContext);
+  const getMockCtx = () =>
+    ({
+      ipHash: `123.123.123.123-hash-${Math.random()}`,
+      userAgent: "vitest",
+      res: {} as any,
+      req: {} as any,
+      db: {} as any,
+      user: null,
+      session: null,
+      apiKeyScopes: null,
+      requestMeta: { startTime: Date.now(), requestId: "test-req" },
+    }) as unknown as TRPCContext;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -51,7 +52,7 @@ describe("Auth Router", () => {
     const ctx = getMockCtx();
     const caller = authRouter.createCaller(ctx);
     const mockUser = { id: "u1", name: "Test", email: "test@example.com" };
-    
+
     vi.mocked(authService.register).mockResolvedValueOnce({
       user: mockUser as any,
       session: { id: "s1" } as any,
@@ -66,7 +67,7 @@ describe("Auth Router", () => {
 
     expect(authService.register).toHaveBeenCalledWith(
       { name: "Test", email: "test@example.com", password: "Password1!" },
-      { ip: ctx.ipHash, userAgent: ctx.userAgent }
+      { ip: ctx.ipHash, userAgent: ctx.userAgent },
     );
     expect(setSessionCookie).toHaveBeenCalledWith(ctx.res, "secret-token");
     expect(result.token).toBe("secret-token");
@@ -77,7 +78,7 @@ describe("Auth Router", () => {
     const ctx = getMockCtx();
     const caller = authRouter.createCaller(ctx);
     const mockUser = { id: "u2", name: "Bob", email: "bob@example.com" };
-    
+
     vi.mocked(authService.login).mockResolvedValueOnce({
       user: mockUser as any,
       session: { id: "s2" } as any,
@@ -91,7 +92,7 @@ describe("Auth Router", () => {
 
     expect(authService.login).toHaveBeenCalledWith(
       { email: "bob@example.com", password: "Password1!" },
-      { ip: ctx.ipHash, userAgent: ctx.userAgent }
+      { ip: ctx.ipHash, userAgent: ctx.userAgent },
     );
     expect(setSessionCookie).toHaveBeenCalledWith(ctx.res, "login-token");
     expect(result.token).toBe("login-token");

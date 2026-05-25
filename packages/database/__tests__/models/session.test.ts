@@ -10,10 +10,13 @@ describe("Session Model Tests", () => {
 
   beforeAll(async () => {
     // Create a dummy user for session tests
-    const user = await db.insert(usersTable).values({
-      name: "Session Test User",
-      email: "session-test@example.com",
-    }).returning();
+    const user = await db
+      .insert(usersTable)
+      .values({
+        name: "Session Test User",
+        email: "session-test@example.com",
+      })
+      .returning();
     testUserId = user[0]!.id;
   });
 
@@ -33,11 +36,11 @@ describe("Session Model Tests", () => {
     };
 
     const inserted = await db.insert(sessionsTable).values(newSession).returning();
-    
+
     expect(inserted).toHaveLength(1);
     expect(inserted[0]!.userId).toBe(testUserId);
     expect(inserted[0]!.token).toBe(newSession.token);
-    
+
     testSessionId = inserted[0]!.id;
   });
 
@@ -48,8 +51,6 @@ describe("Session Model Tests", () => {
       expiresAt: new Date(),
     };
 
-    await expect(
-      db.insert(sessionsTable).values(invalidSession)
-    ).rejects.toThrow();
+    await expect(db.insert(sessionsTable).values(invalidSession)).rejects.toThrow();
   });
 });

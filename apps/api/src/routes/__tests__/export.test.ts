@@ -27,10 +27,10 @@ const testApp = express();
 testApp.get("/api/forms/:formId/export", async (req, res) => {
   const { ResponseService } = await import("@repo/services/response");
   const service = new ResponseService();
-  
+
   res.setHeader("Content-Type", "text/csv");
-  res.setHeader("Content-Disposition", "attachment; filename=\"export.csv\"");
-  
+  res.setHeader("Content-Disposition", 'attachment; filename="export.csv"');
+
   // Pass the Express response object as a writable stream to the service
   await service.exportCsv(req.params.formId, res);
 });
@@ -45,7 +45,7 @@ describe("TC-PERF-002 | Large Datasets | Massive CSV Export", () => {
       .buffer()
       .parse((res, callback) => {
         let data = "";
-        res.on("data", chunk => {
+        res.on("data", (chunk) => {
           data += chunk;
         });
         res.on("end", () => {
@@ -59,7 +59,7 @@ describe("TC-PERF-002 | Large Datasets | Massive CSV Export", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers["content-type"]).toContain("text/csv");
-    
+
     // Check that we actually streamed data
     const responseData = response.text || response.body;
     expect(responseData).toContain("response_0");
@@ -68,6 +68,6 @@ describe("TC-PERF-002 | Large Datasets | Massive CSV Export", () => {
     // The core validation: Streaming 50k rows should not bloat memory drastically
     // Usually memory shouldn't spike by more than 50-100MB for a simple stream,
     // whereas loading 50k rows into memory first would spike heavily.
-    expect(memoryDiffMB).toBeLessThan(100); 
+    expect(memoryDiffMB).toBeLessThan(100);
   });
 });

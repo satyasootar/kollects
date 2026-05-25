@@ -15,11 +15,7 @@ export class SubmissionService {
    */
   async submit(slug: string, answers: Record<string, any>, metadata?: Record<string, any>) {
     // 1. Fetch form
-    const [form] = await db
-      .select()
-      .from(formsTable)
-      .where(eq(formsTable.slug, slug))
-      .limit(1);
+    const [form] = await db.select().from(formsTable).where(eq(formsTable.slug, slug)).limit(1);
 
     if (!form || form.deletedAt !== null) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Form not found" });
@@ -104,24 +100,34 @@ export class SubmissionService {
     });
 
     // Fire and forget background jobs
-    import("../jobs").then(({ jobQueue }) => {
-      jobQueue.enqueue("ANALYTICS_UPDATE", { formId: form.id, dateStr: new Date().toISOString() });
-      jobQueue.enqueue("EMAIL_NOTIFICATION", { formId: form.id, responseId });
-    }).catch(console.error);
+    import("../jobs")
+      .then(({ jobQueue }) => {
+        jobQueue.enqueue("ANALYTICS_UPDATE", {
+          formId: form.id,
+          dateStr: new Date().toISOString(),
+        });
+        jobQueue.enqueue("EMAIL_NOTIFICATION", { formId: form.id, responseId });
+      })
+      .catch(console.error);
 
-    return { responseId, successMessage: (form.settings as any)?.successMessage || "Thank you for your submission!" };
+    return {
+      responseId,
+      successMessage: (form.settings as any)?.successMessage || "Thank you for your submission!",
+    };
   }
 
   /**
    * Saves partial progress for multi-page forms to track drop-offs.
    */
-  async saveProgress(slug: string, sessionId: string, currentPage: number, answers: Record<string, any>, metadata?: Record<string, any>) {
+  async saveProgress(
+    slug: string,
+    sessionId: string,
+    currentPage: number,
+    answers: Record<string, any>,
+    metadata?: Record<string, any>,
+  ) {
     // 1. Fetch form
-    const [form] = await db
-      .select()
-      .from(formsTable)
-      .where(eq(formsTable.slug, slug))
-      .limit(1);
+    const [form] = await db.select().from(formsTable).where(eq(formsTable.slug, slug)).limit(1);
 
     if (!form || form.deletedAt !== null) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Form not found" });
@@ -138,19 +144,19 @@ export class SubmissionService {
     // For partial saves, we validate but don't strictly reject missing required fields on future pages
     // We'll just build a partial schema or just safely parse what we can to prevent injection
     const schema = buildValidationSchema(fields);
-    
+
     // We only want to save answers that are valid. We filter out invalid ones.
     const validAnswers: Record<string, any> = {};
     for (const [key, value] of Object.entries(answers)) {
-       // Deeply partial validation
-       try {
-         const fieldSchema = schema.shape[key];
-         if (fieldSchema) {
-           validAnswers[key] = fieldSchema.parse(value);
-         }
-       } catch (e) {
-         // ignore invalid fields on partial saves
-       }
+      // Deeply partial validation
+      try {
+        const fieldSchema = schema.shape[key];
+        if (fieldSchema) {
+          validAnswers[key] = fieldSchema.parse(value);
+        }
+      } catch (e) {
+        // ignore invalid fields on partial saves
+      }
     }
 
     // Upsert response based on sessionId + formId
@@ -158,23 +164,30 @@ export class SubmissionService {
     // Or we just insert if it doesn't exist
     await db.transaction(async (tx) => {
       let responseId: string;
-      const [existing] = await tx.select().from(formResponsesTable).where(
-        sql`${formResponsesTable.formId} = ${form.id} AND ${formResponsesTable.isComplete} = false AND ${formResponsesTable.metadata}->>'sessionId' = ${sessionId}`
-      ).limit(1);
+      const [existing] = await tx
+        .select()
+        .from(formResponsesTable)
+        .where(
+          sql`${formResponsesTable.formId} = ${form.id} AND ${formResponsesTable.isComplete} = false AND ${formResponsesTable.metadata}->>'sessionId' = ${sessionId}`,
+        )
+        .limit(1);
 
       if (existing) {
         responseId = existing.id;
         // Update metadata with new page
         const existingMetadata = existing.metadata || {};
-        await tx.update(formResponsesTable)
+        await tx
+          .update(formResponsesTable)
           .set({
             metadata: { ...existingMetadata, lastCompletedPage: currentPage },
-            updatedAt: new Date()
+            updatedAt: new Date(),
           })
           .where(eq(formResponsesTable.id, responseId));
-          
+
         // Delete old answers and reinsert
-        await tx.delete(responseAnswersTable).where(eq(responseAnswersTable.responseId, responseId));
+        await tx
+          .delete(responseAnswersTable)
+          .where(eq(responseAnswersTable.responseId, responseId));
       } else {
         responseId = crypto.randomUUID();
         await tx.insert(formResponsesTable).values({

@@ -27,12 +27,7 @@ export const apiKeyRouter = router({
           createdAt: apiKeysTable.createdAt,
         })
         .from(apiKeysTable)
-        .where(
-          and(
-            eq(apiKeysTable.userId, ctx.user.id),
-            eq(apiKeysTable.isActive, true)
-          )
-        );
+        .where(and(eq(apiKeysTable.userId, ctx.user.id), eq(apiKeysTable.isActive, true)));
       return keys;
     }),
 
@@ -49,7 +44,7 @@ export const apiKeyRouter = router({
       z.object({
         name: z.string().min(1).max(100),
         scopes: z.array(z.string()).default(["read:all", "write:all"]),
-      })
+      }),
     )
     .output(z.any())
     .mutation(async ({ ctx, input }) => {
@@ -100,13 +95,8 @@ export const apiKeyRouter = router({
       await db
         .update(apiKeysTable)
         .set({ isActive: false })
-        .where(
-          and(
-            eq(apiKeysTable.id, input.id),
-            eq(apiKeysTable.userId, ctx.user.id)
-          )
-        );
-        
+        .where(and(eq(apiKeysTable.id, input.id), eq(apiKeysTable.userId, ctx.user.id)));
+
       await db.insert(auditLogsTable).values({
         userId: ctx.user.id,
         action: "revoke_api_key",
@@ -114,7 +104,7 @@ export const apiKeyRouter = router({
         entityId: input.id,
         ipAddress: ctx.ipHash || null,
       });
-        
+
       return { success: true };
     }),
 });

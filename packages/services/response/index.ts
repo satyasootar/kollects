@@ -1,5 +1,10 @@
 import { db, eq, and, desc, sql } from "@repo/database";
-import { formsTable, formResponsesTable, responseAnswersTable, formFieldsTable } from "@repo/database/schema";
+import {
+  formsTable,
+  formResponsesTable,
+  responseAnswersTable,
+  formFieldsTable,
+} from "@repo/database/schema";
 import { TRPCError } from "@trpc/server";
 import { generateCsvExport } from "./csv-export";
 import type { ExportResponseData } from "./csv-export";
@@ -10,16 +15,16 @@ export class ResponseService {
    */
   private async enforceFormOwnership(userId: string, formId: string) {
     const form = await db.query.formsTable.findFirst({
-      where: and(
-        eq(formsTable.id, formId),
-        eq(formsTable.creatorId, userId)
-      ),
+      where: and(eq(formsTable.id, formId), eq(formsTable.creatorId, userId)),
     });
 
     if (!form) {
-      throw new TRPCError({ code: "FORBIDDEN", message: "You do not have permission to access this form" });
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "You do not have permission to access this form",
+      });
     }
-    
+
     return form;
   }
 
@@ -33,21 +38,16 @@ export class ResponseService {
 
     // We fetch completed responses
     const responses = await db.query.formResponsesTable.findMany({
-      where: and(
-        eq(formResponsesTable.formId, formId),
-        eq(formResponsesTable.isComplete, true)
-      ),
+      where: and(eq(formResponsesTable.formId, formId), eq(formResponsesTable.isComplete, true)),
       orderBy: [desc(formResponsesTable.submittedAt)],
       limit,
       offset,
     });
 
-    const totalRes = await db.select({ count: formResponsesTable.id }).from(formResponsesTable).where(
-      and(
-        eq(formResponsesTable.formId, formId),
-        eq(formResponsesTable.isComplete, true)
-      )
-    );
+    const totalRes = await db
+      .select({ count: formResponsesTable.id })
+      .from(formResponsesTable)
+      .where(and(eq(formResponsesTable.formId, formId), eq(formResponsesTable.isComplete, true)));
 
     return {
       responses,
@@ -96,13 +96,14 @@ export class ResponseService {
     await db.transaction(async (tx) => {
       // 1. Delete answers
       await tx.delete(responseAnswersTable).where(eq(responseAnswersTable.responseId, responseId));
-      
+
       // 2. Delete response
       await tx.delete(formResponsesTable).where(eq(formResponsesTable.id, responseId));
-      
+
       // 3. Decrement totalSubmissions (if response was complete)
       if (response.isComplete) {
-        await tx.update(formsTable)
+        await tx
+          .update(formsTable)
           .set({ totalSubmissions: sql`${formsTable.totalSubmissions} - 1` })
           .where(and(eq(formsTable.id, response.formId), sql`${formsTable.totalSubmissions} > 0`));
       }
@@ -122,10 +123,10 @@ export class ResponseService {
     });
 
     let csvResult = "";
-    
+
     // Using dynamic import so we don't break existing imports if they weren't exposed
     const { generateCsvHeaders, generateCsvRows } = await import("./csv-export");
-    
+
     csvResult += generateCsvHeaders(fields);
 
     const limit = 500;
@@ -135,10 +136,7 @@ export class ResponseService {
     while (hasMore) {
       // Get all completed responses with answers in chunks
       const responses = await db.query.formResponsesTable.findMany({
-        where: and(
-          eq(formResponsesTable.formId, formId),
-          eq(formResponsesTable.isComplete, true)
-        ),
+        where: and(eq(formResponsesTable.formId, formId), eq(formResponsesTable.isComplete, true)),
         with: {
           answers: true,
         },

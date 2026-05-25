@@ -36,7 +36,11 @@ export class EmailSettingsService {
     return settings;
   }
 
-  async updateSettings(userId: string, formId: string, data: z.infer<typeof updateEmailSettingsSchema>) {
+  async updateSettings(
+    userId: string,
+    formId: string,
+    data: z.infer<typeof updateEmailSettingsSchema>,
+  ) {
     const formService = new FormService();
     await formService.getById(userId, formId);
 

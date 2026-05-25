@@ -19,23 +19,31 @@ const mockDb = {
   select: vi.fn().mockReturnValue({
     from: vi.fn().mockReturnValue({
       where: vi.fn().mockReturnValue([
-        { id: "upload-1", fileId: "imagekit-id-123", formId: null, createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000) } // 48 hours ago
-      ])
-    })
+        {
+          id: "upload-1",
+          fileId: "imagekit-id-123",
+          formId: null,
+          createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
+        }, // 48 hours ago
+      ]),
+    }),
   }),
   delete: vi.fn().mockReturnValue({
-    where: vi.fn().mockResolvedValue(true)
-  })
+    where: vi.fn().mockResolvedValue(true),
+  }),
 };
 
 const runCleanupJob = async (db: any) => {
   // 1. Find uploads older than 24h that have no associated formId
-  const orphanedUploads = await db.select().from("uploads").where("formId is null AND createdAt < NOW() - INTERVAL '24 HOURS'");
-  
+  const orphanedUploads = await db
+    .select()
+    .from("uploads")
+    .where("formId is null AND createdAt < NOW() - INTERVAL '24 HOURS'");
+
   // 2. Delete from ImageKit
   const { MediaService } = await import("@repo/services/media");
   const mediaService = new MediaService();
-  
+
   for (const upload of orphanedUploads) {
     if (upload.fileId) {
       await mediaService.deleteFile(upload.fileId);

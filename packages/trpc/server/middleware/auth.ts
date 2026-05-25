@@ -25,7 +25,7 @@ export const authMiddleware = middleware(async ({ ctx, next }) => {
     ctx: {
       ...ctx,
       user: resolved.user,
-      session: "session" in resolved ? resolved.session ?? null : null,
+      session: "session" in resolved ? (resolved.session ?? null) : null,
       apiKeyScopes: "scopes" in resolved ? (resolved.scopes as string[]) : null,
     },
   });
