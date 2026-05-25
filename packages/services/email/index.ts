@@ -4,6 +4,7 @@ import { emailClient } from "../clients/email";
 import { renderTemplate } from "./templates";
 import { logger } from "@repo/logger";
 import sanitizeHtml from "sanitize-html";
+import { env } from "../env";
 
 export class EmailService {
   async sendCreatorNotification(formId: string, responseId: string) {
@@ -174,7 +175,7 @@ export class EmailService {
 
   async sendPasswordResetEmail(email: string, token: string) {
     try {
-      const resetLink = `https://kollects.tech/auth/reset-password?token=${token}`;
+      const resetLink = `${env.BASE_URL}/auth/reset-password?token=${token}`;
       
       const subject = "Reset your KOLLECTS.TECH password";
       const htmlContent = `

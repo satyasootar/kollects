@@ -5,6 +5,10 @@ import { db, sql } from "@repo/database";
 import { rateLimitEntriesTable } from "@repo/database/models/system";
 import { sessionsTable } from "@repo/database/models/session";
 import { emailLogsTable } from "@repo/database/models/email";
+import fs from "fs";
+import path from "path";
+
+const PERSISTENCE_FILE = path.join(process.cwd(), ".jobs-persistence.json");
 
 type JobPayloads = {
   EMAIL_NOTIFICATION: {
@@ -23,14 +27,16 @@ type JobHandler<T extends JobType> = (payload: JobPayloads[T]) => Promise<void>;
 export class JobQueue {
   private handlers = new Map<string, JobHandler<any>>();
   private running = false;
-  private queue: { type: string; payload: any }[] = [];
+  private queue: { type: string; payload: any; attempts?: number }[] = [];
 
   constructor() {
     this.registerHandlers();
+    this.loadQueue();
   }
 
   enqueue<T extends JobType>(type: T, payload: JobPayloads[T]) {
-    this.queue.push({ type, payload });
+    this.queue.push({ type, payload, attempts: 1 });
+    this.saveQueue();
     if (!this.running) {
       this.processNext();
     }
@@ -38,6 +44,32 @@ export class JobQueue {
 
   process<T extends JobType>(type: T, handler: JobHandler<T>) {
     this.handlers.set(type, handler);
+  }
+
+  private saveQueue() {
+    try {
+      fs.writeFileSync(PERSISTENCE_FILE, JSON.stringify(this.queue, null, 2), "utf8");
+    } catch (error) {
+      logger.error("Failed to save background jobs to disk", { error });
+    }
+  }
+
+  private loadQueue() {
+    try {
+      if (fs.existsSync(PERSISTENCE_FILE)) {
+        const data = fs.readFileSync(PERSISTENCE_FILE, "utf8");
+        this.queue = JSON.parse(data);
+        logger.info(`Restored ${this.queue.length} background jobs from disk`);
+        if (this.queue.length > 0 && !this.running) {
+          // Defer start to let handlers register
+          setTimeout(() => {
+            if (!this.running) this.processNext();
+          }, 100);
+        }
+      }
+    } catch (error) {
+      logger.error("Failed to load background jobs from disk", { error });
+    }
   }
 
   private async processNext() {
@@ -55,6 +87,8 @@ export class JobQueue {
       const job = this.queue.shift();
       if (!job) break;
 
+      this.saveQueue();
+
       const handler = this.handlers.get(job.type);
       if (handler) {
         try {
@@ -65,6 +99,15 @@ export class JobQueue {
           await Promise.race([handler(job.payload), timeoutPromise]);
         } catch (error) {
           logger.error(`Job execution failed: ${job.type}`, { error, payload: job.payload });
+          
+          const attempts = job.attempts || 1;
+          if (attempts < 3) {
+            logger.info(`Re-enqueuing job for retry (attempt ${attempts + 1}/3): ${job.type}`);
+            this.queue.push({ ...job, attempts: attempts + 1 });
+            this.saveQueue();
+          } else {
+            logger.error(`Job exhausted all retry attempts: ${job.type}`, { payload: job.payload });
+          }
         }
       } else {
         logger.warn(`No handler registered for job type: ${job.type}`);

@@ -54,7 +54,7 @@ export class AuthService {
 
     if (!user) throw new Error("Failed to create user");
 
-    logger.info("New user registered", { userId: user.id, email: user.email });
+    logger.info("New user registered", { userId: user.id });
 
     // Create a session for the newly registered user
     const ipHash = reqContext?.ip ? hashIP(reqContext.ip) : undefined;
@@ -164,7 +164,7 @@ export class AuthService {
     const emailService = new EmailService();
     await emailService.sendPasswordResetEmail(user.email, token);
     
-    logger.info(`Password reset email queued for ${user.email}`);
+    logger.info(`Password reset email queued`, { userId: user.id });
   }
 
   /**

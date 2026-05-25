@@ -18,8 +18,8 @@ export const publicFormRouter = router({
       // and throws standard TRPCErrors (404/403) if access is denied.
       const form = await formService.getPublicBySlug(
         input.slug, 
-        input.passwordToken ? (formId) => {
-          const { verifyFormPasswordToken } = require("@repo/services/auth/form-token");
+        input.passwordToken ? async (formId) => {
+          const { verifyFormPasswordToken } = await import("@repo/services/auth/form-token");
           return verifyFormPasswordToken(input.passwordToken!, formId);
         } : undefined
       );

@@ -9,7 +9,7 @@ import {
   jsonb,
   index,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { formsTable } from "./form";
 import { responseAnswersTable } from "./response-answer";
 
@@ -38,6 +38,12 @@ export const formResponsesTable = pgTable(
   },
   (table) => ({
     formIdx: index("idx_form_responses_form").on(table.formId),
+    formCompleteSubmitIdx: index("idx_form_responses_complete_submit").on(table.formId, table.isComplete, table.submittedAt),
+    formCompleteSessionIdx: index("idx_form_responses_session").on(
+      table.formId,
+      table.isComplete,
+      sql`(${table.metadata}->>'sessionId')`
+    ),
   })
 );
 

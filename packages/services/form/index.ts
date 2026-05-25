@@ -284,7 +284,7 @@ export class FormService {
   /**
    * Retrieves a form by slug for public access, resolving visibility and password rules.
    */
-  async getPublicBySlug(slug: string, verifyToken?: (formId: string) => boolean) {
+  async getPublicBySlug(slug: string, verifyToken?: (formId: string) => Promise<boolean> | boolean) {
     const cacheKey = `public-form:slug:${slug}`;
     const cached = await cache.get<typeof formsTable.$inferSelect>(cacheKey);
 

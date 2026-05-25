@@ -32,7 +32,7 @@ export function assertNotDeleted(form: SelectForm) {
  */
 export async function resolvePublicForm(
   form: SelectForm,
-  verifyToken?: (formId: string) => boolean
+  verifyToken?: (formId: string) => Promise<boolean> | boolean
 ): Promise<SelectForm> {
   // 1. Deleted forms are NEVER accessible publicly
   assertNotDeleted(form);
@@ -55,7 +55,7 @@ export async function resolvePublicForm(
 
   // 3. Password Check
   if (form.passwordHash) {
-    if (!verifyToken || !verifyToken(form.id)) {
+    if (!verifyToken || !(await verifyToken(form.id))) {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "This form is password protected",

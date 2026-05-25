@@ -14,6 +14,7 @@ const envSchema = z.object({
   SMTP_PASS: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
   JWT_SECRET: z.string().min(32),
+  BASE_URL: z.string().default("https://kollects.tech"),
 });
 
 function createEnv(env: NodeJS.ProcessEnv) {
