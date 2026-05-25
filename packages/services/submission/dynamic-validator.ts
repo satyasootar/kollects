@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { type SelectFormField } from "@repo/database/models/form-field";
+import safeRegex from "safe-regex";
 
 /**
  * Dynamically builds a Zod schema from an array of form fields.
@@ -18,7 +19,12 @@ export function buildValidationSchema(fields: SelectFormField[]): z.ZodObject<an
         let strSchema = z.string();
         if (validations.minLength !== undefined) strSchema = strSchema.min(Number(validations.minLength));
         if (validations.maxLength !== undefined) strSchema = strSchema.max(Number(validations.maxLength));
-        if (validations.pattern) strSchema = strSchema.regex(new RegExp(String(validations.pattern)));
+        if (validations.pattern) {
+          const patternStr = String(validations.pattern);
+          if (safeRegex(patternStr)) {
+            strSchema = strSchema.regex(new RegExp(patternStr), { message: "Invalid format" });
+          }
+        }
         fieldSchema = strSchema;
         break;
       }

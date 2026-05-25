@@ -25,7 +25,18 @@ import { securityHeaders } from "./middleware/security-headers";
 app.use(securityHeaders);
 app.use(corsMiddleware);
 
-app.use(express.json({ limit: "1mb" }));
+import rateLimit from "express-rate-limit";
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests from this IP, please try again later." },
+});
+
+app.use(apiLimiter);
+app.use(express.json({ limit: "500kb" }));
 
 // Start background cron tasks
 jobQueue.startCronTasks();

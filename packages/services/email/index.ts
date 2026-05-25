@@ -3,6 +3,7 @@ import { emailLogsTable, formsTable, usersTable, formFieldsTable, formResponsesT
 import { emailClient } from "../clients/email";
 import { renderTemplate } from "./templates";
 import { logger } from "@repo/logger";
+import sanitizeHtml from "sanitize-html";
 
 export class EmailService {
   async sendCreatorNotification(formId: string, responseId: string) {
@@ -56,7 +57,15 @@ export class EmailService {
       `;
 
       const subject = renderTemplate(settings.creatorEmailSubject || defaultSubject, variables);
-      const htmlContent = renderTemplate(settings.creatorEmailTemplate || defaultTemplate, variables);
+      let htmlContent = renderTemplate(settings.creatorEmailTemplate || defaultTemplate, variables);
+      htmlContent = sanitizeHtml(htmlContent, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+        allowedAttributes: {
+          ...sanitizeHtml.defaults.allowedAttributes,
+          'a': ['href', 'target', 'rel'],
+          'img': ['src', 'alt', 'width', 'height']
+        }
+      });
 
       // 4. Send email
       const result = await emailClient.sendEmail({
@@ -130,7 +139,15 @@ export class EmailService {
       `;
 
       const subject = renderTemplate(settings.respondentEmailSubject || defaultSubject, variables);
-      const htmlContent = renderTemplate(settings.respondentEmailTemplate || defaultTemplate, variables);
+      let htmlContent = renderTemplate(settings.respondentEmailTemplate || defaultTemplate, variables);
+      htmlContent = sanitizeHtml(htmlContent, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img']),
+        allowedAttributes: {
+          ...sanitizeHtml.defaults.allowedAttributes,
+          'a': ['href', 'target', 'rel'],
+          'img': ['src', 'alt', 'width', 'height']
+        }
+      });
 
       const result = await emailClient.sendEmail({
         to: respondentEmail,

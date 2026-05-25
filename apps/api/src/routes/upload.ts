@@ -1,5 +1,5 @@
 import { Router, ErrorRequestHandler } from "express";
-import { upload } from "../middleware/upload";
+import { upload, validateFileMagicBytes } from "../middleware/upload";
 import { MediaService } from "@repo/services/media";
 import { AuthService } from "@repo/services/auth";
 
@@ -7,7 +7,7 @@ const router = Router();
 const mediaService = new MediaService();
 const authService = new AuthService();
 
-router.post("/", upload.single("file"), async (req, res) => {
+router.post("/", upload.single("file"), validateFileMagicBytes, async (req, res) => {
   try {
     const sessionToken = req.headers.cookie?.match(/(?:^|;\s*)session=([^;]+)/)?.[1];
     const authHeader = req.headers.authorization;

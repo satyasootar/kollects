@@ -49,12 +49,15 @@ describe("Upload Route", () => {
   });
 
   it("should successfully upload a file and return metadata", async () => {
-    const fileBuffer = Buffer.from("fake-image-content");
+    const fileBuffer = Buffer.from("R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==", "base64");
     
     const response = await request(app)
       .post("/api/upload")
       .set("Cookie", "session=valid-session")
-      .attach("file", fileBuffer, "test-image.jpg");
+      .attach("file", fileBuffer, {
+        filename: "test-image.gif",
+        contentType: "image/gif"
+      });
 
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty("url", "https://ik.imagekit.io/test/test-image.jpg");

@@ -1,3 +1,13 @@
+export function escapeHtml(unsafe: string): string {
+  if (typeof unsafe !== 'string') return String(unsafe);
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export function renderTemplate(template: string, variables: Record<string, any>): string {
   if (!template) return "";
 
@@ -15,7 +25,7 @@ export function renderTemplate(template: string, variables: Record<string, any>)
       value = value[k];
     }
     
-    return value !== undefined && value !== null ? String(value) : match;
+    return value !== undefined && value !== null ? escapeHtml(String(value)) : match;
   });
 }
 
@@ -45,8 +55,8 @@ function generateAnswersTable(answers: any[], fields: any[]): string {
     }
 
     html += `<tr>`;
-    html += `<td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${field.label}</td>`;
-    html += `<td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${displayValue || "-"}</td>`;
+    html += `<td style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 500;">${escapeHtml(String(field.label))}</td>`;
+    html += `<td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${escapeHtml(String(displayValue || "-"))}</td>`;
     html += `</tr>`;
   }
 
