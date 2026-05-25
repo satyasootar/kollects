@@ -45,6 +45,14 @@ export async function resolvePublicForm(
     });
   }
 
+  // 3. Visibility Check
+  if (form.visibility === "private") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "This form is private and cannot be accessed publicly",
+    });
+  }
+
   // 3. Password Check
   if (form.passwordHash) {
     if (!verifyToken || !verifyToken(form.id)) {

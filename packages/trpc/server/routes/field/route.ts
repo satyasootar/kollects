@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../../trpc";
+import { protectedProcedure, scopedProcedure, router } from "../../trpc";
 import { fieldService } from "../../services";
 import { 
   createFieldSchema, 
@@ -8,7 +8,7 @@ import {
 } from "@repo/database/schemas/field";
 
 export const fieldRouter = router({
-  create: protectedProcedure
+  create: scopedProcedure("write:all")
     .meta({ openapi: { method: "POST", path: "/fields", tags: ["Fields"], summary: "Create a new field" } })
     .input(createFieldSchema)
     .output(z.any())
@@ -27,7 +27,7 @@ export const fieldRouter = router({
       });
     }),
 
-  update: protectedProcedure
+  update: scopedProcedure("write:all")
     .meta({ openapi: { method: "PATCH", path: "/fields/{fieldId}", tags: ["Fields"], summary: "Update a field" } })
     .input(updateFieldSchema)
     .output(z.any())
@@ -36,7 +36,7 @@ export const fieldRouter = router({
       return fieldService.update(ctx.user.id, fieldId, data);
     }),
 
-  delete: protectedProcedure
+  delete: scopedProcedure("write:all")
     .meta({ openapi: { method: "DELETE", path: "/fields/{fieldId}", tags: ["Fields"], summary: "Delete a field" } })
     .input(z.object({ fieldId: z.string().uuid() }))
     .output(z.any())
@@ -45,7 +45,7 @@ export const fieldRouter = router({
       return { success: true };
     }),
 
-  reorder: protectedProcedure
+  reorder: scopedProcedure("write:all")
     .meta({ openapi: { method: "POST", path: "/fields/reorder", tags: ["Fields"], summary: "Reorder fields" } })
     .input(reorderFieldsSchema)
     .output(z.any())

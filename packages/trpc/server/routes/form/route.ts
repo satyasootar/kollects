@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../../trpc";
+import { protectedProcedure, scopedProcedure, router } from "../../trpc";
 import { formService } from "../../services";
 import { 
   createFormSchema, 
@@ -8,7 +8,7 @@ import {
 } from "@repo/database/schemas/form";
 
 export const formRouter = router({
-  create: protectedProcedure
+  create: scopedProcedure("write:all")
     .meta({ openapi: { method: "POST", path: "/forms", tags: ["Forms"], summary: "Create a new form" } })
     .input(createFormSchema)
     .output(z.any())
@@ -19,7 +19,7 @@ export const formRouter = router({
       });
     }),
 
-  update: protectedProcedure
+  update: scopedProcedure("write:all")
     .meta({ openapi: { method: "PATCH", path: "/forms/{formId}", tags: ["Forms"], summary: "Update a form" } })
     .input(updateFormSchema)
     .output(z.any())
@@ -28,7 +28,7 @@ export const formRouter = router({
       return formService.update(ctx.user.id, formId, data);
     }),
 
-  delete: protectedProcedure
+  delete: scopedProcedure("write:all")
     .meta({ openapi: { method: "DELETE", path: "/forms/{formId}", tags: ["Forms"], summary: "Delete a form" } })
     .input(z.object({ formId: z.string().uuid() }))
     .output(z.any())
@@ -37,7 +37,7 @@ export const formRouter = router({
       return { success: true };
     }),
 
-  publish: protectedProcedure
+  publish: scopedProcedure("write:all")
     .meta({ openapi: { method: "POST", path: "/forms/{formId}/publish", tags: ["Forms"], summary: "Publish a form" } })
     .input(publishFormSchema)
     .output(z.any())
@@ -45,7 +45,7 @@ export const formRouter = router({
       return formService.publish(ctx.user.id, input.formId);
     }),
 
-  unpublish: protectedProcedure
+  unpublish: scopedProcedure("write:all")
     .meta({ openapi: { method: "POST", path: "/forms/{formId}/unpublish", tags: ["Forms"], summary: "Unpublish a form" } })
     .input(z.object({ formId: z.string().uuid() }))
     .output(z.any())
@@ -53,7 +53,7 @@ export const formRouter = router({
       return formService.unpublish(ctx.user.id, input.formId);
     }),
 
-  archive: protectedProcedure
+  archive: scopedProcedure("write:all")
     .meta({ openapi: { method: "POST", path: "/forms/{formId}/archive", tags: ["Forms"], summary: "Archive a form" } })
     .input(z.object({ formId: z.string().uuid() }))
     .output(z.any())
@@ -61,7 +61,7 @@ export const formRouter = router({
       return formService.archive(ctx.user.id, input.formId);
     }),
 
-  clone: protectedProcedure
+  clone: scopedProcedure("write:all")
     .meta({ openapi: { method: "POST", path: "/forms/{formId}/clone", tags: ["Forms"], summary: "Clone a form" } })
     .input(z.object({ formId: z.string().uuid() }))
     .output(z.any())

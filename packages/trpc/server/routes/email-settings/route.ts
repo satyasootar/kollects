@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../../trpc";
+import { protectedProcedure, scopedProcedure, router } from "../../trpc";
 import { EmailSettingsService } from "@repo/services/email-settings";
 import { updateEmailSettingsSchema } from "@repo/database/schemas/email-settings";
 
@@ -21,7 +21,7 @@ export const emailSettingsRouter = router({
       return emailSettingsService.getSettings(ctx.user.id, input.formId);
     }),
 
-  update: protectedProcedure
+  update: scopedProcedure("write:all")
     .meta({
       openapi: {
         method: "PUT",

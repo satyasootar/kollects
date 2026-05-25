@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../../../server/trpc";
+import { protectedProcedure, scopedProcedure, router } from "../../../server/trpc";
 import { generatePath } from "../../../server/utils/path-generator";
 import { responseService } from "../../../server/services";
 import { paginationSchema } from "@repo/database/schemas/common";
@@ -54,7 +54,7 @@ export const responseRouter = router({
       return responseService.getById(ctx.user!.id, input.responseId);
     }),
 
-  delete: protectedProcedure
+  delete: scopedProcedure("write:all")
     .meta({ openapi: { method: "DELETE", path: getPath("/{responseId}"), tags: TAGS, summary: "Delete a response" } })
     .input(z.object({
       responseId: z.string().uuid(),

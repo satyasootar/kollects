@@ -19,7 +19,7 @@ import { formAnalyticsDailyTable, formViewsTable } from "./analytics";
 import { emailNotificationSettingsTable, emailLogsTable } from "./email";
 
 export const formStatusEnum = pgEnum("form_status", ["draft", "published", "archived"]);
-export const formVisibilityEnum = pgEnum("form_visibility", ["public", "unlisted"]);
+export const formVisibilityEnum = pgEnum("form_visibility", ["public", "unlisted", "private"]);
 
 export const formsTable = pgTable(
   "forms",

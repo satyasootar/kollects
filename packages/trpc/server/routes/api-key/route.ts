@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../../trpc";
+import { protectedProcedure, scopedProcedure, router } from "../../trpc";
 import { db, eq, and } from "@repo/database";
 import { apiKeysTable } from "@repo/database/models/system";
 import { generateApiKey } from "@repo/services/auth/api-key";
@@ -36,7 +36,7 @@ export const apiKeyRouter = router({
       return keys;
     }),
 
-  create: protectedProcedure
+  create: scopedProcedure("write:all")
     .meta({
       openapi: {
         method: "POST",
@@ -77,7 +77,7 @@ export const apiKeyRouter = router({
       };
     }),
 
-  revoke: protectedProcedure
+  revoke: scopedProcedure("write:all")
     .meta({
       openapi: {
         method: "DELETE",

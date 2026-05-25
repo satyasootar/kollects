@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicProcedure, protectedProcedure, router } from "../../trpc";
+import { publicProcedure, protectedProcedure, scopedProcedure, router } from "../../trpc";
 import { ThemeService } from "@repo/services/theme";
 
 const themeService = new ThemeService();
