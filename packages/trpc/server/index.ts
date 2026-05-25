@@ -11,6 +11,11 @@ import { publicSubmitRouter } from "./routes/public-submit/route";
 import { responseRouter } from "./routes/response/route";
 import { analyticsRouter } from "./routes/analytics/route";
 
+import { emailSettingsRouter } from "./routes/email-settings/route";
+import { themeRouter } from "./routes/theme/route";
+import { templateRouter } from "./routes/template/route";
+import { apiKeyRouter } from "./routes/api-key/route";
+
 export const serverRouter = router({
   health: healthRouter,
   auth: authRouter,
@@ -22,6 +27,10 @@ export const serverRouter = router({
   publicSubmit: publicSubmitRouter,
   response: responseRouter,
   analytics: analyticsRouter,
+  emailSettings: emailSettingsRouter,
+  theme: themeRouter,
+  template: templateRouter,
+  apiKey: apiKeyRouter,
 });
 
 export { createContext } from "./context";

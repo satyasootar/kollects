@@ -148,8 +148,11 @@ export class AuthService {
       expiresAt,
     });
 
-    // TODO: Send real email in Phase 13
-    console.log(`[SIMULATED EMAIL] Password reset token for ${user.email}: ${token}`);
+    const { EmailService } = await import("../email");
+    const emailService = new EmailService();
+    await emailService.sendPasswordResetEmail(user.email, token);
+    
+    logger.info(`Password reset email queued for ${user.email}`);
   }
 
   /**

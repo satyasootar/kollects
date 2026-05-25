@@ -103,9 +103,11 @@ export class SubmissionService {
       return id;
     });
 
-    // Fire and forget analytics update
-    const analyticsService = new AnalyticsService();
-    analyticsService.upsertDailyAnalytics(form.id, new Date()).catch(console.error);
+    // Fire and forget background jobs
+    import("../jobs").then(({ jobQueue }) => {
+      jobQueue.enqueue("ANALYTICS_UPDATE", { formId: form.id, dateStr: new Date().toISOString() });
+      jobQueue.enqueue("EMAIL_NOTIFICATION", { formId: form.id, responseId });
+    }).catch(console.error);
 
     return { responseId, successMessage: (form.settings as any)?.successMessage || "Thank you for your submission!" };
   }
