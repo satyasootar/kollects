@@ -49,13 +49,15 @@ app.get("/health", (req, res) => {
   return res.json({ message: "KOLLECTS.TECH server is healthy", healthy: true });
 });
 
-logger.debug(`openapi.json: ${env.BASE_URL}/openapi.json`);
-app.get("/openapi.json", (req, res) => {
-  return res.json(openApiDocument);
-});
+if (env.NODE_ENV !== "production") {
+  logger.debug(`openapi.json: ${env.BASE_URL}/openapi.json`);
+  app.get("/openapi.json", (req, res) => {
+    return res.json(openApiDocument);
+  });
 
-logger.debug(`docs: ${env.BASE_URL}/docs`);
-app.use("/docs", apiReference({ url: "/openapi.json" }));
+  logger.debug(`docs: ${env.BASE_URL}/docs`);
+  app.use("/docs", apiReference({ url: "/openapi.json" }));
+}
 
 import uploadRouter from "./routes/upload";
 app.use("/api/upload", uploadRouter);

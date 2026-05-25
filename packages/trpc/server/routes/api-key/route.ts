@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, scopedProcedure, router } from "../../trpc";
 import { db, eq, and } from "@repo/database";
-import { apiKeysTable } from "@repo/database/models/system";
+import { apiKeysTable, auditLogsTable } from "@repo/database/models/system";
 import { generateApiKey } from "@repo/services/auth/api-key";
 
 export const apiKeyRouter = router({
@@ -67,8 +67,16 @@ export const apiKeyRouter = router({
         .returning({
           id: apiKeysTable.id,
           name: apiKeysTable.name,
-          createdAt: apiKeysTable.createdAt,
         });
+
+      await db.insert(auditLogsTable).values({
+        userId: ctx.user.id,
+        action: "create_api_key",
+        entityType: "api_key",
+        entityId: key.id,
+        ipAddress: ctx.ipHash || null,
+        metadata: { name: input.name, scopes: input.scopes },
+      });
 
       // ONLY time full key is ever returned
       return {
@@ -98,6 +106,15 @@ export const apiKeyRouter = router({
             eq(apiKeysTable.userId, ctx.user.id)
           )
         );
+        
+      await db.insert(auditLogsTable).values({
+        userId: ctx.user.id,
+        action: "revoke_api_key",
+        entityType: "api_key",
+        entityId: input.id,
+        ipAddress: ctx.ipHash || null,
+      });
+        
       return { success: true };
     }),
 });

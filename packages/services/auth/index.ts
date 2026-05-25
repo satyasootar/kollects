@@ -3,6 +3,7 @@ import { usersTable, SelectUser } from "@repo/database/models/user";
 import { passwordResetTokensTable } from "@repo/database/models/password-reset-token";
 import { apiKeysTable } from "@repo/database/models/system";
 import { sessionsTable } from "@repo/database/models/session";
+import { auditLogsTable } from "@repo/database/models/system";
 import { eq } from "drizzle-orm";
 import {
   loginSchema,
@@ -82,13 +83,13 @@ export class AuthService {
       .limit(1);
 
     if (!user || !user.passwordHash) {
-      logger.warn("Failed login attempt — user not found or no password", { email: validData.email });
+      logger.warn("Failed login attempt — user not found or no password", { userId: user?.id });
       throw new Error("Invalid email or password");
     }
 
     const isValid = await verifyPassword(validData.password, user.passwordHash);
     if (!isValid) {
-      logger.warn("Failed login attempt — wrong password", { userId: user.id, email: user.email });
+      logger.warn("Failed login attempt — wrong password", { userId: user.id });
       throw new Error("Invalid email or password");
     }
 
@@ -96,6 +97,15 @@ export class AuthService {
     const sessionResult = await createSession(user.id, ipHash, reqContext?.userAgent);
 
     logger.info("User logged in successfully", { userId: user.id });
+
+    // Audit log for login
+    await db.insert(auditLogsTable).values({
+      userId: user.id,
+      action: "login",
+      entityType: "user",
+      entityId: user.id,
+      ipAddress: reqContext?.ip || null,
+    });
 
     return {
       user: this.sanitizeUser(user),
@@ -200,6 +210,14 @@ export class AuthService {
 
     // Invalidate all existing sessions for this user
     await db.delete(sessionsTable).where(eq(sessionsTable.userId, resetToken.userId));
+
+    // Audit log for password reset
+    await db.insert(auditLogsTable).values({
+      userId: resetToken.userId,
+      action: "password_reset",
+      entityType: "user",
+      entityId: resetToken.userId,
+    });
   }
 
   /**

@@ -2,6 +2,7 @@ import { db, eq, and, sql } from "@repo/database";
 import { formsTable } from "@repo/database/models/form";
 import { formFieldsTable } from "@repo/database/models/form-field";
 import { usersTable } from "@repo/database/models/user";
+import { auditLogsTable } from "@repo/database/models/system";
 import { TRPCError } from "@trpc/server";
 import { assertOwnership, assertNotDeleted } from "./access-control";
 import { SlugService } from "../slug";
@@ -149,6 +150,13 @@ export class FormService {
       .update(formsTable)
       .set({ deletedAt: new Date() })
       .where(eq(formsTable.id, formId));
+
+    await db.insert(auditLogsTable).values({
+      userId,
+      action: "delete_form",
+      entityType: "form",
+      entityId: formId,
+    });
 
     await cache.invalidate(`public-form:slug:${form.slug}`);
   }

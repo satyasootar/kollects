@@ -4,6 +4,7 @@ import { AnalyticsService } from "../analytics";
 import { db, sql } from "@repo/database";
 import { rateLimitEntriesTable } from "@repo/database/models/system";
 import { sessionsTable } from "@repo/database/models/session";
+import { emailLogsTable } from "@repo/database/models/email";
 
 type JobPayloads = {
   EMAIL_NOTIFICATION: {
@@ -46,13 +47,22 @@ export class JobQueue {
     }
 
     this.running = true;
-    const job = this.queue.shift();
 
-    if (job) {
+    // Process a max of 50 jobs per batch to prevent event loop blocking
+    const batchSize = Math.min(this.queue.length, 50);
+
+    for (let i = 0; i < batchSize; i++) {
+      const job = this.queue.shift();
+      if (!job) break;
+
       const handler = this.handlers.get(job.type);
       if (handler) {
         try {
-          await handler(job.payload);
+          // Implement a timeout to prevent stalled jobs from hanging the queue
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Job processing timeout")), 30000)
+          );
+          await Promise.race([handler(job.payload), timeoutPromise]);
         } catch (error) {
           logger.error(`Job execution failed: ${job.type}`, { error, payload: job.payload });
         }
@@ -61,8 +71,12 @@ export class JobQueue {
       }
     }
 
-    // Schedule next immediately (but yielded to event loop)
-    setTimeout(() => this.processNext(), 0);
+    // Schedule next immediately if there's more in the queue
+    if (this.queue.length > 0) {
+      setTimeout(() => this.processNext(), 0);
+    } else {
+      this.running = false;
+    }
   }
 
   private registerHandlers() {
@@ -93,9 +107,15 @@ export class JobQueue {
       this.cleanupSessions();
     }, 24 * 60 * 60 * 1000);
     
+    // EMAIL_LOGS_CLEANUP: Daily
+    setInterval(() => {
+      this.cleanupEmailLogs();
+    }, 24 * 60 * 60 * 1000);
+
     // Run an initial cleanup on startup
     this.cleanupRateLimits();
     this.cleanupSessions();
+    this.cleanupEmailLogs();
   }
 
   private async cleanupRateLimits() {
@@ -119,6 +139,19 @@ export class JobQueue {
       logger.info(`Cleaned up expired sessions`);
     } catch (error) {
       logger.error("Failed to clean up sessions", { error });
+    }
+  }
+
+  private async cleanupEmailLogs() {
+    try {
+      // Clear HTML content from email logs older than 7 days to save space
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      await db.update(emailLogsTable)
+        .set({ htmlContent: null })
+        .where(sql`${emailLogsTable.createdAt} < ${sevenDaysAgo} AND ${emailLogsTable.htmlContent} IS NOT NULL`);
+      logger.info(`Cleaned up old email log HTML content`);
+    } catch (error) {
+      logger.error("Failed to clean up email logs", { error });
     }
   }
 }
