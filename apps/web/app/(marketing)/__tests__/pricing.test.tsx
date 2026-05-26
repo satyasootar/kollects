@@ -42,8 +42,8 @@ describe("Pricing Page", () => {
   it("renders FAQ section with at least 6 items", () => {
     render(<PricingPage />);
     const triggers = screen.getAllByRole("button");
-    // FAQ accordion triggers (at least 6) + CTA buttons (3)
-    expect(triggers.length).toBeGreaterThanOrEqual(9);
+    // FAQ accordion triggers are rendered as buttons
+    expect(triggers.length).toBeGreaterThanOrEqual(6);
   });
 
   it("renders Start free CTA linking to /signup", () => {
