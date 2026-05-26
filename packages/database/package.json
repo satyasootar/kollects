@@ -1,6 +1,20 @@
 {
   "name": "@repo/database",
   "version": "1.0.0",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./schema": "./schema.ts",
+    "./schemas/*": "./schemas/*.ts",
+    "./models/*": "./models/*.ts",
+    "./constants": "./constants/index.ts",
+    "./constants/*": "./constants/*.ts",
+    "./types": "./types/index.ts",
+    "./types/*": "./types/*.ts",
+    "./utils": "./utils/index.ts",
+    "./utils/*": "./utils/*.ts"
+  },
   "scripts": {
     "db:migrate": "dotenv -- drizzle-kit migrate",
     "db:generate": "dotenv -- drizzle-kit generate",
