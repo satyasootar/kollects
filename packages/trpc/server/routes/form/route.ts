@@ -6,7 +6,7 @@ import { createFormSchema, updateFormSchema, publishFormSchema } from "@repo/dat
 export const formRouter = router({
   create: scopedProcedure("write:all")
     .meta({
-      openapi: { method: "POST", path: "/forms", tags: ["Forms"], summary: "Create a new form" },
+      openapi: { method: "POST", path: "/forms", tags: ["Forms"], summary: "Create a new form", description: "Creates a new form in draft state. Automatically generates a unique URL slug from the title. Enforces per-plan form limits. The form must be published before it can accept responses." },
     })
     .input(createFormSchema)
     .output(z.any())
@@ -19,12 +19,7 @@ export const formRouter = router({
 
   update: scopedProcedure("write:all")
     .meta({
-      openapi: {
-        method: "PATCH",
-        path: "/forms/{formId}",
-        tags: ["Forms"],
-        summary: "Update a form",
-      },
+      openapi: { method: "PATCH", path: "/forms/{formId}", tags: ["Forms"], summary: "Update a form", description: "Updates form metadata (title, description, slug, theme). Custom slugs are validated for format (lowercase, alphanumeric, hyphens) and uniqueness. Invalidates public cache on slug change." },
     })
     .input(updateFormSchema)
     .output(z.any())
@@ -35,12 +30,7 @@ export const formRouter = router({
 
   delete: scopedProcedure("write:all")
     .meta({
-      openapi: {
-        method: "DELETE",
-        path: "/forms/{formId}",
-        tags: ["Forms"],
-        summary: "Delete a form",
-      },
+      openapi: { method: "DELETE", path: "/forms/{formId}", tags: ["Forms"], summary: "Delete a form (soft)", description: "Soft-deletes a form by setting `deletedAt`. The form becomes inaccessible publicly and via API but data is retained for potential recovery. Creates an audit log entry." },
     })
     .input(z.object({ formId: z.string().uuid() }))
     .output(z.any())
@@ -51,12 +41,7 @@ export const formRouter = router({
 
   publish: scopedProcedure("write:all")
     .meta({
-      openapi: {
-        method: "POST",
-        path: "/forms/{formId}/publish",
-        tags: ["Forms"],
-        summary: "Publish a form",
-      },
+      openapi: { method: "POST", path: "/forms/{formId}/publish", tags: ["Forms"], summary: "Publish a form", description: "Transitions a form from draft to published state, making it accessible to respondents via its public slug URL. Sets `publishedAt` timestamp on first publish. Invalidates public cache." },
     })
     .input(publishFormSchema)
     .output(z.any())
@@ -66,12 +51,7 @@ export const formRouter = router({
 
   unpublish: scopedProcedure("write:all")
     .meta({
-      openapi: {
-        method: "POST",
-        path: "/forms/{formId}/unpublish",
-        tags: ["Forms"],
-        summary: "Unpublish a form",
-      },
+      openapi: { method: "POST", path: "/forms/{formId}/unpublish", tags: ["Forms"], summary: "Unpublish a form", description: "Reverts a published form back to draft state. The form immediately stops accepting new responses. Existing responses are preserved. Invalidates public cache." },
     })
     .input(z.object({ formId: z.string().uuid() }))
     .output(z.any())
@@ -81,12 +61,7 @@ export const formRouter = router({
 
   archive: scopedProcedure("write:all")
     .meta({
-      openapi: {
-        method: "POST",
-        path: "/forms/{formId}/archive",
-        tags: ["Forms"],
-        summary: "Archive a form",
-      },
+      openapi: { method: "POST", path: "/forms/{formId}/archive", tags: ["Forms"], summary: "Archive a form", description: "Moves a form to archived state. Archived forms are closed for submissions but remain visible in the creator's dashboard for historical reference. Invalidates public cache." },
     })
     .input(z.object({ formId: z.string().uuid() }))
     .output(z.any())
@@ -96,12 +71,7 @@ export const formRouter = router({
 
   clone: scopedProcedure("write:all")
     .meta({
-      openapi: {
-        method: "POST",
-        path: "/forms/{formId}/clone",
-        tags: ["Forms"],
-        summary: "Clone a form",
-      },
+      openapi: { method: "POST", path: "/forms/{formId}/clone", tags: ["Forms"], summary: "Clone a form", description: "Creates a deep copy of a form including all fields, options, and settings. The clone is created in draft state with a new slug (appends ' Copy'). Does not copy responses or analytics data." },
     })
     .input(z.object({ formId: z.string().uuid() }))
     .output(z.any())
@@ -111,7 +81,7 @@ export const formRouter = router({
 
   list: protectedProcedure
     .meta({
-      openapi: { method: "GET", path: "/forms", tags: ["Forms"], summary: "List user forms" },
+      openapi: { method: "GET", path: "/forms", tags: ["Forms"], summary: "List user's forms", description: "Returns all non-deleted forms owned by the authenticated user, ordered by creation date (newest first). Includes all form metadata, counters (views, starts, submissions), and status." },
     })
     .input(z.void())
     .output(z.any())
@@ -121,12 +91,7 @@ export const formRouter = router({
 
   getById: protectedProcedure
     .meta({
-      openapi: {
-        method: "GET",
-        path: "/forms/{formId}",
-        tags: ["Forms"],
-        summary: "Get form by ID",
-      },
+      openapi: { method: "GET", path: "/forms/{formId}", tags: ["Forms"], summary: "Get form by ID", description: "Returns full form details including all settings, counters, and metadata. Verifies ownership — returns 403 if the form belongs to another user. Returns 404 if the form is soft-deleted." },
     })
     .input(z.object({ formId: z.string().uuid() }))
     .output(z.any())

@@ -1,4 +1,7 @@
 {
   "extends": ["@repo/typescript-config/node.json"],
-  "include": ["server/", "client/", "__tests__/"]
+  "include": ["server/", "client/", "__tests__/"],
+  "compilerOptions": {
+    "typeRoots": ["./node_modules/@types", "../services/types"]
+  }
 }

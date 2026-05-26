@@ -6,7 +6,7 @@ const allowlist = env.CORS_ORIGINS ? env.CORS_ORIGINS.split(",").map((s) => s.tr
 export const corsMiddleware = cors({
   origin: (origin, callback) => {
     // In development or if origin is missing (e.g. server-to-server), allow it
-    if (env.NODE_ENV !== "prod" || !origin) {
+    if (env.NODE_ENV !== "production" || !origin) {
       return callback(null, true);
     }
 

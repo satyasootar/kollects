@@ -4,9 +4,11 @@ export class CacheService {
   private inMemoryCache: Map<string, { value: any; expiry: number }>;
   private redisClient: Redis | null = null;
   private purgeInterval: NodeJS.Timeout | null = null;
+  private readonly maxSize: number;
 
-  constructor() {
+  constructor(maxSize = 10000) {
     this.inMemoryCache = new Map();
+    this.maxSize = maxSize;
 
     if (process.env.REDIS_URL) {
       this.redisClient = new Redis(process.env.REDIS_URL);
@@ -57,6 +59,11 @@ export class CacheService {
     }
 
     const expiry = Date.now() + ttlSeconds * 1000;
+    // Evict oldest entries if at capacity
+    if (this.inMemoryCache.size >= this.maxSize) {
+      const firstKey = this.inMemoryCache.keys().next().value;
+      if (firstKey !== undefined) this.inMemoryCache.delete(firstKey);
+    }
     this.inMemoryCache.set(key, { value, expiry });
   }
 

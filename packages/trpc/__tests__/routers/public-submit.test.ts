@@ -39,14 +39,14 @@ describe("Public Submit Router", () => {
 
     const result = await caller.publicSubmit.submit({
       slug: "test-form",
-      answers: { field1: "data" },
+      answers: { "123e4567-e89b-12d3-a456-426614174001": "data" },
       metadata: { email: "test@test.com" },
     });
 
     expect(result).toHaveProperty("responseId", "123e4567-e89b-12d3-a456-426614174000");
     expect(submissionService.submit).toHaveBeenCalledWith(
       "test-form",
-      { field1: "data" },
+      { "123e4567-e89b-12d3-a456-426614174001": "data" },
       { email: "test@test.com", ipHash: "mocked-ip-hash", userAgent: "mocked-user-agent" },
     );
   });

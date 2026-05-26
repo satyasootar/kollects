@@ -56,10 +56,12 @@ export class FormService {
     }
 
     // 2. Check limits
-    const [{ count }] = await db
+    const countResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(formsTable)
       .where(and(eq(formsTable.creatorId, userId), sql`${formsTable.deletedAt} IS NULL`));
+
+    const count = countResult[0]?.count ?? 0;
 
     if (count >= user.formLimit) {
       throw new TRPCError({

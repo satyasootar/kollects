@@ -9,7 +9,9 @@ async function init() {
     const server = http.createServer(expressApplication);
     const PORT: number = env.PORT ? +env.PORT : 8000;
     server.listen(PORT, () => {
-      logger.info(`http server is running on PORT ${PORT}`);
+      logger.info(`🚀 API Server is running at: http://localhost:${PORT}`);
+      logger.info(`📄 OpenAPI Document: http://localhost:${PORT}/openapi.json`);
+      logger.info(`📚 Scalar API Reference: http://localhost:${PORT}/docs`);
     });
   } catch (err) {
     logger.error(`Error creating http server`, { err });

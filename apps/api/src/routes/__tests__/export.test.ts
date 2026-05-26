@@ -32,7 +32,7 @@ testApp.get("/api/forms/:formId/export", async (req, res) => {
   res.setHeader("Content-Disposition", 'attachment; filename="export.csv"');
 
   // Pass the Express response object as a writable stream to the service
-  await service.exportCsv(req.params.formId, res);
+  await service.exportCsv(req.params.formId as string, res as any);
 });
 
 describe("TC-PERF-002 | Large Datasets | Massive CSV Export", () => {

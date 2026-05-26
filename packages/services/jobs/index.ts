@@ -7,6 +7,7 @@ import { sessionsTable } from "@repo/database/models/session";
 import { emailLogsTable } from "@repo/database/models/email";
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 
 const PERSISTENCE_FILE = path.join(process.cwd(), ".jobs-persistence.json");
 
@@ -27,17 +28,26 @@ type JobHandler<T extends JobType> = (payload: JobPayloads[T]) => Promise<void>;
 export class JobQueue {
   private handlers = new Map<string, JobHandler<any>>();
   private running = false;
-  private queue: { type: string; payload: any; attempts?: number }[] = [];
+  private queue: { type: string; payload: any; attempts?: number; idempotencyKey?: string }[] = [];
   private isSaving = false;
   private savePending = false;
+  private processedKeys = new Set<string>();
+  private readonly maxProcessedKeys = 5000;
 
   constructor() {
     this.registerHandlers();
     this.loadQueue();
   }
 
+  private generateIdempotencyKey(type: string, payload: any): string {
+    const hash = crypto.createHash("sha256").update(`${type}:${JSON.stringify(payload)}`).digest("hex").slice(0, 16);
+    return hash;
+  }
+
   enqueue<T extends JobType>(type: T, payload: JobPayloads[T]) {
-    this.queue.push({ type, payload, attempts: 1 });
+    const key = this.generateIdempotencyKey(type, payload);
+    if (this.processedKeys.has(key)) return; // Skip duplicate
+    this.queue.push({ type, payload, attempts: 1, idempotencyKey: key });
     this.saveQueue();
     if (!this.running) {
       this.processNext();
@@ -112,6 +122,14 @@ export class JobQueue {
             setTimeout(() => reject(new Error("Job processing timeout")), 30000),
           );
           await Promise.race([handler(job.payload), timeoutPromise]);
+          // Mark as processed for deduplication
+          if (job.idempotencyKey) {
+            this.processedKeys.add(job.idempotencyKey);
+            if (this.processedKeys.size > this.maxProcessedKeys) {
+              const first = this.processedKeys.values().next().value;
+              if (first) this.processedKeys.delete(first);
+            }
+          }
         } catch (error) {
           logger.error(`Job execution failed: ${job.type}`, { error, payload: job.payload });
 

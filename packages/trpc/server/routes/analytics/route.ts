@@ -10,6 +10,7 @@ export const analyticsRouter = router({
         path: "/analytics/{formId}/overview",
         tags: ["Analytics"],
         summary: "Get form overview analytics",
+        description: "Returns high-level analytics counters for a form: total views, total starts, total submissions, and completion rate (percentage). Data is cached for 5 minutes. Requires form ownership.",
       },
     })
     .input(
@@ -36,6 +37,7 @@ export const analyticsRouter = router({
         path: "/analytics/{formId}/daily",
         tags: ["Analytics"],
         summary: "Get daily analytics stats",
+        description: "Returns time-series analytics data for a date range. Each entry includes daily views, starts, submissions, completion rate, average completion time, bounces, and drop-offs. Use ISO 8601 datetime strings for `startDate` and `endDate`. Requires form ownership.",
       },
     })
     .input(
@@ -75,6 +77,7 @@ export const analyticsRouter = router({
         path: "/analytics/{formId}/dropoffs",
         tags: ["Analytics"],
         summary: "Get drop-offs by page",
+        description: "Returns the number of incomplete responses grouped by the last completed page. Useful for identifying which pages cause respondents to abandon the form. Requires form ownership.",
       },
     })
     .input(
@@ -101,6 +104,7 @@ export const analyticsRouter = router({
         path: "/analytics/{formId}/fields/{fieldId}",
         tags: ["Analytics"],
         summary: "Get statistics for a specific field",
+        description: "Returns aggregated answer statistics for a specific field. Stats vary by field type: ratings return average + distribution, select fields return option counts, numbers return min/max/average, checkboxes return true/false counts, text fields return total count. Only includes answers from completed responses. Requires form ownership.",
       },
     })
     .input(

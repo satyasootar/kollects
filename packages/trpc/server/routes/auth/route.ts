@@ -24,7 +24,7 @@ const resetPasswordRateLimit = createRateLimitMiddleware("reset-password", 5, 15
 
 export const authRouter = router({
   getSupportedAuthenticationProviders: publicProcedure
-    .meta({ openapi: { method: "GET", path: getPath("/supported-providers"), tags: TAGS } })
+    .meta({ openapi: { method: "GET", path: getPath("/supported-providers"), tags: TAGS, summary: "Get supported auth providers", description: "Returns a list of authentication methods supported by this instance (e.g., email/password, Google OAuth). Use this to dynamically render login/register UI options." } })
     .input(zodUndefinedModel)
     .output(z.readonly(z.array(getAuthenticationMethodOutputSchema)))
     .query(async () => {
@@ -34,7 +34,7 @@ export const authRouter = router({
 
   register: publicProcedure
     .use(registerRateLimit)
-    .meta({ openapi: { method: "POST", path: getPath("/register"), tags: TAGS } })
+    .meta({ openapi: { method: "POST", path: getPath("/register"), tags: TAGS, summary: "Register a new user", description: "Creates a new user account with email and password. Automatically creates a session and sets a secure HttpOnly cookie. Returns the user object and session token. Rate limited to 5 requests per 15 minutes per IP." } })
     .input(registerSchema)
     .output(
       z.object({
@@ -59,7 +59,7 @@ export const authRouter = router({
 
   login: publicProcedure
     .use(loginRateLimit)
-    .meta({ openapi: { method: "POST", path: getPath("/login"), tags: TAGS } })
+    .meta({ openapi: { method: "POST", path: getPath("/login"), tags: TAGS, summary: "Log in", description: "Authenticates a user with email and password. Sets a secure session cookie (30-day expiry) and returns the user object with session token. Rate limited to 10 requests per 15 minutes per IP. Failed attempts are logged for security auditing." } })
     .input(loginSchema)
     .output(
       z.object({
@@ -83,7 +83,7 @@ export const authRouter = router({
     }),
 
   logout: protectedProcedure
-    .meta({ openapi: { method: "POST", path: getPath("/logout"), tags: TAGS } })
+    .meta({ openapi: { method: "POST", path: getPath("/logout"), tags: TAGS, summary: "Log out", description: "Invalidates the current session and clears the session cookie. Requires authentication. The session token is immediately revoked and cannot be reused." } })
     .input(zodUndefinedModel)
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx }) => {
@@ -95,7 +95,7 @@ export const authRouter = router({
     }),
 
   me: protectedProcedure
-    .meta({ openapi: { method: "GET", path: getPath("/me"), tags: TAGS } })
+    .meta({ openapi: { method: "GET", path: getPath("/me"), tags: TAGS, summary: "Get current user", description: "Returns the authenticated user's profile information. Requires a valid session cookie or API key. Never returns the password hash or other sensitive internal fields." } })
     .input(zodUndefinedModel)
     .output(
       z.object({
@@ -114,7 +114,7 @@ export const authRouter = router({
 
   forgotPassword: publicProcedure
     .use(forgotPasswordRateLimit)
-    .meta({ openapi: { method: "POST", path: getPath("/forgot-password"), tags: TAGS } })
+    .meta({ openapi: { method: "POST", path: getPath("/forgot-password"), tags: TAGS, summary: "Request password reset", description: "Sends a password reset email to the specified address if an account exists. Always returns success (even if email not found) to prevent email enumeration attacks. The reset token expires in 1 hour. Rate limited to 3 requests per hour per IP." } })
     .input(forgotPasswordSchema)
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ input }) => {
@@ -124,7 +124,7 @@ export const authRouter = router({
 
   resetPassword: publicProcedure
     .use(resetPasswordRateLimit)
-    .meta({ openapi: { method: "POST", path: getPath("/reset-password"), tags: TAGS } })
+    .meta({ openapi: { method: "POST", path: getPath("/reset-password"), tags: TAGS, summary: "Reset password with token", description: "Resets the user's password using a valid reset token (received via email). The token is single-use and expires after 1 hour. After successful reset, all existing sessions for the user are invalidated, forcing re-login on all devices." } })
     .input(resetPasswordSchema)
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ input }) => {

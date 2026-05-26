@@ -44,7 +44,7 @@ export const scopedProcedure = (requiredScope: string) =>
  */
 export const adminProcedure = protectedProcedure.use(
   middleware(async ({ ctx, next }) => {
-    if (ctx.user.plan !== "enterprise" && (ctx.user as any).role !== "admin") {
+    if (ctx.user!.plan !== "enterprise" && (ctx.user as any).role !== "admin") {
       throw new TRPCError({
         code: "FORBIDDEN",
         message: "Admin or enterprise privileges required.",

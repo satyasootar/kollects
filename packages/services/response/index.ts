@@ -45,13 +45,13 @@ export class ResponseService {
     });
 
     const totalRes = await db
-      .select({ count: formResponsesTable.id })
+      .select({ count: sql<number>`count(*)::int` })
       .from(formResponsesTable)
       .where(and(eq(formResponsesTable.formId, formId), eq(formResponsesTable.isComplete, true)));
 
     return {
       responses,
-      total: totalRes[0]?.count ? Number(totalRes[0].count) : 0,
+      total: totalRes[0]?.count ?? 0,
     };
   }
 

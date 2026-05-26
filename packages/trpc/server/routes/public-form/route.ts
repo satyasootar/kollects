@@ -11,6 +11,7 @@ export const publicFormRouter = router({
         path: "/public/forms/{slug}",
         tags: ["Public Forms"],
         summary: "Get form by slug for public viewing",
+        description: "Fetches a published form by its URL slug for rendering to respondents. Enforces visibility rules (private forms return 403), password protection (requires valid `passwordToken`), and status checks (only published forms are accessible). Automatically records a view event for analytics. Returns only public-safe fields — never exposes creator info or internal data.",
       },
     })
     .input(
@@ -62,6 +63,7 @@ export const publicFormRouter = router({
         path: "/public/forms/{slug}/validate-password",
         tags: ["Public Forms"],
         summary: "Validate password for a protected form",
+        description: "Validates a password against a password-protected form. On success, returns a short-lived signed token (15 minutes) that must be passed as `passwordToken` to the `getBySlug` endpoint to access the form content. Returns 401 if the password is incorrect.",
       },
     })
     .input(

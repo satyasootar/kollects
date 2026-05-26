@@ -3,6 +3,7 @@ import { protectedProcedure, scopedProcedure, router } from "../../trpc";
 import { db, eq, and } from "@repo/database";
 import { apiKeysTable, auditLogsTable } from "@repo/database/models/system";
 import { generateApiKey } from "@repo/services/auth/api-key";
+import { TRPCError } from "@trpc/server";
 
 export const apiKeyRouter = router({
   list: protectedProcedure
@@ -12,6 +13,7 @@ export const apiKeyRouter = router({
         path: "/api-keys",
         tags: ["API Keys"],
         summary: "List all active API keys",
+        description: "Returns all active (non-revoked) API keys for the authenticated user. Only shows the key prefix (`sk_live_...`), name, scopes, last used timestamp, and expiry. The full key is never returned after creation.",
       },
     })
     .output(z.any())
@@ -38,6 +40,7 @@ export const apiKeyRouter = router({
         path: "/api-keys",
         tags: ["API Keys"],
         summary: "Create a new API key",
+        description: "Generates a new API key with the specified name and scopes. **The full key (`sk_live_...`) is only returned in this response — store it securely.** The key is SHA-256 hashed before storage. Default scopes are `read:all` and `write:all`. Creates an audit log entry.",
       },
     })
     .input(
@@ -64,6 +67,8 @@ export const apiKeyRouter = router({
           name: apiKeysTable.name,
         });
 
+      if (!key) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create API key" });
+
       await db.insert(auditLogsTable).values({
         userId: ctx.user.id,
         action: "create_api_key",
@@ -87,6 +92,7 @@ export const apiKeyRouter = router({
         path: "/api-keys/{id}",
         tags: ["API Keys"],
         summary: "Revoke an API key",
+        description: "Permanently deactivates an API key. The key immediately stops working for all future requests. This action cannot be undone — a new key must be created if access is needed again. Creates an audit log entry.",
       },
     })
     .input(z.object({ id: z.string().uuid() }))

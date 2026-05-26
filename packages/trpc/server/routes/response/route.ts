@@ -26,6 +26,7 @@ export const responseRouter = router({
         path: getPath("/{formId}"),
         tags: TAGS,
         summary: "List responses for a form",
+        description: "Returns paginated completed responses for a form. Supports `page` and `limit` query parameters. Only returns responses where `isComplete=true`. Ordered by submission date (newest first). Requires form ownership.",
       },
     })
     .input(
@@ -51,6 +52,7 @@ export const responseRouter = router({
         path: getPath("/{responseId}/details"),
         tags: TAGS,
         summary: "Get a specific response with answers",
+        description: "Returns a single response with all its answers expanded. Each answer includes the field ID, value, and the field's metadata (type, label). Requires ownership of the form that the response belongs to.",
       },
     })
     .input(
@@ -87,6 +89,7 @@ export const responseRouter = router({
         path: getPath("/{responseId}"),
         tags: TAGS,
         summary: "Delete a response",
+        description: "Permanently deletes a response and all its answers. If the response was complete, decrements the form's `totalSubmissions` counter atomically. This action cannot be undone. Requires form ownership.",
       },
     })
     .input(
@@ -107,6 +110,7 @@ export const responseRouter = router({
         path: getPath("/{formId}/export"),
         tags: TAGS,
         summary: "Export all responses as CSV",
+        description: "Exports all completed responses for a form as a CSV string. Columns include metadata (Response ID, Submitted At, Completion Time, IP Hash, User Agent) followed by one column per field in order. Processes responses in chunks of 500 to manage memory. Requires form ownership.",
       },
     })
     .input(

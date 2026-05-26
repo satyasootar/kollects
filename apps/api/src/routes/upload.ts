@@ -1,4 +1,5 @@
 import { Router, ErrorRequestHandler } from "express";
+import rateLimit from "express-rate-limit";
 import { upload, validateFileMagicBytes } from "../middleware/upload";
 import { MediaService } from "@repo/services/media";
 import { AuthService } from "@repo/services/auth";
@@ -7,7 +8,15 @@ const router = Router();
 const mediaService = new MediaService();
 const authService = new AuthService();
 
-router.post("/", upload.single("file"), validateFileMagicBytes, async (req, res) => {
+const uploadRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many uploads, please try again later." },
+});
+
+router.post("/", uploadRateLimit, upload.single("file"), validateFileMagicBytes, async (req, res) => {
   try {
     const sessionToken = req.headers.cookie?.match(/(?:^|;\s*)session=([^;]+)/)?.[1];
     const authHeader = req.headers.authorization;
@@ -47,9 +56,12 @@ router.post("/", upload.single("file"), validateFileMagicBytes, async (req, res)
 // ... [we'll append the error handler before export]
 const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   if (err.code === "LIMIT_FILE_SIZE") {
-    return res.status(413).json({ error: "File too large" });
+    return res.status(413).json({ error: "File too large. Maximum size is 5MB." });
   }
-  return res.status(500).json({ error: err.message || "Failed to upload file" });
+  if (err.message === "Invalid file type") {
+    return res.status(400).json({ error: "Invalid file type" });
+  }
+  return res.status(500).json({ error: "Failed to upload file" });
 };
 
 router.use(errorHandler);
