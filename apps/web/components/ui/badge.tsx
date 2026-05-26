@@ -15,6 +15,12 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline: "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+        draft: "bg-muted text-status-draft ring-1 ring-status-draft/20 rounded-full font-mono lowercase tracking-tight",
+        published: "bg-tint-mint text-status-published ring-1 ring-status-published/30 rounded-full font-mono lowercase tracking-tight",
+        archived: "bg-secondary text-status-archived ring-1 ring-status-archived/30 rounded-full font-mono lowercase tracking-tight",
+        public: "bg-tint-mint text-status-published rounded-full font-mono lowercase tracking-tight",
+        unlisted: "bg-tint-butter text-status-unlisted rounded-full font-mono lowercase tracking-tight",
+        private: "bg-tint-blush text-status-private rounded-full font-mono lowercase tracking-tight",
       },
     },
     defaultVariants: {

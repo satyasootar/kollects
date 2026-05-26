@@ -279,6 +279,11 @@
   }
 }
 
+@keyframes dot-drift {
+  from { background-position: 0 0; }
+  to { background-position: 4px 4px; }
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════════
    ACCESSIBILITY — Reduced motion guard (DESIGN.md §2.6, §9)
    ═══════════════════════════════════════════════════════════════════════════════ */
