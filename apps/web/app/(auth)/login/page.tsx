@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { loginSchema } from "@repo/database";
+import { loginSchema } from "@repo/database/schemas/auth";
 import type { z } from "zod";
 import { trpc } from "~/trpc/client";
 import { Button } from "~/components/ui/button";

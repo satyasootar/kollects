@@ -2,14 +2,9 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 // We test slug validation logic directly since the page requires complex mocking
-import { RESERVED_SLUGS } from "@repo/database";
+import { RESERVED_SLUGS } from "@repo/database/constants/reserved-slugs";
 
-vi.mock("@repo/database", () => ({
-  updateFormSchema: {
-    parse: (d: any) => d,
-    safeParse: (d: any) => ({ success: true, data: d }),
-    shape: {},
-  },
+vi.mock("@repo/database/constants/reserved-slugs", () => ({
   RESERVED_SLUGS: [
     "api",
     "admin",
@@ -22,7 +17,6 @@ vi.mock("@repo/database", () => ({
     "templates",
     "forms",
   ],
-  FORM_VISIBILITIES: ["public", "unlisted", "private"],
 }));
 
 const SLUG_REGEX = /^[a-z0-9-]{3,80}$/;

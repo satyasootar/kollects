@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { resetPasswordSchema } from "@repo/database";
+import { resetPasswordSchema } from "@repo/database/schemas/auth";
 
 /**
  * Client-only extension of resetPasswordSchema that adds confirmPassword.

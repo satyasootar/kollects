@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PLAN_LIMITS } from "@repo/database";
+import { PLAN_LIMITS } from "@repo/database/constants/user-plan";
 import { trpc } from "~/trpc/client";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";

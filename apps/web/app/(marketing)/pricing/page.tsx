@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
-import { PLAN_LIMITS } from "@repo/database";
+import { PLAN_LIMITS } from "@repo/database/constants/user-plan";
 import { Button } from "~/components/ui/button";
 import {
   Accordion,

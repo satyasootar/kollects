@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { FIELD_TYPES } from "@repo/database";
+import { FIELD_TYPES } from "@repo/database/constants/field-types";
 import {
   FieldTypePicker,
   FIELD_TYPE_LABELS,

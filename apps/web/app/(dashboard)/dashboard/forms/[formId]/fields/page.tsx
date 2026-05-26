@@ -11,7 +11,7 @@ import { FieldInspector, type FieldData } from "~/components/form-builder/field-
 import { FieldTypePicker } from "~/components/form-builder/field-type-picker";
 import { toast } from "~/lib/toast";
 import { handleTrpcError } from "~/lib/api-error";
-import type { FieldType } from "@repo/database";
+import type { FieldType } from "@repo/database/constants/field-types";
 
 export default function FieldsPage() {
   const params = useParams<{ formId: string }>();

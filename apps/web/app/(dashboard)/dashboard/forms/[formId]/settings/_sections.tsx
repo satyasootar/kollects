@@ -1,6 +1,6 @@
 "use client";
 
-import { FORM_VISIBILITIES } from "@repo/database";
+import { FORM_VISIBILITIES } from "@repo/database/constants/form-visibility";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";

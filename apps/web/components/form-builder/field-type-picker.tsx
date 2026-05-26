@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FIELD_TYPES, type FieldType } from "@repo/database";
+import { FIELD_TYPES, type FieldType } from "@repo/database/constants/field-types";
 import {
   Command,
   CommandEmpty,

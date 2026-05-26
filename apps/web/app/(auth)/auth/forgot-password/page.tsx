@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { forgotPasswordSchema } from "@repo/database";
+import { forgotPasswordSchema } from "@repo/database/schemas/auth";
 import type { z } from "zod";
 import { trpc } from "~/trpc/client";
 import { Button } from "~/components/ui/button";

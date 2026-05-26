@@ -24,7 +24,7 @@ import {
   FIELD_TYPE_ICON_MAP,
   FIELD_TYPE_LABELS,
 } from "~/components/form-builder/field-type-picker";
-import type { FieldType } from "@repo/database";
+import type { FieldType } from "@repo/database/constants/field-types";
 
 export interface FieldItem {
   id: string;
