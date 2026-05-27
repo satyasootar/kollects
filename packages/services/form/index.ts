@@ -39,7 +39,6 @@ export class FormService {
         fields: {
           orderBy: (fields: any, { asc }: any) => [asc(fields.order)],
         },
-        theme: true,
       },
     });
 
@@ -144,8 +143,8 @@ export class FormService {
       metaDescription?: string;
       visibility?: "public" | "unlisted" | "private";
       settings?: Record<string, any>;
-    },
   ) {
+    console.log("UPDATE FORM CALLED WITH DATA:", data);
     const form = await this.getById(formId, userId);
 
     if (data.slug && data.slug !== form.slug) {

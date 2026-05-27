@@ -6,6 +6,8 @@ import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import { Monitor, Tablet, Smartphone } from "lucide-react";
 import { useFormContext } from "../layout";
 import { FormPreviewRenderer } from "~/components/form-builder/form-preview-renderer";
+import { loadTheme, type ThemeConfig } from "~/components/form-themes";
+import "~/components/form-themes/themes/_register-all";
 import { useFormEditorStore } from "~/lib/stores/form-editor-store";
 
 const DEVICES = [

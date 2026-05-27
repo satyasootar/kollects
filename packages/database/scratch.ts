@@ -1,0 +1,1 @@
+import { db } from './index'; import { formsTable } from './models/form'; async function run() { const forms = await db.select().from(formsTable); console.log(forms.map(f => ({ id: f.id, title: f.title, themeId: f.themeId }))); process.exit(0); } run();

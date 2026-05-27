@@ -1,3 +1,4 @@
+import "./themes/_register-all";
 export { FormThemeProvider } from "./_provider";
 export {
   loadTheme,
