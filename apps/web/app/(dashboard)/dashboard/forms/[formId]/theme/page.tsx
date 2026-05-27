@@ -250,7 +250,7 @@ export default function ThemeDesignPage() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel — Theme selection */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="w-full lg:w-[450px] shrink-0 overflow-y-auto p-6 space-y-6">
           <Tabs defaultValue="presets" className="space-y-4">
             <TabsList>
               <TabsTrigger value="presets" className="gap-1.5">
@@ -303,11 +303,10 @@ export default function ThemeDesignPage() {
                       if (preset) {
                         store.setThemeId("default-light");
                         store.setCustomTheme(preset.config as any);
-                        toast.success(`Applied ${preset.name} preset`);
                       }
                     }}
                   >
-                    <SelectTrigger className="w-[200px] h-9">
+                    <SelectTrigger className="w-[260px] h-9">
                       <SelectValue placeholder="Select a preset..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -478,10 +477,10 @@ export default function ThemeDesignPage() {
 
         {/* Right panel — Live preview */}
         <div 
-          className="w-[450px] border-l border-border p-6 overflow-y-auto hidden lg:block transition-colors duration-300"
+          className="flex-1 border-l border-border p-6 overflow-y-auto hidden lg:block transition-colors duration-300"
           style={{ backgroundColor: activeThemeConfig.colors.background }}
         >
-          <div className="sticky top-0 space-y-4">
+          <div className="sticky top-0 space-y-4 max-w-[500px] mx-auto">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Live Preview
             </h3>
