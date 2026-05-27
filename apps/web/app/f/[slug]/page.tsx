@@ -155,83 +155,89 @@ export default function FormFillPage() {
   return (
     <FormThemeProvider theme={theme}>
       <div
-        className="min-h-screen flex items-center justify-center p-4 sm:p-8 md:p-12"
+        className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 md:p-8"
         style={{ background: theme.colors.background, color: theme.colors.foreground }}
       >
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-2xl space-y-8 bg-card/5 p-6 sm:p-10 rounded-2xl shadow-sm border border-border/10"
+          className="w-full max-w-lg rounded-xl shadow-sm border border-border/10"
           onFocus={handleFocus}
           style={{ background: theme.colors.surface }}
         >
-          {formData.coverImageUrl && (
-            <div className="w-full h-48 rounded-xl overflow-hidden mb-6">
-              <img src={formData.coverImageUrl} alt="Form Banner" className="w-full h-full object-cover" />
-            </div>
-          )}
-          <div>
-            <h1
-              style={{
-                fontFamily: theme.fonts.display,
-                fontWeight: theme.fonts.weights.display,
-                fontSize: `${theme.fonts.scale.hero}rem`,
-              }}
-            >
-              {formData.title}
-            </h1>
-            {formData.description && (
-              <p className="mt-2 opacity-70" style={{ fontSize: `${theme.fonts.scale.body}rem` }}>
-                {formData.description}
-              </p>
+          <div className="p-5 sm:p-7 space-y-5">
+            {formData.coverImageUrl && (
+              <div className="w-full h-36 rounded-lg overflow-hidden mb-4 shrink-0">
+                <img src={formData.coverImageUrl} alt="Form Banner" className="w-full h-full object-cover" />
+              </div>
             )}
-          </div>
-
-          {fields.map((field: any) => (
-            <div key={field.id} id={`field-${field.id}`} className="space-y-2">
-              <label
-                htmlFor={`input-${field.id}`}
-                style={{ fontSize: `${theme.fonts.scale.question}rem`, fontWeight: 500 }}
+            <div className="shrink-0">
+              <h1
+                style={{
+                  fontFamily: theme.fonts.display,
+                  fontWeight: theme.fonts.weights.display,
+                  fontSize: `${theme.fonts.scale.hero}rem`,
+                }}
               >
-                {field.label}
-                {field.required && (
-                  <span style={{ color: theme.colors.danger }}> *</span>
-                )}
-                {field.helpText && (
-                  <span
-                    title={field.helpText}
-                    className="ml-2 inline-flex cursor-help opacity-50 hover:opacity-100 transition-opacity"
-                  >
-                    <Info className="size-4 inline-block" />
-                  </span>
-                )}
-              </label>
-              <FieldInput
-                field={field}
-                answers={answers}
-                setAnswers={setAnswers}
-                errors={errors}
-                theme={theme}
-              />
-              {errors[field.id] && (
-                <p style={{ color: theme.colors.danger, fontSize: "0.75rem" }} aria-live="polite">
-                  {errors[field.id]}
+                {formData.title}
+              </h1>
+              {formData.description && (
+                <p className="mt-2 opacity-70" style={{ fontSize: `${theme.fonts.scale.body}rem` }}>
+                  {formData.description}
                 </p>
               )}
             </div>
-          ))}
 
-          <Button
-            type="submit"
-            disabled={submitMutation.isPending}
-            className="w-full h-12"
-            style={{
-              background: theme.colors.accent,
-              color: theme.colors.accentForeground,
-              borderRadius: `${theme.shape.radius}px`,
-            }}
-          >
-            {submitMutation.isPending ? "Submitting…" : "Submit"}
-          </Button>
+            <div className="space-y-5">
+              {fields.map((field: any) => (
+                <div key={field.id} id={`field-${field.id}`} className="space-y-2">
+                  <label
+                    htmlFor={`input-${field.id}`}
+                    style={{ fontSize: `${theme.fonts.scale.question}rem`, fontWeight: 500 }}
+                  >
+                    {field.label}
+                    {field.required && (
+                      <span style={{ color: theme.colors.danger }}> *</span>
+                    )}
+                    {field.helpText && (
+                      <span
+                        title={field.helpText}
+                        className="ml-2 inline-flex cursor-help opacity-50 hover:opacity-100 transition-opacity"
+                      >
+                        <Info className="size-4 inline-block" />
+                      </span>
+                    )}
+                  </label>
+                  <FieldInput
+                    field={field}
+                    answers={answers}
+                    setAnswers={setAnswers}
+                    errors={errors}
+                    theme={theme}
+                  />
+                  {errors[field.id] && (
+                    <p style={{ color: theme.colors.danger, fontSize: "0.75rem" }} aria-live="polite">
+                      {errors[field.id]}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-3 pb-1">
+              <Button
+                type="submit"
+                disabled={submitMutation.isPending}
+                className="w-full h-10"
+                style={{
+                  background: theme.colors.accent,
+                  color: theme.colors.accentForeground,
+                  borderRadius: `${theme.shape.radius}px`,
+                }}
+              >
+                {submitMutation.isPending ? "Submitting…" : "Submit"}
+              </Button>
+            </div>
+          </div>
         </form>
       </div>
     </FormThemeProvider>

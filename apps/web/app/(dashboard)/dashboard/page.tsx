@@ -233,13 +233,21 @@ export default function DashboardPage() {
                   <EditorialCard interactive className="h-full flex flex-col">
                     {/* Cover strip */}
                     <div
-                      className="h-10 -mx-6 -mt-6 rounded-t-2xl mb-4"
+                      className="h-32 -mx-6 -mt-6 rounded-t-2xl mb-4 overflow-hidden shrink-0"
                       style={{
                         background: form.coverImageUrl
-                          ? `url(${form.coverImageUrl}) center/cover`
+                          ? undefined
                           : `linear-gradient(135deg, var(--tint-mint), var(--tint-peach))`,
                       }}
-                    />
+                    >
+                      {form.coverImageUrl && (
+                        <img
+                          src={form.coverImageUrl}
+                          alt={`${form.title} cover`}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
                     {/* Title + badges */}
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-lg font-semibold text-foreground line-clamp-1">

@@ -406,7 +406,7 @@ export default function FormEditorLayout({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto">{children}</div>
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">{children}</div>
 
         {/* Share modal */}
         <ShareModal

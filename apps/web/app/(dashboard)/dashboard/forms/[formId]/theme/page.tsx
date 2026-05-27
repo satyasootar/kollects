@@ -214,7 +214,7 @@ export default function ThemeDesignPage() {
       : themes.filter((t) => t.category === activeCategory);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col flex-1 min-h-0 h-full">
       {/* Save bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background">
         <div className="flex items-center gap-3">

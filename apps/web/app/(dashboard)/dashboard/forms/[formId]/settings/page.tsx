@@ -211,7 +211,7 @@ export default function FormSettingsPage() {
   const formTitle = (form as any)?.title ?? "";
 
   return (
-    <div className="flex h-[calc(100vh-8rem)]">
+    <div className="flex flex-1 min-h-0 h-full">
       {/* Left panel — Settings */}
       <div className="flex-1 overflow-y-auto p-6 lg:border-r lg:border-border">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-3xl">
@@ -295,10 +295,14 @@ export default function FormSettingsPage() {
 
       {/* Right panel — Live Preview */}
       <div 
-        className="w-[450px] overflow-y-auto p-6 hidden lg:flex flex-col transition-colors duration-300"
+        className="w-[450px] hidden lg:flex flex-col transition-colors duration-300 min-h-0"
         style={{ backgroundColor: activeThemeConfig?.colors?.background ?? "#fafafa" }}
       >
-        <div className="flex items-center justify-between mb-4 sticky top-0 z-10 py-2 mix-blend-difference text-white">
+        {/* Sticky header */}
+        <div
+          className="flex items-center justify-between px-6 py-3 shrink-0 border-b border-border/20 mix-blend-difference text-white"
+          style={{ backgroundColor: activeThemeConfig?.colors?.background ?? "#fafafa" }}
+        >
           <h3 className="text-xs font-semibold uppercase tracking-wider opacity-80">
             Live Preview
           </h3>
@@ -329,18 +333,21 @@ export default function FormSettingsPage() {
             </Button>
           </div>
         </div>
-        
-        {activeThemeConfig ? (
-          <FormPreviewRenderer
-            fields={store.fields}
-            formTitle={store.title}
-            formDescription={store.description}
-            coverImageUrl={store.coverImageUrl}
-            themeConfig={activeThemeConfig}
-          />
-        ) : (
-          <Skeleton className="h-96 w-full rounded-2xl" />
-        )}
+
+        {/* Scrollable form preview */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {activeThemeConfig ? (
+            <FormPreviewRenderer
+              fields={store.fields}
+              formTitle={store.title}
+              formDescription={store.description}
+              coverImageUrl={store.coverImageUrl}
+              themeConfig={activeThemeConfig}
+            />
+          ) : (
+            <Skeleton className="h-96 w-full rounded-2xl" />
+          )}
+        </div>
       </div>
     </div>
   );
