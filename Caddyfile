@@ -1,0 +1,7 @@
+kollects.tech {
+    reverse_proxy web:3000
+}
+
+api.kollects.tech {
+    reverse_proxy api:8000
+}

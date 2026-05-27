@@ -3,17 +3,75 @@ services:
     image: postgres:15
     restart: unless-stopped
     container_name: postgresdb
-
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: dev
-
     ports:
       - "5432:5432"
-
     volumes:
       - pg_data:/var/lib/postgresql/data
+    networks:
+      - kollects-network
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    container_name: kollects-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://api.kollects.tech/trpc
+    env_file:
+      - .env
+    networks:
+      - kollects-network
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    container_name: kollects-api
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env
+    networks:
+      - kollects-network
+    depends_on:
+      - postgresdb
+
+  caddy:
+    image: caddy:2.7-alpine
+    restart: unless-stopped
+    container_name: kollects-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - kollects-network
+    depends_on:
+      - web
+      - api
 
 volumes:
   pg_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  kollects-network:
+    driver: bridge
