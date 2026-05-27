@@ -22,6 +22,8 @@ export const updateFormSchema = z.object({
   formId: uuidSchema,
   title: z.string().min(1).max(255).trim().optional(),
   description: z.string().max(2000).trim().optional(),
+  slug: z.string().max(255).trim().optional(),
+  themeId: z.string().max(255).optional(),
   visibility: z.enum(FORM_VISIBILITIES).optional(),
   coverImageUrl: z.string().url().optional().nullable(),
   metaTitle: z.string().max(60).trim().optional(),

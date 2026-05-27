@@ -30,6 +30,30 @@ export class FormService {
   }
 
   /**
+   * Retrieves a form by ID with all related fields and theme, validates ownership.
+   */
+  async getByIdWithFields(formId: string, userId: string) {
+    const form = await db.query.formsTable.findFirst({
+      where: eq(formsTable.id, formId),
+      with: {
+        fields: {
+          orderBy: (fields: any, { asc }: any) => [asc(fields.order)],
+        },
+        theme: true,
+      },
+    });
+
+    if (!form) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Form not found" });
+    }
+
+    assertNotDeleted(form);
+    assertOwnership(form, userId);
+
+    return form;
+  }
+
+  /**
    * Lists all non-deleted forms for a user.
    */
   async list(userId: string) {
@@ -105,12 +129,22 @@ export class FormService {
   }
 
   /**
-   * Updates basic form settings (title, description, slug, theme).
+   * Updates form settings (title, description, slug, theme, cover image, etc.).
    */
   async update(
     userId: string,
     formId: string,
-    data: { title?: string; description?: string; slug?: string; themeId?: string },
+    data: {
+      title?: string;
+      description?: string;
+      slug?: string;
+      themeId?: string;
+      coverImageUrl?: string | null;
+      metaTitle?: string;
+      metaDescription?: string;
+      visibility?: "public" | "unlisted" | "private";
+      settings?: Record<string, any>;
+    },
   ) {
     const form = await this.getById(formId, userId);
 

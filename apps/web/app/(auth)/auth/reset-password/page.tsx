@@ -13,7 +13,7 @@ import { toast } from "~/lib/toast";
 import { handleTrpcError } from "~/lib/api-error";
 import { resetPasswordClientSchema, type ResetPasswordClientInput } from "~/lib/schemas-extra";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -137,5 +137,13 @@ export default function ResetPasswordPage() {
         <Link href="/login">&larr; Back to Login</Link>
       </Button>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <React.Suspense fallback={<div className="text-sm text-muted-foreground">Loading...</div>}>
+      <ResetPasswordContent />
+    </React.Suspense>
   );
 }

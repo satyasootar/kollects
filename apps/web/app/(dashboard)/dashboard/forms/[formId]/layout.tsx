@@ -8,7 +8,7 @@ import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Spinner } from "~/components/ui/spinner";
 import { StatusBadge } from "~/components/chrome";
-import { ArrowLeft, Check, MoreHorizontal, Share2, Eye } from "lucide-react";
+import { ArrowLeft, Check, MoreHorizontal, Share2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,11 +37,30 @@ import { ShareModal } from "~/components/form-builder/share-modal";
 import { cn } from "~/lib/utils";
 
 const STEPS = [
-  { id: "build", label: "Build", path: "/fields" },
+  { id: "build", label: "Editor", path: "/fields" },
   { id: "design", label: "Design", path: "/theme" },
   { id: "preview", label: "Preview", path: "/preview" },
 ] as const;
 
+// ─── Form Data Context ─────────────────────────────────────────────────────────
+// Shares loaded form data with child pages to avoid redundant queries
+interface FormContextValue {
+  form: any;
+  isLoading: boolean;
+  refetch: () => void;
+}
+
+const FormContext = React.createContext<FormContextValue>({
+  form: null,
+  isLoading: true,
+  refetch: () => {},
+});
+
+export function useFormContext() {
+  return React.useContext(FormContext);
+}
+
+// ─── Layout ─────────────────────────────────────────────────────────────────────
 export default function FormEditorLayout({
   children,
 }: {
@@ -52,7 +71,7 @@ export default function FormEditorLayout({
   const router = useRouter();
   const formId = params.formId;
 
-  const { data: form, isLoading } = trpc.form.getById.useQuery(
+  const { data: form, isLoading, refetch } = trpc.form.getByIdWithFields.useQuery(
     { formId },
     { enabled: !!formId },
   );
@@ -65,6 +84,7 @@ export default function FormEditorLayout({
 
   const updateMutation = trpc.form.update.useMutation({
     onSuccess: () => {
+      utils.form.getByIdWithFields.invalidate({ formId });
       utils.form.getById.invalidate({ formId });
       utils.form.list.invalidate();
     },
@@ -73,6 +93,7 @@ export default function FormEditorLayout({
 
   const publishMutation = trpc.form.publish.useMutation({
     onSuccess: () => {
+      utils.form.getByIdWithFields.invalidate({ formId });
       utils.form.getById.invalidate({ formId });
       utils.form.list.invalidate();
       toast.success("Form published!");
@@ -82,6 +103,7 @@ export default function FormEditorLayout({
 
   const unpublishMutation = trpc.form.unpublish.useMutation({
     onSuccess: () => {
+      utils.form.getByIdWithFields.invalidate({ formId });
       utils.form.getById.invalidate({ formId });
       utils.form.list.invalidate();
       toast.success("Form unpublished.");
@@ -182,206 +204,229 @@ export default function FormEditorLayout({
   const isDraft = formData.status === "draft";
   const isPublished = formData.status === "published";
   const isArchived = formData.status === "archived";
+  const isOnPreview = activeStepIndex === 2;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 h-full">
-      {/* Top bar */}
-      <div className="sticky top-0 z-40 h-14 flex items-center gap-4 px-6 border-b border-border bg-background/95 backdrop-blur shrink-0">
-        {/* Back button */}
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          onClick={() => router.push("/dashboard")}
-          className="shrink-0"
-          aria-label="Back to dashboard"
-        >
-          <ArrowLeft className="size-4" />
-        </Button>
+    <FormContext.Provider value={{ form, isLoading, refetch }}>
+      <div className="flex flex-col flex-1 min-h-0 h-full">
+        {/* Top bar */}
+        <div className="sticky top-0 z-40 h-14 flex items-center gap-4 px-6 border-b border-border bg-background/95 backdrop-blur shrink-0">
+          {/* Back button */}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => router.push("/dashboard")}
+            className="shrink-0"
+            aria-label="Back to dashboard"
+          >
+            <ArrowLeft className="size-4" />
+          </Button>
 
-        {/* Title */}
-        <div className="flex items-center gap-2 min-w-0">
-          {isEditingTitle ? (
-            <input
-              ref={titleInputRef}
-              value={titleDraft}
-              onChange={(e) => setTitleDraft(e.target.value)}
-              onBlur={saveTitle}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") saveTitle();
-                if (e.key === "Escape") cancelEditTitle();
-              }}
-              className="bg-transparent border-b border-foreground outline-none text-sm font-semibold w-48"
-              aria-label="Form title"
-            />
-          ) : (
-            <button
-              onClick={startEditingTitle}
-              className="text-sm font-semibold hover:underline cursor-text truncate max-w-[200px]"
-              title="Click to edit title"
-            >
-              {formData.title}
-              {updateMutation.isPending && (
-                <Spinner className="inline-block ml-1 size-3" />
-              )}
-            </button>
-          )}
-          <StatusBadge status={formData.status ?? "draft"} />
-        </div>
+          {/* Title */}
+          <div className="flex items-center gap-2 min-w-0">
+            {isEditingTitle ? (
+              <input
+                ref={titleInputRef}
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={saveTitle}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveTitle();
+                  if (e.key === "Escape") cancelEditTitle();
+                }}
+                className="bg-transparent border-b border-foreground outline-none text-sm font-semibold w-48"
+                aria-label="Form title"
+              />
+            ) : (
+              <button
+                onClick={startEditingTitle}
+                className="text-sm font-semibold hover:underline cursor-text truncate max-w-[200px]"
+                title="Click to edit title"
+              >
+                {formData.title}
+                {updateMutation.isPending && (
+                  <Spinner className="inline-block ml-1 size-3" />
+                )}
+              </button>
+            )}
+            <StatusBadge status={formData.status ?? "draft"} />
+          </div>
 
-        {/* Stepper — centered */}
-        <div className="flex-1 flex justify-center">
-          <nav className="flex items-center gap-1" aria-label="Form editor steps">
-            {STEPS.map((step, index) => {
-              const isActive = index === activeStepIndex;
-              const isCompleted = index < activeStepIndex;
-              return (
-                <React.Fragment key={step.id}>
-                  {index > 0 && (
-                    <div
+          {/* Stepper — centered */}
+          <div className="flex-1 flex justify-center">
+            <nav className="flex items-center gap-1" aria-label="Form editor steps">
+              {STEPS.map((step, index) => {
+                const isActive = index === activeStepIndex;
+                const isCompleted = index < activeStepIndex;
+                return (
+                  <React.Fragment key={step.id}>
+                    {index > 0 && (
+                      <div
+                        className={cn(
+                          "w-8 h-px mx-1",
+                          index <= activeStepIndex ? "bg-foreground" : "bg-border",
+                        )}
+                      />
+                    )}
+                    <button
+                      onClick={() => navigateToStep(index)}
                       className={cn(
-                        "w-8 h-px mx-1",
-                        index <= activeStepIndex ? "bg-foreground" : "bg-border",
+                        "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                        isActive && "bg-foreground text-background",
+                        isCompleted && "bg-tint-mint text-tint-mint-ink",
+                        !isActive && !isCompleted && "text-muted-foreground hover:text-foreground hover:bg-secondary",
                       )}
-                    />
-                  )}
-                  <button
-                    onClick={() => navigateToStep(index)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                      isActive && "bg-foreground text-background",
-                      isCompleted && "bg-tint-mint text-tint-mint-ink",
-                      !isActive && !isCompleted && "text-muted-foreground hover:text-foreground hover:bg-secondary",
-                    )}
-                  >
-                    {isCompleted ? (
-                      <Check className="size-3" />
-                    ) : (
-                      <span className={cn(
-                        "size-4 rounded-full flex items-center justify-center text-[10px] font-bold border",
-                        isActive ? "border-background/50" : "border-current",
-                      )}>
-                        {index + 1}
-                      </span>
-                    )}
-                    {step.label}
-                  </button>
-                </React.Fragment>
-              );
-            })}
-          </nav>
-        </div>
+                    >
+                      {isCompleted ? (
+                        <Check className="size-3" />
+                      ) : (
+                        <span className={cn(
+                          "size-4 rounded-full flex items-center justify-center text-[10px] font-bold border",
+                          isActive ? "border-background/50" : "border-current",
+                        )}>
+                          {index + 1}
+                        </span>
+                      )}
+                      {step.label}
+                    </button>
+                  </React.Fragment>
+                );
+              })}
+            </nav>
+          </div>
 
-        {/* Action bar */}
-        <div className="flex items-center gap-2 shrink-0">
-          {isDraft && (
-            <Button
-              variant="forest"
-              size="sm"
-              onClick={() => publishMutation.mutate({ formId })}
-              disabled={publishMutation.isPending}
-            >
-              {publishMutation.isPending ? "Publishing…" : "Publish"}
-            </Button>
-          )}
-          {isPublished && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => unpublishMutation.mutate({ formId })}
-              disabled={unpublishMutation.isPending}
-            >
-              Unpublish
-            </Button>
-          )}
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
+          {/* Action bar */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Preview step shows Save Draft + Publish */}
+            {isOnPreview && (
+              <>
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={isDraft}
                   onClick={() => {
-                    if (!isDraft) setShowShareModal(true);
+                    // Save as draft — just ensure status stays draft
+                    updateMutation.mutate({ formId }, {
+                      onSuccess: () => toast.success("Draft saved!"),
+                    });
                   }}
+                  disabled={updateMutation.isPending}
                 >
-                  <Share2 className="size-4 mr-1" />
-                  Share
+                  {updateMutation.isPending ? "Saving…" : "Save Draft"}
                 </Button>
-              </TooltipTrigger>
-              {isDraft && (
-                <TooltipContent>
-                  Publish this form before sharing.
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
+                {isDraft && (
+                  <Button
+                    variant="forest"
+                    size="sm"
+                    onClick={() => publishMutation.mutate({ formId })}
+                    disabled={publishMutation.isPending}
+                  >
+                    {publishMutation.isPending ? "Publishing…" : "Publish"}
+                  </Button>
+                )}
+                {isPublished && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => unpublishMutation.mutate({ formId })}
+                    disabled={unpublishMutation.isPending}
+                  >
+                    Unpublish
+                  </Button>
+                )}
+              </>
+            )}
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm">
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => cloneMutation.mutate({ formId })}
-              >
-                Duplicate
-              </DropdownMenuItem>
-              {!isArchived && (
+            {/* Non-preview steps don't show publish/draft — child pages handle Save & Continue */}
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isDraft}
+                    onClick={() => {
+                      if (!isDraft) setShowShareModal(true);
+                    }}
+                  >
+                    <Share2 className="size-4 mr-1" />
+                    Share
+                  </Button>
+                </TooltipTrigger>
+                {isDraft && (
+                  <TooltipContent>
+                    Publish this form before sharing.
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm">
+                  <MoreHorizontal className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => archiveMutation.mutate({ formId })}
+                  onClick={() => cloneMutation.mutate({ formId })}
                 >
-                  Archive
+                  Duplicate
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => setShowDeleteDialog(true)}
+                {!isArchived && (
+                  <DropdownMenuItem
+                    onClick={() => archiveMutation.mutate({ formId })}
+                  >
+                    Archive
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-auto">{children}</div>
+
+        {/* Share modal */}
+        <ShareModal
+          open={showShareModal}
+          onOpenChange={setShowShareModal}
+          slug={formData.slug ?? ""}
+          status={formData.status ?? "draft"}
+          visibility={formData.visibility ?? "public"}
+        />
+
+        {/* Delete dialog */}
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Delete &ldquo;{formData.title}&rdquo;?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. All responses and analytics will be
+                permanently deleted.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-white hover:bg-destructive/90"
+                onClick={() => deleteMutation.mutate({ formId })}
               >
                 Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-auto">{children}</div>
-
-      {/* Share modal */}
-      <ShareModal
-        open={showShareModal}
-        onOpenChange={setShowShareModal}
-        slug={formData.slug ?? ""}
-        status={formData.status ?? "draft"}
-        visibility={formData.visibility ?? "public"}
-      />
-
-      {/* Delete dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Delete &ldquo;{formData.title}&rdquo;?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. All responses and analytics will be
-              permanently deleted.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
-              onClick={() => deleteMutation.mutate({ formId })}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+    </FormContext.Provider>
   );
 }

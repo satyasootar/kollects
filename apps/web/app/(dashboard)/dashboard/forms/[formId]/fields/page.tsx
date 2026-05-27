@@ -5,12 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { trpc } from "~/trpc/client";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Button } from "~/components/ui/button";
-import { Switch } from "~/components/ui/switch";
-import { Label } from "~/components/ui/label";
 import { FieldPalette } from "~/components/form-builder/field-palette";
 import { FormCanvas } from "~/components/form-builder/form-canvas";
 import { FieldSettings } from "~/components/form-builder/field-settings";
 import { useFormEditorStore } from "~/lib/stores/form-editor-store";
+import { useFormContext } from "../layout";
 import { toast } from "~/lib/toast";
 import { handleTrpcError } from "~/lib/api-error";
 import {
@@ -23,43 +22,44 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
-import type { FieldType } from "@repo/database/constants/field-types";
+import { ArrowRight, Save } from "lucide-react";
 
 export default function FieldsPage() {
   const params = useParams<{ formId: string }>();
   const router = useRouter();
   const formId = params.formId;
-
-  const { data: form, isLoading } = trpc.form.getById.useQuery(
-    { formId },
-    { enabled: !!formId },
-  );
+  const { form, isLoading, refetch } = useFormContext();
 
   const store = useFormEditorStore();
   const [showLeaveDialog, setShowLeaveDialog] = React.useState(false);
   const [pendingNavigation, setPendingNavigation] = React.useState<string | null>(null);
+  const [isSaving, setIsSaving] = React.useState(false);
 
-  // Initialize store from API data on first load
+  // Initialize store from API data on first load or when form data changes
   React.useEffect(() => {
     if (form && store.formId !== formId) {
       const formData = form as any;
-      store.setFormData(
+      store.setFormData({
         formId,
-        formData.title ?? "",
-        formData.description ?? "",
-        formData.fields ?? [],
-      );
+        title: formData.title ?? "",
+        description: formData.description ?? "",
+        fields: (formData.fields ?? []).map((f: any) => ({
+          id: f.id,
+          type: f.type,
+          label: f.label,
+          placeholder: f.placeholder ?? undefined,
+          helpText: f.helpText ?? undefined,
+          required: f.required ?? false,
+          pageNumber: f.pageNumber,
+          options: f.options ?? undefined,
+          validations: f.validations ?? undefined,
+          settings: f.settings ?? undefined,
+        })),
+        themeId: formData.themeId,
+        coverImageUrl: formData.coverImageUrl,
+      });
     }
   }, [form, formId]);
-
-  // Auto-save with debounce (10s interval when enabled)
-  React.useEffect(() => {
-    if (!store.autoSaveEnabled || !store.isDirty) return;
-    const timer = setTimeout(() => {
-      handleSave();
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, [store.autoSaveEnabled, store.isDirty, store.fields, store.title]);
 
   // Warn before leaving with unsaved changes
   React.useEffect(() => {
@@ -75,70 +75,86 @@ export default function FieldsPage() {
 
   // Save mutations
   const updateFormMutation = trpc.form.update.useMutation();
-  const createFieldMutation = trpc.field.create.useMutation();
-  const updateFieldMutation = trpc.field.update.useMutation();
-  const deleteFieldMutation = trpc.field.delete.useMutation();
-  const reorderFieldsMutation = trpc.field.reorder.useMutation();
-  const publishMutation = trpc.form.publish.useMutation();
+  const bulkSyncMutation = trpc.field.bulkSync.useMutation();
 
-  const handleSave = async () => {
-    if (!store.isDirty) return;
+  const handleSaveAndContinue = async () => {
+    setIsSaving(true);
     try {
-      // 1. Update form metadata
+      // 1. Update form title/description
       await updateFormMutation.mutateAsync({
         formId,
         title: store.title,
-        description: store.description,
+        description: store.description || undefined,
       });
 
-      // 2. Sync fields — for new fields (temp IDs), create them; for existing, update
-      for (const field of store.fields) {
-        if (field.id.startsWith("temp_")) {
-          await createFieldMutation.mutateAsync({
-            formId,
-            type: field.type,
-            label: field.label,
-            placeholder: field.placeholder,
-            helpText: field.helpText,
-            required: field.required,
-            options: field.options,
-            validations: field.validations,
-            settings: field.settings,
-          });
-        }
-      }
+      // 2. Bulk sync all fields
+      const fieldsToSync = store.fields.map((field) => ({
+        // Only send real DB IDs, not temp IDs
+        id: field.id.startsWith("temp_") ? undefined : field.id,
+        type: field.type,
+        label: field.label,
+        placeholder: field.placeholder,
+        helpText: field.helpText,
+        required: field.required,
+        pageNumber: field.pageNumber,
+        options: field.options,
+        validations: field.validations,
+        settings: field.settings,
+      }));
 
-      // 3. Reorder
-      const existingFieldIds = store.fields
-        .filter((f) => !f.id.startsWith("temp_"))
-        .map((f) => f.id);
-      if (existingFieldIds.length > 0) {
-        await reorderFieldsMutation.mutateAsync({ formId, fieldIds: existingFieldIds });
-      }
+      await bulkSyncMutation.mutateAsync({
+        formId,
+        fields: fieldsToSync,
+      });
 
       store.markSaved();
-      toast.success("Form saved.");
+      refetch(); // Refresh form data in context
+      toast.success("Form saved!");
+
+      // Navigate to theme designer
+      router.push(`/dashboard/forms/${formId}/theme`);
     } catch (err) {
       handleTrpcError(err);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handlePublish = async () => {
-    await handleSave();
+  const handleSaveDraft = async () => {
+    if (!store.isDirty) return;
+    setIsSaving(true);
     try {
-      await publishMutation.mutateAsync({ formId });
-      toast.success("Form published!");
+      await updateFormMutation.mutateAsync({
+        formId,
+        title: store.title,
+        description: store.description || undefined,
+      });
+
+      const fieldsToSync = store.fields.map((field) => ({
+        id: field.id.startsWith("temp_") ? undefined : field.id,
+        type: field.type,
+        label: field.label,
+        placeholder: field.placeholder,
+        helpText: field.helpText,
+        required: field.required,
+        pageNumber: field.pageNumber,
+        options: field.options,
+        validations: field.validations,
+        settings: field.settings,
+      }));
+
+      await bulkSyncMutation.mutateAsync({
+        formId,
+        fields: fieldsToSync,
+      });
+
+      store.markSaved();
+      refetch();
+      toast.success("Draft saved.");
     } catch (err) {
       handleTrpcError(err);
-    }
-  };
-
-  const handleNavigateAway = (path: string) => {
-    if (store.isDirty) {
-      setPendingNavigation(path);
-      setShowLeaveDialog(true);
-    } else {
-      router.push(path);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -164,29 +180,25 @@ export default function FieldsPage() {
               Unsaved changes
             </span>
           )}
-          <div className="flex items-center gap-2">
-            <Switch
-              id="auto-save"
-              checked={store.autoSaveEnabled}
-              onCheckedChange={store.toggleAutoSave}
-              className="scale-75"
-            />
-            <Label htmlFor="auto-save" className="text-xs text-muted-foreground cursor-pointer">
-              Auto-save
-            </Label>
-          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={handleSave}
-            disabled={!store.isDirty || updateFormMutation.isPending}
+            onClick={handleSaveDraft}
+            disabled={!store.isDirty || isSaving}
           >
-            {updateFormMutation.isPending ? "Saving…" : "Save Draft"}
+            <Save className="size-3.5 mr-1.5" />
+            {isSaving ? "Saving…" : "Save Draft"}
           </Button>
-          <Button variant="forest" size="sm" onClick={handlePublish}>
-            Publish
+          <Button
+            variant="forest"
+            size="sm"
+            onClick={handleSaveAndContinue}
+            disabled={isSaving}
+          >
+            {isSaving ? "Saving…" : "Save & Continue"}
+            <ArrowRight className="size-3.5 ml-1.5" />
           </Button>
         </div>
       </div>
@@ -226,7 +238,7 @@ export default function FieldsPage() {
               Leave without saving
             </AlertDialogCancel>
             <AlertDialogAction onClick={async () => {
-              await handleSave();
+              await handleSaveDraft();
               setShowLeaveDialog(false);
               if (pendingNavigation) router.push(pendingNavigation);
             }}>

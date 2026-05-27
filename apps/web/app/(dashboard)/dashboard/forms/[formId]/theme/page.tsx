@@ -1,26 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { trpc } from "~/trpc/client";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Skeleton } from "~/components/ui/skeleton";
-import { Slider } from "~/components/ui/slider";
-import { Switch } from "~/components/ui/switch";
 import { Badge } from "~/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import { EditorialCard } from "~/components/chrome";
-import {
-  FormThemeProvider,
   loadTheme,
   getRegisteredThemeIds,
 } from "~/components/form-themes";
@@ -30,41 +19,19 @@ import { handleTrpcError } from "~/lib/api-error";
 import { cn } from "~/lib/utils";
 import {
   Palette,
-  Type,
-  Square,
   Sparkles,
-  Image,
+  Image as ImageIcon,
   Check,
   Upload,
+  ArrowRight,
+  Save,
 } from "lucide-react";
+import { useFormEditorStore } from "~/lib/stores/form-editor-store";
+import { useFormContext } from "../layout";
+import { FormPreviewRenderer } from "~/components/form-builder/form-preview-renderer";
 
-// Import registration side-effect
 import "~/components/form-themes/themes/_register-all";
 
-// ─── Font options for custom theme ───
-const DISPLAY_FONTS = [
-  { label: "System Default", value: "system-ui, sans-serif" },
-  { label: "Recoleta / Fraunces", value: "'Fraunces', serif" },
-  { label: "Bangers (Comic)", value: "'Bangers', cursive" },
-  { label: "Orbitron (Tech)", value: "'Orbitron', sans-serif" },
-  { label: "Bebas Neue", value: "'Bebas Neue', sans-serif" },
-  { label: "Playfair Display", value: "'Playfair Display', serif" },
-  { label: "Cormorant Garamond", value: "'Cormorant Garamond', serif" },
-  { label: "Big Shoulders", value: "'Big Shoulders Display', sans-serif" },
-];
-
-const BODY_FONTS = [
-  { label: "System Default", value: "system-ui, sans-serif" },
-  { label: "Inter", value: "'Inter', sans-serif" },
-  { label: "DM Sans", value: "'DM Sans', sans-serif" },
-  { label: "Manrope", value: "'Manrope', sans-serif" },
-  { label: "Lora", value: "'Lora', serif" },
-  { label: "Comic Neue", value: "'Comic Neue', sans-serif" },
-  { label: "JetBrains Mono", value: "'JetBrains Mono', monospace" },
-  { label: "Source Sans 3", value: "'Source Sans 3', sans-serif" },
-];
-
-// ─── Category filter chips ───
 const CATEGORIES = [
   { id: "all", label: "All" },
   { id: "marvel", label: "Marvel" },
@@ -77,45 +44,88 @@ const CATEGORIES = [
 
 export default function ThemeDesignPage() {
   const params = useParams<{ formId: string }>();
+  const router = useRouter();
   const formId = params.formId;
 
+  const { form, isLoading: isFormLoading, refetch } = useFormContext();
+  const store = useFormEditorStore();
+
   const [themes, setThemes] = React.useState<ThemeConfig[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [themesLoading, setThemesLoading] = React.useState(true);
   const [activeCategory, setActiveCategory] = React.useState("all");
-  const [designMode, setDesignMode] = React.useState<"presets" | "customize">("presets");
+  const [isSaving, setIsSaving] = React.useState(false);
 
-  const { data: form } = trpc.form.getById.useQuery(
-    { formId },
-    { enabled: !!formId },
-  );
-  const utils = trpc.useUtils();
+  const updateFormMutation = trpc.form.update.useMutation();
 
-  const updateMutation = trpc.form.update.useMutation({
-    onSuccess: () => {
-      utils.form.getById.invalidate({ formId });
-      toast.success("Theme applied!");
-    },
-    onError: (err) => handleTrpcError(err),
-  });
-
+  // Load themes
   React.useEffect(() => {
     async function loadAll() {
       const ids = getRegisteredThemeIds();
       const loaded = await Promise.all(ids.map((id) => loadTheme(id)));
       setThemes(loaded);
-      setLoading(false);
+      setThemesLoading(false);
     }
     loadAll();
   }, []);
 
-  const currentThemeId = (form as any)?.themeId ?? "default-light";
+  // Initialize store from API data
+  React.useEffect(() => {
+    if (form && store.formId !== formId) {
+      const formData = form as any;
+      store.setFormData({
+        formId,
+        title: formData.title ?? "",
+        description: formData.description ?? "",
+        fields: formData.fields ?? [],
+        themeId: formData.themeId,
+        coverImageUrl: formData.coverImageUrl,
+      });
+    }
+  }, [form, formId]);
 
-  const filteredThemes =
-    activeCategory === "all"
-      ? themes
-      : themes.filter((t) => t.category === activeCategory);
+  const handleSaveAndContinue = async () => {
+    setIsSaving(true);
+    try {
+      await updateFormMutation.mutateAsync({
+        formId,
+        themeId: store.themeId ?? undefined,
+        coverImageUrl: store.coverImageUrl,
+      });
+      store.markSaved();
+      refetch();
+      toast.success("Design saved!");
+      router.push(`/dashboard/forms/${formId}/preview`);
+    } catch (err) {
+      handleTrpcError(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  if (loading) {
+  const handleSaveDraft = async () => {
+    if (!store.isDirty) return;
+    setIsSaving(true);
+    try {
+      await updateFormMutation.mutateAsync({
+        formId,
+        themeId: store.themeId ?? undefined,
+        coverImageUrl: store.coverImageUrl,
+      });
+      store.markSaved();
+      refetch();
+      toast.success("Draft saved.");
+    } catch (err) {
+      handleTrpcError(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const activeThemeConfig = React.useMemo(() => {
+    return themes.find((t) => t.id === store.themeId) ?? themes[0];
+  }, [themes, store.themeId]);
+
+  if (isFormLoading || themesLoading) {
     return (
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
@@ -125,96 +135,154 @@ export default function ThemeDesignPage() {
     );
   }
 
+  const filteredThemes =
+    activeCategory === "all"
+      ? themes
+      : themes.filter((t) => t.category === activeCategory);
+
   return (
-    <div className="flex h-full">
-      {/* Left panel — Theme selection / customization */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        {/* Mode toggle */}
+    <div className="flex flex-col h-[calc(100vh-8rem)]">
+      {/* Save bar */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background">
         <div className="flex items-center gap-3">
+          {store.isDirty && (
+            <span className="text-xs text-muted-foreground bg-tint-butter/60 px-2 py-0.5 rounded-full">
+              Unsaved changes
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
           <Button
-            variant={designMode === "presets" ? "forest" : "outline"}
+            variant="outline"
             size="sm"
-            onClick={() => setDesignMode("presets")}
+            onClick={handleSaveDraft}
+            disabled={!store.isDirty || isSaving}
           >
-            <Sparkles className="size-4 mr-1.5" />
-            Preset Themes
+            <Save className="size-3.5 mr-1.5" />
+            {isSaving ? "Saving…" : "Save Draft"}
           </Button>
           <Button
-            variant={designMode === "customize" ? "forest" : "outline"}
+            variant="forest"
             size="sm"
-            onClick={() => setDesignMode("customize")}
+            onClick={handleSaveAndContinue}
+            disabled={isSaving}
           >
-            <Palette className="size-4 mr-1.5" />
-            Customize
+            {isSaving ? "Saving…" : "Save & Continue"}
+            <ArrowRight className="size-3.5 ml-1.5" />
           </Button>
         </div>
-
-        {designMode === "presets" ? (
-          <>
-            {/* Category filter */}
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
-                    activeCategory === cat.id
-                      ? "bg-foreground text-background border-foreground"
-                      : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30",
-                  )}
-                >
-                  {cat.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Theme grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredThemes.map((theme) => (
-                <ThemeCard
-                  key={theme.id}
-                  theme={theme}
-                  isActive={currentThemeId === theme.id}
-                  isPending={updateMutation.isPending}
-                  onSelect={() =>
-                    updateMutation.mutate({ formId, themeId: theme.id } as any)
-                  }
-                />
-              ))}
-            </div>
-          </>
-        ) : (
-          <ThemeCustomizer formId={formId} currentThemeId={currentThemeId} />
-        )}
       </div>
 
-      {/* Right panel — Live preview */}
-      <div className="w-[400px] border-l border-border bg-secondary/30 p-6 overflow-y-auto hidden lg:block">
-        <div className="sticky top-0">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
-            Live Preview
-          </h3>
-          <ThemeLivePreview
-            themes={themes}
-            currentThemeId={currentThemeId}
-          />
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left panel — Theme selection */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <Tabs defaultValue="presets" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="presets" className="gap-1.5">
+                <Sparkles className="size-4" />
+                Themes
+              </TabsTrigger>
+              <TabsTrigger value="header" className="gap-1.5">
+                <ImageIcon className="size-4" />
+                Cover Image
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="presets" className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                      activeCategory === cat.id
+                        ? "bg-foreground text-background border-foreground"
+                        : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30",
+                    )}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredThemes.map((theme) => (
+                  <ThemeCard
+                    key={theme.id}
+                    theme={theme}
+                    isActive={store.themeId === theme.id || (!store.themeId && theme.id === themes[0]?.id)}
+                    onSelect={() => store.setThemeId(theme.id)}
+                  />
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="header" className="space-y-4">
+              <div className="max-w-md space-y-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block">Cover Image URL</Label>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Add a cover image that appears at the top of your form.
+                  </p>
+                  <Input 
+                    placeholder="https://example.com/image.jpg" 
+                    value={store.coverImageUrl || ""}
+                    onChange={(e) => store.setCoverImageUrl(e.target.value)}
+                  />
+                </div>
+                {store.coverImageUrl ? (
+                  <div className="relative rounded-xl overflow-hidden border border-border">
+                    <img src={store.coverImageUrl} alt="Header" className="w-full h-40 object-cover" />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => store.setCoverImageUrl(null)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-foreground/30 transition-colors cursor-pointer">
+                    <Upload className="size-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      Paste a URL above
+                    </p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Right panel — Live preview */}
+        <div className="w-[450px] border-l border-border bg-[#fafafa] p-6 overflow-y-auto hidden lg:block">
+          <div className="sticky top-0 space-y-4">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Live Preview
+            </h3>
+            <FormPreviewRenderer
+              fields={store.fields}
+              formTitle={store.title}
+              formDescription={store.description}
+              coverImageUrl={store.coverImageUrl}
+              themeConfig={activeThemeConfig}
+            />
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Theme Card ───
 function ThemeCard({
   theme,
   isActive,
-  isPending,
   onSelect,
 }: {
   theme: ThemeConfig;
   isActive: boolean;
-  isPending: boolean;
   onSelect: () => void;
 }) {
   return (
@@ -227,63 +295,58 @@ function ThemeCard({
       )}
       onClick={onSelect}
     >
-      {/* Active indicator */}
       {isActive && (
         <div className="absolute top-3 right-3 z-10 size-6 rounded-full bg-foreground text-background flex items-center justify-center">
           <Check className="size-3.5" />
         </div>
       )}
 
-      {/* Mini preview */}
       <div className="h-36 overflow-hidden">
-        <FormThemeProvider theme={theme}>
-          <div
-            className="h-full p-5 flex flex-col justify-center"
-            style={{ background: theme.colors.background }}
+        <div
+          className="h-full p-5 flex flex-col justify-center"
+          style={{ background: theme.colors.background }}
+        >
+          <p
+            style={{
+              color: theme.colors.foreground,
+              fontFamily: theme.fonts.display,
+              fontSize: "1.1rem",
+              fontWeight: theme.fonts.weights.display,
+              letterSpacing: theme.fonts.letterSpacing?.hero,
+              textTransform: theme.fonts.textTransform as any,
+            }}
           >
-            <p
+            What&apos;s your name?
+          </p>
+          <div
+            className="mt-3 h-9 rounded"
+            style={{
+              background: theme.colors.surface,
+              border: `${theme.shape.border.width}px ${theme.shape.border.style} ${theme.colors.border}`,
+              borderRadius: `${theme.shape.radius}px`,
+            }}
+          />
+          <div
+            className="mt-3 h-8 w-24 rounded flex items-center justify-center"
+            style={{
+              background: theme.colors.accent,
+              borderRadius: `${theme.shape.radius}px`,
+            }}
+          >
+            <span
               style={{
-                color: theme.colors.foreground,
-                fontFamily: theme.fonts.display,
-                fontSize: "1.1rem",
-                fontWeight: theme.fonts.weights.display,
-                letterSpacing: theme.fonts.letterSpacing?.hero,
-                textTransform: theme.fonts.textTransform as any,
+                color: theme.colors.accentForeground,
+                fontSize: "0.75rem",
+                fontFamily: theme.fonts.body,
+                fontWeight: 600,
               }}
             >
-              What&apos;s your name?
-            </p>
-            <div
-              className="mt-3 h-9 rounded"
-              style={{
-                background: theme.colors.surface,
-                border: `${theme.shape.border.width}px ${theme.shape.border.style} ${theme.colors.border}`,
-                borderRadius: `${theme.shape.radius}px`,
-              }}
-            />
-            <div
-              className="mt-3 h-8 w-24 rounded flex items-center justify-center"
-              style={{
-                background: theme.colors.accent,
-                borderRadius: `${theme.shape.radius}px`,
-              }}
-            >
-              <span
-                style={{
-                  color: theme.colors.accentForeground,
-                  fontSize: "0.75rem",
-                  fontFamily: theme.fonts.body,
-                  fontWeight: 600,
-                }}
-              >
-                Next →
-              </span>
-            </div>
+              Next →
+            </span>
           </div>
-        </FormThemeProvider>
+        </div>
       </div>
 
-      {/* Info */}
       <div className="p-4 flex items-center justify-between bg-card">
         <div>
           <h3 className="text-sm font-semibold">{theme.name}</h3>
@@ -294,7 +357,7 @@ function ThemeCard({
         <Button
           variant={isActive ? "outline" : "forest"}
           size="sm"
-          disabled={isActive || isPending}
+          disabled={isActive}
           onClick={(e) => {
             e.stopPropagation();
             onSelect();
@@ -306,479 +369,3 @@ function ThemeCard({
     </div>
   );
 }
-
-// ─── Theme Customizer ───
-function ThemeCustomizer({
-  formId,
-  currentThemeId,
-}: {
-  formId: string;
-  currentThemeId: string;
-}) {
-  const [colors, setColors] = React.useState({
-    background: "#ffffff",
-    surface: "#f9fafb",
-    foreground: "#111827",
-    accent: "#0d2e2a",
-    accentForeground: "#ffffff",
-    border: "#e5e7eb",
-  });
-  const [fonts, setFonts] = React.useState({
-    display: "system-ui, sans-serif",
-    body: "system-ui, sans-serif",
-  });
-  const [shape, setShape] = React.useState({
-    radius: 10,
-    borderWidth: 1,
-  });
-  const [headerImage, setHeaderImage] = React.useState<string | null>(null);
-
-  return (
-    <Tabs defaultValue="colors" className="space-y-4">
-      <TabsList className="grid grid-cols-4 w-full max-w-md">
-        <TabsTrigger value="colors" className="gap-1.5">
-          <Palette className="size-3.5" />
-          Colors
-        </TabsTrigger>
-        <TabsTrigger value="typography" className="gap-1.5">
-          <Type className="size-3.5" />
-          Fonts
-        </TabsTrigger>
-        <TabsTrigger value="shape" className="gap-1.5">
-          <Square className="size-3.5" />
-          Shape
-        </TabsTrigger>
-        <TabsTrigger value="header" className="gap-1.5">
-          <Image className="size-3.5" />
-          Header
-        </TabsTrigger>
-      </TabsList>
-
-      {/* Colors tab */}
-      <TabsContent value="colors" className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <ColorPicker
-            label="Background"
-            value={colors.background}
-            onChange={(v) => setColors((c) => ({ ...c, background: v }))}
-          />
-          <ColorPicker
-            label="Surface"
-            value={colors.surface}
-            onChange={(v) => setColors((c) => ({ ...c, surface: v }))}
-          />
-          <ColorPicker
-            label="Text"
-            value={colors.foreground}
-            onChange={(v) => setColors((c) => ({ ...c, foreground: v }))}
-          />
-          <ColorPicker
-            label="Accent"
-            value={colors.accent}
-            onChange={(v) => setColors((c) => ({ ...c, accent: v }))}
-          />
-          <ColorPicker
-            label="Accent Text"
-            value={colors.accentForeground}
-            onChange={(v) => setColors((c) => ({ ...c, accentForeground: v }))}
-          />
-          <ColorPicker
-            label="Border"
-            value={colors.border}
-            onChange={(v) => setColors((c) => ({ ...c, border: v }))}
-          />
-        </div>
-
-        {/* Quick presets */}
-        <div>
-          <Label className="text-xs text-muted-foreground mb-2 block">Quick Presets</Label>
-          <div className="flex gap-2 flex-wrap">
-            {COLOR_PRESETS.map((preset) => (
-              <button
-                key={preset.name}
-                onClick={() => setColors(preset.colors)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border hover:border-foreground/30 transition-colors"
-                title={preset.name}
-              >
-                <div className="flex -space-x-1">
-                  <div className="size-4 rounded-full border border-white" style={{ background: preset.colors.background }} />
-                  <div className="size-4 rounded-full border border-white" style={{ background: preset.colors.accent }} />
-                  <div className="size-4 rounded-full border border-white" style={{ background: preset.colors.foreground }} />
-                </div>
-                <span className="text-xs font-medium">{preset.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </TabsContent>
-
-      {/* Typography tab */}
-      <TabsContent value="typography" className="space-y-6">
-        <div className="space-y-4">
-          <div>
-            <Label className="text-xs text-muted-foreground mb-2 block">Display Font</Label>
-            <Select value={fonts.display} onValueChange={(v) => setFonts((f) => ({ ...f, display: v }))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DISPLAY_FONTS.map((f) => (
-                  <SelectItem key={f.value} value={f.value}>
-                    <span style={{ fontFamily: f.value }}>{f.label}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground mb-2 block">Body Font</Label>
-            <Select value={fonts.body} onValueChange={(v) => setFonts((f) => ({ ...f, body: v }))}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {BODY_FONTS.map((f) => (
-                  <SelectItem key={f.value} value={f.value}>
-                    <span style={{ fontFamily: f.value }}>{f.label}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Font preview */}
-        <div className="p-4 rounded-xl border border-border bg-card">
-          <p style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: "1.5rem" }}>
-            The quick brown fox
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground" style={{ fontFamily: fonts.body }}>
-            jumps over the lazy dog. This is how your form text will look.
-          </p>
-        </div>
-      </TabsContent>
-
-      {/* Shape tab */}
-      <TabsContent value="shape" className="space-y-6">
-        <div className="space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label className="text-xs text-muted-foreground">Border Radius</Label>
-              <span className="text-xs font-mono text-muted-foreground">{shape.radius}px</span>
-            </div>
-            <Slider
-              value={[shape.radius]}
-              onValueChange={([v]) => setShape((s) => ({ ...s, radius: v ?? 0 }))}
-              min={0}
-              max={32}
-              step={1}
-            />
-          </div>
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label className="text-xs text-muted-foreground">Border Width</Label>
-              <span className="text-xs font-mono text-muted-foreground">{shape.borderWidth}px</span>
-            </div>
-            <Slider
-              value={[shape.borderWidth]}
-              onValueChange={([v]) => setShape((s) => ({ ...s, borderWidth: v ?? 1 }))}
-              min={0}
-              max={4}
-              step={0.5}
-            />
-          </div>
-        </div>
-
-        {/* Shape preview */}
-        <div className="p-4 rounded-xl border border-border bg-card">
-          <div
-            className="h-10 w-full"
-            style={{
-              background: colors.surface,
-              border: `${shape.borderWidth}px solid ${colors.border}`,
-              borderRadius: `${shape.radius}px`,
-            }}
-          />
-          <div
-            className="mt-3 h-9 w-28"
-            style={{
-              background: colors.accent,
-              borderRadius: `${shape.radius}px`,
-            }}
-          />
-        </div>
-      </TabsContent>
-
-      {/* Header image tab */}
-      <TabsContent value="header" className="space-y-6">
-        <div className="space-y-4">
-          <div>
-            <Label className="text-xs text-muted-foreground mb-2 block">Header Image</Label>
-            <p className="text-xs text-muted-foreground mb-3">
-              Add a cover image that appears at the top of your form.
-            </p>
-            {headerImage ? (
-              <div className="relative rounded-xl overflow-hidden border border-border">
-                <img src={headerImage} alt="Header" className="w-full h-40 object-cover" />
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="absolute top-2 right-2"
-                  onClick={() => setHeaderImage(null)}
-                >
-                  Remove
-                </Button>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-foreground/30 transition-colors cursor-pointer">
-                <Upload className="size-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Click or drag to upload
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  PNG, JPG up to 5MB. Recommended: 1200×400
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </TabsContent>
-
-      {/* Apply button */}
-      <div className="pt-4 border-t border-border">
-        <Button variant="forest" className="w-full">
-          Apply Custom Theme
-        </Button>
-      </div>
-    </Tabs>
-  );
-}
-
-// ─── Color Picker ───
-function ColorPicker({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      <div className="flex items-center gap-2">
-        <div className="relative">
-          <input
-            type="color"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-          />
-          <div
-            className="size-8 rounded-lg border border-border shadow-sm cursor-pointer"
-            style={{ background: value }}
-          />
-        </div>
-        <Input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 text-xs font-mono flex-1"
-          placeholder="#000000"
-        />
-      </div>
-    </div>
-  );
-}
-
-// ─── Live Preview ───
-function ThemeLivePreview({
-  themes,
-  currentThemeId,
-}: {
-  themes: ThemeConfig[];
-  currentThemeId: string;
-}) {
-  const activeTheme = themes.find((t) => t.id === currentThemeId) ?? themes[0];
-  if (!activeTheme) return null;
-
-  return (
-    <FormThemeProvider theme={activeTheme}>
-      <div
-        className="rounded-2xl overflow-hidden border border-border shadow-sm"
-        style={{ background: activeTheme.colors.background }}
-      >
-        <div className="p-6 space-y-5">
-          {/* Form title */}
-          <div>
-            <h2
-              style={{
-                color: activeTheme.colors.foreground,
-                fontFamily: activeTheme.fonts.display,
-                fontWeight: activeTheme.fonts.weights.display,
-                fontSize: `${activeTheme.fonts.scale.hero * 0.7}rem`,
-              }}
-            >
-              Contact Form
-            </h2>
-            <p
-              className="mt-1"
-              style={{
-                color: activeTheme.colors.foregroundSoft,
-                fontFamily: activeTheme.fonts.body,
-                fontSize: `${activeTheme.fonts.scale.helper}rem`,
-              }}
-            >
-              We&apos;d love to hear from you
-            </p>
-          </div>
-
-          {/* Sample fields */}
-          <div className="space-y-4">
-            <PreviewField
-              theme={activeTheme}
-              label="Your name"
-              placeholder="John Doe"
-            />
-            <PreviewField
-              theme={activeTheme}
-              label="Email address"
-              placeholder="john@example.com"
-            />
-            <PreviewField
-              theme={activeTheme}
-              label="Message"
-              placeholder="Tell us more..."
-              isTextarea
-            />
-          </div>
-
-          {/* Submit button */}
-          <button
-            className="px-5 py-2.5 font-medium text-sm"
-            style={{
-              background: activeTheme.colors.accent,
-              color: activeTheme.colors.accentForeground,
-              borderRadius: `${activeTheme.shape.radius}px`,
-              fontFamily: activeTheme.fonts.body,
-            }}
-          >
-            Submit
-          </button>
-        </div>
-      </div>
-    </FormThemeProvider>
-  );
-}
-
-function PreviewField({
-  theme,
-  label,
-  placeholder,
-  isTextarea,
-}: {
-  theme: ThemeConfig;
-  label: string;
-  placeholder: string;
-  isTextarea?: boolean;
-}) {
-  return (
-    <div>
-      <label
-        className="block mb-1.5"
-        style={{
-          color: theme.colors.foreground,
-          fontFamily: theme.fonts.body,
-          fontSize: `${theme.fonts.scale.body * 0.85}rem`,
-          fontWeight: 500,
-        }}
-      >
-        {label}
-      </label>
-      <div
-        style={{
-          background: theme.colors.surface,
-          border: `${theme.shape.border.width}px ${theme.shape.border.style} ${theme.colors.border}`,
-          borderRadius: `${theme.shape.radius}px`,
-          height: isTextarea ? "80px" : "40px",
-          padding: "8px 12px",
-          fontFamily: theme.fonts.body,
-          fontSize: `${theme.fonts.scale.body * 0.8}rem`,
-          color: theme.colors.foregroundSoft,
-        }}
-      >
-        {placeholder}
-      </div>
-    </div>
-  );
-}
-
-// ─── Color presets ───
-const COLOR_PRESETS = [
-  {
-    name: "Clean",
-    colors: {
-      background: "#ffffff",
-      surface: "#f9fafb",
-      foreground: "#111827",
-      accent: "#0d2e2a",
-      accentForeground: "#ffffff",
-      border: "#e5e7eb",
-    },
-  },
-  {
-    name: "Dark",
-    colors: {
-      background: "#0a0a0a",
-      surface: "#171717",
-      foreground: "#fafafa",
-      accent: "#3b82f6",
-      accentForeground: "#ffffff",
-      border: "#262626",
-    },
-  },
-  {
-    name: "Ocean",
-    colors: {
-      background: "#0f172a",
-      surface: "#1e293b",
-      foreground: "#f1f5f9",
-      accent: "#38bdf8",
-      accentForeground: "#0f172a",
-      border: "#334155",
-    },
-  },
-  {
-    name: "Warm",
-    colors: {
-      background: "#fffbeb",
-      surface: "#ffffff",
-      foreground: "#1c1917",
-      accent: "#d97706",
-      accentForeground: "#ffffff",
-      border: "#fde68a",
-    },
-  },
-  {
-    name: "Rose",
-    colors: {
-      background: "#fff1f2",
-      surface: "#ffffff",
-      foreground: "#1f2937",
-      accent: "#e11d48",
-      accentForeground: "#ffffff",
-      border: "#fecdd3",
-    },
-  },
-  {
-    name: "Forest",
-    colors: {
-      background: "#0f1a14",
-      surface: "#15241b",
-      foreground: "#e8f0e2",
-      accent: "#82c272",
-      accentForeground: "#0f1a14",
-      border: "#2d4a35",
-    },
-  },
-];

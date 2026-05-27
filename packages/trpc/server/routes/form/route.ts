@@ -98,4 +98,14 @@ export const formRouter = router({
     .query(async ({ ctx, input }) => {
       return formService.getById(input.formId, ctx.user.id);
     }),
+
+  getByIdWithFields: protectedProcedure
+    .meta({
+      openapi: { method: "GET", path: "/forms/{formId}/full", tags: ["Forms"], summary: "Get form with fields and theme", description: "Returns full form details with all fields (sorted by order) and theme configuration. Used by the form editor, theme designer, and preview pages." },
+    })
+    .input(z.object({ formId: z.string().uuid() }))
+    .output(z.any())
+    .query(async ({ ctx, input }) => {
+      return formService.getByIdWithFields(input.formId, ctx.user.id);
+    }),
 });

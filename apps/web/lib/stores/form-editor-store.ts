@@ -26,19 +26,31 @@ interface FormEditorState {
   fields: EditorField[];
   selectedFieldId: string | null;
 
+  // Theme/design state
+  themeId: string | null;
+  coverImageUrl: string | null;
+
   // Dirty tracking
   isDirty: boolean;
   lastSavedAt: number | null;
 
-  // Auto-save
-  autoSaveEnabled: boolean;
-
-  // Actions
-  setFormData: (formId: string, title: string, description: string, fields: EditorField[]) => void;
+  // Actions — Form data
+  setFormData: (data: {
+    formId: string;
+    title: string;
+    description: string;
+    fields: EditorField[];
+    themeId?: string | null;
+    coverImageUrl?: string | null;
+  }) => void;
   setTitle: (title: string) => void;
   setDescription: (description: string) => void;
 
-  // Field actions (all local, no API calls)
+  // Actions — Theme/design
+  setThemeId: (themeId: string | null) => void;
+  setCoverImageUrl: (url: string | null) => void;
+
+  // Actions — Fields (all local, no API calls)
   addField: (type: FieldType) => void;
   updateField: (fieldId: string, data: Partial<EditorField>) => void;
   deleteField: (fieldId: string) => void;
@@ -48,7 +60,6 @@ interface FormEditorState {
   // Save state
   markSaved: () => void;
   markDirty: () => void;
-  toggleAutoSave: () => void;
 
   // Reset
   reset: () => void;
@@ -67,15 +78,28 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
   description: "",
   fields: [],
   selectedFieldId: null,
+  themeId: null,
+  coverImageUrl: null,
   isDirty: false,
   lastSavedAt: null,
-  autoSaveEnabled: false,
 
-  setFormData: (formId, title, description, fields) =>
-    set({ formId, title, description, fields, isDirty: false, selectedFieldId: null }),
+  setFormData: (data) =>
+    set({
+      formId: data.formId,
+      title: data.title,
+      description: data.description,
+      fields: data.fields,
+      themeId: data.themeId ?? null,
+      coverImageUrl: data.coverImageUrl ?? null,
+      isDirty: false,
+      selectedFieldId: null,
+    }),
 
   setTitle: (title) => set({ title, isDirty: true }),
   setDescription: (description) => set({ description, isDirty: true }),
+
+  setThemeId: (themeId) => set({ themeId, isDirty: true }),
+  setCoverImageUrl: (coverImageUrl) => set({ coverImageUrl, isDirty: true }),
 
   addField: (type) => {
     const newField: EditorField = {
@@ -115,7 +139,6 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
 
   markSaved: () => set({ isDirty: false, lastSavedAt: Date.now() }),
   markDirty: () => set({ isDirty: true }),
-  toggleAutoSave: () => set((state) => ({ autoSaveEnabled: !state.autoSaveEnabled })),
 
   reset: () =>
     set({
@@ -124,6 +147,8 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
       description: "",
       fields: [],
       selectedFieldId: null,
+      themeId: null,
+      coverImageUrl: null,
       isDirty: false,
       lastSavedAt: null,
     }),

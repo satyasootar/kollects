@@ -30,7 +30,7 @@ export const formsTable = pgTable(
     creatorId: uuid("creator_id")
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
-    themeId: uuid("theme_id").references(() => themesTable.id, { onDelete: "set null" }),
+    themeId: varchar("theme_id", { length: 255 }),
 
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
@@ -70,10 +70,6 @@ export const formsRelations = relations(formsTable, ({ one, many }) => ({
   creator: one(usersTable, {
     fields: [formsTable.creatorId],
     references: [usersTable.id],
-  }),
-  theme: one(themesTable, {
-    fields: [formsTable.themeId],
-    references: [themesTable.id],
   }),
   fields: many(formFieldsTable),
   responses: many(formResponsesTable),

@@ -1,4 +1,4 @@
-import { db, eq, sql, and } from "@repo/database";
+import { db, eq, sql, and, asc, inArray } from "@repo/database";
 import { formsTable } from "@repo/database/models/form";
 import { formFieldsTable } from "@repo/database/models/form-field";
 import { TRPCError } from "@trpc/server";
@@ -164,6 +164,121 @@ export class FieldService {
             .where(and(eq(formFieldsTable.id, id), eq(formFieldsTable.formId, formId)));
         }
       }
+    });
+  }
+
+  /**
+   * Lists all fields for a form, sorted by order.
+   */
+  async listByFormId(userId: string, formId: string) {
+    await this.getFormWithOwnership(formId, userId);
+
+    return db
+      .select()
+      .from(formFieldsTable)
+      .where(eq(formFieldsTable.formId, formId))
+      .orderBy(asc(formFieldsTable.order));
+  }
+
+  /**
+   * Bulk syncs fields for a form: creates new, updates existing, deletes removed.
+   * Accepts the full desired field list — anything not in the list is deleted.
+   */
+  async bulkSync(
+    userId: string,
+    formId: string,
+    fields: Array<{
+      id?: string;
+      type: "short_text" | "long_text" | "email" | "number" | "date" | "single_select" | "multi_select" | "checkbox" | "rating" | "url" | "phone";
+      label: string;
+      helpText?: string;
+      placeholder?: string;
+      required?: boolean;
+      pageNumber?: number;
+      options?: any[];
+      validations?: any;
+      settings?: any;
+    }>,
+  ) {
+    await this.getFormWithOwnership(formId, userId);
+
+    return db.transaction(async (tx) => {
+      // 1. Get existing field IDs for this form
+      const existingFields = await tx
+        .select({ id: formFieldsTable.id })
+        .from(formFieldsTable)
+        .where(eq(formFieldsTable.formId, formId));
+
+      const existingIds = new Set(existingFields.map((f) => f.id));
+
+      // 2. Determine which incoming fields are updates vs creates
+      const toCreate: typeof fields = [];
+      const toUpdate: (typeof fields[number] & { id: string })[] = [];
+      const incomingIds = new Set<string>();
+
+      for (const field of fields) {
+        if (field.id && existingIds.has(field.id)) {
+          toUpdate.push(field as typeof fields[number] & { id: string });
+          incomingIds.add(field.id);
+        } else {
+          toCreate.push(field);
+        }
+      }
+
+      // 3. Delete fields not in the incoming list
+      const toDeleteIds = [...existingIds].filter((id) => !incomingIds.has(id));
+      if (toDeleteIds.length > 0) {
+        await tx
+          .delete(formFieldsTable)
+          .where(and(eq(formFieldsTable.formId, formId), inArray(formFieldsTable.id, toDeleteIds)));
+      }
+
+      // 4. Update existing fields
+      for (let i = 0; i < toUpdate.length; i++) {
+        const field = toUpdate[i]!;
+        await tx
+          .update(formFieldsTable)
+          .set({
+            type: field.type,
+            label: field.label,
+            helpText: field.helpText ?? null,
+            placeholder: field.placeholder ?? null,
+            required: field.required ?? false,
+            pageNumber: field.pageNumber ?? 1,
+            options: field.options ?? null,
+            validations: field.validations ?? null,
+            settings: field.settings ?? null,
+            order: fields.indexOf(field),
+            updatedAt: new Date(),
+          })
+          .where(eq(formFieldsTable.id, field.id));
+      }
+
+      // 5. Create new fields
+      if (toCreate.length > 0) {
+        const newFields = toCreate.map((field, idx) => ({
+          id: crypto.randomUUID(),
+          formId,
+          type: field.type,
+          label: field.label,
+          helpText: field.helpText ?? null,
+          placeholder: field.placeholder ?? null,
+          required: field.required ?? false,
+          pageNumber: field.pageNumber ?? 1,
+          options: field.options ?? null,
+          validations: field.validations ?? null,
+          settings: field.settings ?? null,
+          order: toUpdate.length + idx,
+        }));
+        await tx.insert(formFieldsTable).values(newFields);
+      }
+
+      // 6. Return all fields in order
+      return tx
+        .select()
+        .from(formFieldsTable)
+        .where(eq(formFieldsTable.formId, formId))
+        .orderBy(asc(formFieldsTable.order));
     });
   }
 }

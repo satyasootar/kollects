@@ -45,6 +45,14 @@ export default function DashboardPage() {
   const { data: forms, isLoading } = trpc.form.list.useQuery(undefined);
   const utils = trpc.useUtils();
 
+  const createMutation = trpc.form.create.useMutation({
+    onSuccess: (data: any) => {
+      utils.form.list.invalidate();
+      if (data?.id) router.push(`/dashboard/forms/${data.id}/fields`);
+    },
+    onError: () => toast.error("Failed to create form."),
+  });
+
   const publishMutation = trpc.form.publish.useMutation({
     onSuccess: () => {
       utils.form.list.invalidate();
@@ -123,11 +131,13 @@ export default function DashboardPage() {
             place.
           </h1>
         </div>
-        <Button variant="forest" asChild>
-          <Link href="/dashboard/forms/new" className="flex items-center gap-2">
-            <Doodle name="sparkle" className="size-4" />
-            Create form
-          </Link>
+        <Button 
+          variant="forest" 
+          onClick={() => createMutation.mutate({ title: "Untitled Form" })}
+          disabled={createMutation.isPending}
+        >
+          <Doodle name="sparkle" className="size-4 mr-2" />
+          {createMutation.isPending ? "Creating…" : "Create form"}
         </Button>
       </div>
 
