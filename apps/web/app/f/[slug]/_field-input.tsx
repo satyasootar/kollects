@@ -94,6 +94,60 @@ export function FieldInput({ field, answers, setAnswers, errors, theme }: FieldI
         </div>
       );
     }
+    case "date":
+      return (
+        <input
+          id={`input-${field.id}`}
+          type="date"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          style={inputStyle}
+          aria-invalid={!!errors[field.id]}
+        />
+      );
+    case "single_select":
+      return (
+        <select
+          id={`input-${field.id}`}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          style={inputStyle}
+          aria-invalid={!!errors[field.id]}
+        >
+          <option value="" disabled>{field.placeholder || "Select an option..."}</option>
+          {(field.options || []).map((opt: any, i: number) => (
+            <option key={i} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      );
+    case "multi_select": {
+      const selectedValues = Array.isArray(value) ? value : [];
+      return (
+        <div className="space-y-3 mt-2">
+          {(field.options || []).map((opt: any, i: number) => (
+            <label key={i} className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedValues.includes(opt.value)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    onChange([...selectedValues, opt.value]);
+                  } else {
+                    onChange(selectedValues.filter((v: string) => v !== opt.value));
+                  }
+                }}
+                className="size-5 cursor-pointer"
+              />
+              <span style={{ fontSize: `${theme.fonts.scale.body}rem`, color: theme.colors.foreground }}>
+                {opt.label}
+              </span>
+            </label>
+          ))}
+        </div>
+      );
+    }
     default:
       return (
         <input

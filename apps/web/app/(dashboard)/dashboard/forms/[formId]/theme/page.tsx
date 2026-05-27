@@ -9,6 +9,7 @@ import { Label } from "~/components/ui/label";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Badge } from "~/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import {
   loadTheme,
   getRegisteredThemeIds,
@@ -32,6 +33,19 @@ import { FormPreviewRenderer } from "~/components/form-builder/form-preview-rend
 import { env } from "~/env.js";
 
 import "~/components/form-themes/themes/_register-all";
+
+const FONT_OPTIONS = [
+  { value: "system-ui, sans-serif", label: "System Default" },
+  { value: "'Inter', sans-serif", label: "Inter" },
+  { value: "'Roboto', sans-serif", label: "Roboto" },
+  { value: "'Open Sans', sans-serif", label: "Open Sans" },
+  { value: "'Lato', sans-serif", label: "Lato" },
+  { value: "'Montserrat', sans-serif", label: "Montserrat" },
+  { value: "'Playfair Display', serif", label: "Playfair Display" },
+  { value: "'Merriweather', serif", label: "Merriweather" },
+  { value: "'Fira Code', monospace", label: "Fira Code" },
+  { value: "'Comic Sans MS', cursive", label: "Comic Sans MS" },
+];
 
 const CATEGORIES = [
   { id: "all", label: "All" },
@@ -108,6 +122,7 @@ export default function ThemeDesignPage() {
         fields: formData.fields ?? [],
         themeId: formData.themeId,
         coverImageUrl: formData.coverImageUrl,
+        customTheme: formData.settings?.customTheme,
       });
     }
   }, [form, formId]);
@@ -115,10 +130,16 @@ export default function ThemeDesignPage() {
   const handleSaveAndContinue = async () => {
     setIsSaving(true);
     try {
+      const settings = (form as any)?.settings || {};
+      if (store.themeId === "custom" && store.customTheme) {
+        settings.customTheme = store.customTheme;
+      }
+
       await updateFormMutation.mutateAsync({
         formId,
         themeId: store.themeId ?? undefined,
         coverImageUrl: store.coverImageUrl,
+        settings,
       });
       store.markSaved();
       refetch();
@@ -135,10 +156,16 @@ export default function ThemeDesignPage() {
     if (!store.isDirty) return;
     setIsSaving(true);
     try {
+      const settings = (form as any)?.settings || {};
+      if (store.themeId === "custom" && store.customTheme) {
+        settings.customTheme = store.customTheme;
+      }
+
       await updateFormMutation.mutateAsync({
         formId,
         themeId: store.themeId ?? undefined,
         coverImageUrl: store.coverImageUrl,
+        settings,
       });
       store.markSaved();
       refetch();
@@ -151,8 +178,22 @@ export default function ThemeDesignPage() {
   };
 
   const activeThemeConfig = React.useMemo(() => {
+    if (store.themeId === "custom" && store.customTheme) {
+      const custom = store.customTheme;
+      const base = themes.find((t) => t.id === "default-light") || themes[0];
+      if (!base) return custom;
+      return {
+        ...base,
+        ...custom,
+        colors: { ...base.colors, ...(custom.colors || {}) },
+        fonts: { ...base.fonts, ...(custom.fonts || {}) },
+        shape: { ...base.shape, ...(custom.shape || {}) },
+        motion: { ...base.motion, ...(custom.motion || {}) },
+        chrome: { ...base.chrome, ...(custom.chrome || {}) },
+      };
+    }
     return themes.find((t) => t.id === store.themeId) ?? themes[0];
-  }, [themes, store.themeId]);
+  }, [themes, store.themeId, store.customTheme]);
 
   if (isFormLoading || themesLoading) {
     return (
@@ -214,6 +255,10 @@ export default function ThemeDesignPage() {
               <TabsTrigger value="header" className="gap-1.5">
                 <ImageIcon className="size-4" />
                 Cover Image
+              </TabsTrigger>
+              <TabsTrigger value="customize" className="gap-1.5">
+                <Palette className="size-4" />
+                Customize
               </TabsTrigger>
             </TabsList>
 
@@ -288,6 +333,149 @@ export default function ThemeDesignPage() {
                   </Label>
                 )}
               </div>
+            </TabsContent>
+
+            <TabsContent value="customize" className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold">Colors</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs">Background</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        type="color"
+                        className="w-12 h-8 p-1"
+                        value={store.customTheme?.colors?.background || activeThemeConfig.colors.background}
+                        onChange={(e) => store.updateCustomTheme({ colors: { background: e.target.value } })}
+                      />
+                      <Input
+                        className="flex-1 font-mono text-xs h-8"
+                        value={store.customTheme?.colors?.background || activeThemeConfig.colors.background}
+                        onChange={(e) => store.updateCustomTheme({ colors: { background: e.target.value } })}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Foreground (Text)</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        type="color"
+                        className="w-12 h-8 p-1"
+                        value={store.customTheme?.colors?.foreground || activeThemeConfig.colors.foreground}
+                        onChange={(e) => store.updateCustomTheme({ colors: { foreground: e.target.value } })}
+                      />
+                      <Input
+                        className="flex-1 font-mono text-xs h-8"
+                        value={store.customTheme?.colors?.foreground || activeThemeConfig.colors.foreground}
+                        onChange={(e) => store.updateCustomTheme({ colors: { foreground: e.target.value } })}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Surface (Cards)</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        type="color"
+                        className="w-12 h-8 p-1"
+                        value={store.customTheme?.colors?.surface || activeThemeConfig.colors.surface}
+                        onChange={(e) => store.updateCustomTheme({ colors: { surface: e.target.value } })}
+                      />
+                      <Input
+                        className="flex-1 font-mono text-xs h-8"
+                        value={store.customTheme?.colors?.surface || activeThemeConfig.colors.surface}
+                        onChange={(e) => store.updateCustomTheme({ colors: { surface: e.target.value } })}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Accent (Buttons)</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        type="color"
+                        className="w-12 h-8 p-1"
+                        value={store.customTheme?.colors?.accent || activeThemeConfig.colors.accent}
+                        onChange={(e) => store.updateCustomTheme({ colors: { accent: e.target.value } })}
+                      />
+                      <Input
+                        className="flex-1 font-mono text-xs h-8"
+                        value={store.customTheme?.colors?.accent || activeThemeConfig.colors.accent}
+                        onChange={(e) => store.updateCustomTheme({ colors: { accent: e.target.value } })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold">Typography</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs">Display Font</Label>
+                    <Select
+                      value={store.customTheme?.fonts?.display || activeThemeConfig.fonts.display}
+                      onValueChange={(val) => store.updateCustomTheme({ fonts: { display: val } })}
+                    >
+                      <SelectTrigger className="mt-1 h-8 text-xs font-mono">
+                        <SelectValue placeholder="Select a font" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FONT_OPTIONS.map((font) => (
+                          <SelectItem key={font.value} value={font.value} className="text-xs" style={{ fontFamily: font.value }}>
+                            {font.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Body Font</Label>
+                    <Select
+                      value={store.customTheme?.fonts?.body || activeThemeConfig.fonts.body}
+                      onValueChange={(val) => store.updateCustomTheme({ fonts: { body: val } })}
+                    >
+                      <SelectTrigger className="mt-1 h-8 text-xs font-mono">
+                        <SelectValue placeholder="Select a font" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {FONT_OPTIONS.map((font) => (
+                          <SelectItem key={font.value} value={font.value} className="text-xs" style={{ fontFamily: font.value }}>
+                            {font.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold">Shape</h3>
+                <div>
+                  <Label className="text-xs">Border Radius (px)</Label>
+                  <Input
+                    type="number"
+                    className="mt-1 w-24 text-xs h-8"
+                    value={store.customTheme?.shape?.radius ?? activeThemeConfig.shape.radius}
+                    onChange={(e) => store.updateCustomTheme({ shape: { radius: Number(e.target.value) } })}
+                  />
+                </div>
+              </div>
+              {!store.customTheme && (
+                <div className="p-4 bg-tint-butter/30 rounded-xl text-sm border border-tint-butter">
+                  <p>Select a preset theme first, then customize it here to create your own unique look!</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-3" 
+                    onClick={() => {
+                      const baseTheme = themes.find(t => t.id === (store.themeId || "default-light")) || themes[0];
+                      store.updateCustomTheme(baseTheme);
+                    }}
+                  >
+                    Start Customizing
+                  </Button>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
@@ -377,7 +565,7 @@ function ThemeCard({
                 fontWeight: 600,
               }}
             >
-              Next →
+              Submit
             </span>
           </div>
         </div>

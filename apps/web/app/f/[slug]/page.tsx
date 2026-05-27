@@ -11,6 +11,8 @@ import type { ThemeConfig } from "~/components/form-themes";
 import { useCompletionTimer } from "~/hooks/use-completion-timer";
 import { toast } from "~/lib/toast";
 import { FieldInput } from "./_field-input";
+import { Info } from "lucide-react";
+import { buildValidationSchema } from "@repo/database/schemas/dynamic-validator";
 
 import "~/components/form-themes/themes/_register-all";
 
@@ -47,9 +49,23 @@ export default function FormFillPage() {
   // Load theme
   React.useEffect(() => {
     if (formData?.themeId) {
-      loadTheme(formData.themeId).then(setTheme);
+      if (formData.themeId === "custom" && formData.settings?.customTheme) {
+        const custom = formData.settings.customTheme;
+        const base = DEFAULT_LIGHT_THEME;
+        setTheme({
+          ...base,
+          ...custom,
+          colors: { ...base.colors, ...(custom.colors || {}) },
+          fonts: { ...base.fonts, ...(custom.fonts || {}) },
+          shape: { ...base.shape, ...(custom.shape || {}) },
+          motion: { ...base.motion, ...(custom.motion || {}) },
+          chrome: { ...base.chrome, ...(custom.chrome || {}) },
+        });
+      } else {
+        loadTheme(formData.themeId).then(setTheme);
+      }
     }
-  }, [formData?.themeId]);
+  }, [formData?.themeId, formData?.settings?.customTheme]);
 
   const handleFocus = () => {
     if (!startedRef.current) {
@@ -62,22 +78,33 @@ export default function FormFillPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const newErrors: Record<string, string> = {};
-    for (const field of fields) {
-      if (field.required && !answers[field.id]) {
-        newErrors[field.id] = "This field is required";
-      }
-    }
+    const schema = buildValidationSchema(fields);
+    const result = schema.safeParse(answers);
 
-    if (Object.keys(newErrors).length > 0) {
+    if (!result.success) {
+      const newErrors: Record<string, string> = {};
+      
+      for (const err of result.error.issues) {
+        if (err.path.length > 0) {
+          const fieldId = String(err.path[0]);
+          // Use the specific Zod message if provided, else generic message
+          newErrors[fieldId] = err.message || "Invalid input";
+        }
+      }
+      
       setErrors(newErrors);
+      
       const firstErrorId = Object.keys(newErrors)[0];
-      document.getElementById(`field-${firstErrorId}`)?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+      if (firstErrorId) {
+        document.getElementById(`field-${firstErrorId}`)?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
       return;
     }
+
+    setErrors({});
 
     const completionTime = stop();
     submitMutation.mutate({
@@ -127,13 +154,14 @@ export default function FormFillPage() {
   return (
     <FormThemeProvider theme={theme}>
       <div
-        className="min-h-screen flex items-center justify-center p-6"
+        className="min-h-screen flex items-center justify-center p-4 sm:p-8 md:p-12"
         style={{ background: theme.colors.background, color: theme.colors.foreground }}
       >
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-lg space-y-6"
+          className="w-full max-w-2xl space-y-8 bg-card/5 p-6 sm:p-10 rounded-2xl shadow-sm border border-border/10"
           onFocus={handleFocus}
+          style={{ background: theme.colors.surface }}
         >
           {formData.coverImageUrl && (
             <div className="w-full h-48 rounded-xl overflow-hidden mb-6">
@@ -167,12 +195,15 @@ export default function FormFillPage() {
                 {field.required && (
                   <span style={{ color: theme.colors.danger }}> *</span>
                 )}
+                {field.helpText && (
+                  <span
+                    title={field.helpText}
+                    className="ml-2 inline-flex cursor-help opacity-50 hover:opacity-100 transition-opacity"
+                  >
+                    <Info className="size-4 inline-block" />
+                  </span>
+                )}
               </label>
-              {field.helpText && (
-                <p style={{ color: theme.colors.foregroundSoft, fontSize: `${theme.fonts.scale.helper}rem` }}>
-                  {field.helpText}
-                </p>
-              )}
               <FieldInput
                 field={field}
                 answers={answers}

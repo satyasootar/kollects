@@ -34,6 +34,7 @@ export const updateFormSchema = z.object({
       redirectUrl: z.string().url().optional().nullable(),
       showProgressBar: z.boolean().optional(),
       allowMultipleSubmissions: z.boolean().optional(),
+      customTheme: z.any().optional(),
     })
     .optional(),
 });

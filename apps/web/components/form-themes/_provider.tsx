@@ -8,6 +8,17 @@ interface FormThemeProviderProps {
   children: React.ReactNode;
 }
 
+function getGoogleFontUrl(fontFamily: string) {
+  if (!fontFamily) return null;
+  const match = fontFamily.match(/'([^']+)'/);
+  if (match && match[1]) {
+    const fontName = match[1];
+    if (fontName === "Comic Sans MS" || fontName.toLowerCase().includes("system")) return null;
+    return `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, "+")}:wght@400;500;600;700&display=swap`;
+  }
+  return null;
+}
+
 export function FormThemeProvider({ theme, children }: FormThemeProviderProps) {
   const cssVars = React.useMemo(() => {
     const vars: Record<string, string> = {
@@ -41,16 +52,23 @@ export function FormThemeProvider({ theme, children }: FormThemeProviderProps) {
     return vars;
   }, [theme]);
 
+  const displayFontUrl = React.useMemo(() => getGoogleFontUrl(theme.fonts.display), [theme.fonts.display]);
+  const bodyFontUrl = React.useMemo(() => getGoogleFontUrl(theme.fonts.body), [theme.fonts.body]);
+
   return (
-    <div
-      data-theme={theme.id}
-      data-color-scheme={theme.colorScheme}
-      data-question-layout={theme.chrome.questionLayout}
-      data-progress-bar={theme.chrome.progressBar}
-      style={cssVars as React.CSSProperties}
-      className="min-h-screen"
-    >
-      {children}
-    </div>
+    <>
+      {displayFontUrl && <link href={displayFontUrl} rel="stylesheet" />}
+      {bodyFontUrl && displayFontUrl !== bodyFontUrl && <link href={bodyFontUrl} rel="stylesheet" />}
+      <div
+        data-theme={theme.id}
+        data-color-scheme={theme.colorScheme}
+        data-question-layout={theme.chrome.questionLayout}
+        data-progress-bar={theme.chrome.progressBar}
+        style={cssVars as React.CSSProperties}
+        className="min-h-screen"
+      >
+        {children}
+      </div>
+    </>
   );
 }

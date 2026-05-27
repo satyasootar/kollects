@@ -286,7 +286,7 @@ function ResponseDetailDrawer({ responseId, onClose }: { responseId: string | nu
                 <div>
                   <p className="text-muted-foreground text-xs">Submitted</p>
                   <p className="font-medium">
-                    {response.createdAt ? format(new Date(response.createdAt), "PPP p") : "—"}
+                    {response.submittedAt ? format(new Date(response.submittedAt), "PPP p") : "—"}
                   </p>
                 </div>
                 <div>

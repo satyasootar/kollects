@@ -3,6 +3,7 @@
 import * as React from "react";
 import type { ThemeConfig } from "~/components/form-themes";
 import { cn } from "~/lib/utils";
+import { Info } from "lucide-react";
 
 interface FormPreviewRendererProps {
   fields: any[];
@@ -11,6 +12,17 @@ interface FormPreviewRendererProps {
   coverImageUrl?: string | null;
   themeConfig?: ThemeConfig | null;
   className?: string;
+}
+
+function getGoogleFontUrl(fontFamily: string) {
+  if (!fontFamily) return null;
+  const match = fontFamily.match(/'([^']+)'/);
+  if (match && match[1]) {
+    const fontName = match[1];
+    if (fontName === "Comic Sans MS" || fontName.toLowerCase().includes("system")) return null;
+    return `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, "+")}:wght@400;500;600;700&display=swap`;
+  }
+  return null;
 }
 
 /**
@@ -53,11 +65,17 @@ export function FormPreviewRenderer({
     shadowFocus: "0 0 0 2px rgba(0,0,0,0.1)",
   };
 
+  const displayFontUrl = React.useMemo(() => getGoogleFontUrl(fonts.display), [fonts.display]);
+  const bodyFontUrl = React.useMemo(() => getGoogleFontUrl(fonts.body), [fonts.body]);
+
   return (
-    <div
-      className={cn("rounded-2xl overflow-hidden border border-border shadow-sm", className)}
-      style={{ background: colors.background }}
-    >
+    <>
+      {displayFontUrl && <link href={displayFontUrl} rel="stylesheet" />}
+      {bodyFontUrl && displayFontUrl !== bodyFontUrl && <link href={bodyFontUrl} rel="stylesheet" />}
+      <div
+        className={cn("rounded-2xl overflow-hidden border border-border shadow-sm", className)}
+        style={{ background: colors.background }}
+      >
       {/* Cover image */}
       {coverImageUrl && (
         <div className="w-full h-40 overflow-hidden">
@@ -137,7 +155,8 @@ export function FormPreviewRenderer({
           </button>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -179,20 +198,15 @@ function PreviewField({
         {field.required && (
           <span style={{ color: colors.danger }} className="ml-0.5">*</span>
         )}
+        {field.helpText && (
+          <span
+            title={field.helpText}
+            className="ml-2 inline-flex cursor-help opacity-50 hover:opacity-100 transition-opacity"
+          >
+            <Info className="size-4 inline-block" />
+          </span>
+        )}
       </label>
-
-      {field.helpText && (
-        <p
-          className="mb-1.5"
-          style={{
-            color: colors.foregroundSoft,
-            fontFamily: fonts.body,
-            fontSize: `${fonts.scale.helper * 0.9}rem`,
-          }}
-        >
-          {field.helpText}
-        </p>
-      )}
 
       {renderFieldInput(field, inputStyle, colors, shape, fonts)}
     </div>

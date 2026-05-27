@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { type SelectFormField } from "@repo/database/models/form-field";
+import type { SelectFormField } from "../models/form-field";
 import safeRegex from "safe-regex";
 
 /**
@@ -31,7 +31,7 @@ export function buildValidationSchema(fields: SelectFormField[]): z.ZodObject<an
         break;
       }
       case "email": {
-        fieldSchema = z.string().email();
+        fieldSchema = z.string().email({ message: "Invalid email address" });
         break;
       }
       case "number": {
@@ -75,12 +75,12 @@ export function buildValidationSchema(fields: SelectFormField[]): z.ZodObject<an
         break;
       }
       case "url": {
-        fieldSchema = z.string().url();
+        fieldSchema = z.string().url({ message: "Invalid URL" });
         break;
       }
       case "phone": {
         // Basic phone validation (allowing digits, +, -, space, brackets)
-        fieldSchema = z.string().regex(/^[+\d\s()\-.]+$/);
+        fieldSchema = z.string().regex(/^[+\d\s()\-.]+$/, { message: "Invalid phone number format" });
         break;
       }
       default:

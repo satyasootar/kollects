@@ -167,14 +167,6 @@ export function FormCanvas({
           </DndContext>
         )}
 
-        {/* Next button preview */}
-        {fields.length > 0 && (
-          <div className="mt-8">
-            <Button variant="forest" className="gap-2">
-              Next <span>→</span>
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -205,7 +197,7 @@ function SortableCanvasField({
       style={style}
       onClick={onSelect}
       className={cn(
-        "group relative rounded-xl border p-4 cursor-pointer transition-all",
+        "group relative rounded-xl border p-4 cursor-pointer transition-colors",
         isSelected
           ? "border-primary/40 bg-primary/[0.02] shadow-sm"
           : "border-transparent hover:border-border",
@@ -236,19 +228,21 @@ function SortableCanvasField({
           {field.required && <span className="text-destructive ml-0.5">*</span>}
         </label>
         <div className="mt-2">
-          <FieldPreviewInput type={field.type} placeholder={field.placeholder} />
+          <FieldPreviewInput field={field} />
         </div>
       </div>
     </div>
   );
 }
 
-function FieldPreviewInput({ type, placeholder }: { type: string; placeholder?: string }) {
-  const baseClass = "w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground pointer-events-none";
+function FieldPreviewInput({ field }: { field: any }) {
+  const type = field.type;
+  const placeholder = field.placeholder;
+  const baseClass = "w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground pointer-events-none flex items-center";
 
   switch (type) {
     case "long_text":
-      return <div className={cn(baseClass, "h-20")}>{placeholder || "Enter text..."}</div>;
+      return <div className={cn(baseClass, "h-20 items-start py-2")}>{placeholder || "Enter text..."}</div>;
     case "checkbox":
       return (
         <div className="flex items-center gap-2">
@@ -266,8 +260,22 @@ function FieldPreviewInput({ type, placeholder }: { type: string; placeholder?: 
       );
     case "single_select":
     case "multi_select":
+      if (field.options && field.options.length > 0) {
+        return (
+          <div className="space-y-2 pointer-events-none mt-2">
+            {field.options.map((opt: any, i: number) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className={cn("size-4 border border-border shrink-0", type === "single_select" ? "rounded-full" : "rounded")} />
+                <span className="text-sm text-foreground">{opt.label}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
       return <div className={baseClass}>{placeholder || "Select an option..."}</div>;
+    case "date":
+      return <input type="date" className={baseClass} readOnly />;
     default:
-      return <div className={baseClass}>{placeholder || "Ex. lumix"}</div>;
+      return <div className={baseClass}>{placeholder || "Your answer..."}</div>;
   }
 }

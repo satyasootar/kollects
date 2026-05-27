@@ -4,7 +4,7 @@ import { formFieldsTable } from "@repo/database/models/form-field";
 import { formResponsesTable } from "@repo/database/models/form-response";
 import { responseAnswersTable } from "@repo/database/models/response-answer";
 import { TRPCError } from "@trpc/server";
-import { buildValidationSchema } from "./dynamic-validator";
+import { buildValidationSchema } from "@repo/database/schemas/dynamic-validator";
 import crypto from "crypto";
 import { AnalyticsService } from "../analytics";
 

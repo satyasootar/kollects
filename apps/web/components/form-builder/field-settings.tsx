@@ -6,6 +6,8 @@ import { Label } from "~/components/ui/label";
 import { Switch } from "~/components/ui/switch";
 import { Slider } from "~/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
+import { Button } from "~/components/ui/button";
+import { Trash2, Plus } from "lucide-react";
 import { FIELD_TYPE_LABELS } from "./field-type-picker";
 
 interface FieldSettingsProps {
@@ -23,6 +25,14 @@ export function FieldSettings({ field, onUpdate }: FieldSettingsProps) {
       </div>
     );
   }
+
+  let defaultPlaceholder = "Your answer...";
+  if (field.type === "email") defaultPlaceholder = "john@example.com";
+  else if (field.type === "number") defaultPlaceholder = "123";
+  else if (field.type === "short_text") defaultPlaceholder = "John Doe";
+  else if (field.type === "long_text") defaultPlaceholder = "Enter your message...";
+  else if (field.type === "date") defaultPlaceholder = "mm/dd/yyyy";
+  else if (field.type === "single_select" || field.type === "multi_select") defaultPlaceholder = "Select an option...";
 
   return (
     <div className="w-72 border-l border-border bg-background overflow-y-auto p-5 space-y-6">
@@ -56,7 +66,7 @@ export function FieldSettings({ field, onUpdate }: FieldSettingsProps) {
         <Input
           value={field.placeholder ?? ""}
           onChange={(e) => onUpdate(field.id, { placeholder: e.target.value })}
-          placeholder="Ex. lumix"
+          placeholder={defaultPlaceholder}
           className="h-9"
         />
       </div>
@@ -73,15 +83,29 @@ export function FieldSettings({ field, onUpdate }: FieldSettingsProps) {
             onChange={(v) => onUpdate(field.id, { required: v })}
           />
           {(field.type === "short_text" || field.type === "long_text") && (
-            <SettingRow
-              label="Max character"
-              checked={!!field.validations?.maxLength}
-              onChange={(v) =>
-                onUpdate(field.id, {
-                  validations: { ...field.validations, maxLength: v ? 255 : undefined },
-                })
-              }
-            />
+            <div className="space-y-2">
+              <SettingRow
+                label="Max character"
+                checked={!!field.validations?.maxLength}
+                onChange={(v) =>
+                  onUpdate(field.id, {
+                    validations: { ...field.validations, maxLength: v ? 255 : undefined },
+                  })
+                }
+              />
+              {!!field.validations?.maxLength && (
+                <div className="pl-1 pr-1 pb-1">
+                  <Input 
+                    type="number" 
+                    className="h-8 text-xs" 
+                    value={field.validations.maxLength}
+                    onChange={(e) => onUpdate(field.id, {
+                      validations: { ...field.validations, maxLength: Number(e.target.value) || 255 }
+                    })}
+                  />
+                </div>
+              )}
+            </div>
           )}
           <SettingRow
             label="Info message"
@@ -122,6 +146,56 @@ export function FieldSettings({ field, onUpdate }: FieldSettingsProps) {
             onChange={(e) => onUpdate(field.id, { helpText: e.target.value })}
             className="h-9"
           />
+        </div>
+      )}
+
+      {/* Options Editor */}
+      {(field.type === "single_select" || field.type === "multi_select") && (
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            Options
+          </p>
+          <div className="space-y-2">
+            {(field.options || []).map((opt: any, idx: number) => (
+              <div key={idx} className="flex items-center gap-2">
+                <Input
+                  className="h-8 text-xs"
+                  value={opt.label}
+                  onChange={(e) => {
+                    const newOptions = [...(field.options || [])];
+                    newOptions[idx] = { label: e.target.value, value: e.target.value };
+                    onUpdate(field.id, { options: newOptions });
+                  }}
+                />
+                <Button 
+                  variant="ghost" 
+                  size="icon-sm" 
+                  className="shrink-0 size-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => {
+                    const newOptions = [...(field.options || [])];
+                    newOptions.splice(idx, 1);
+                    onUpdate(field.id, { options: newOptions });
+                  }}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
+            ))}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-xs gap-1.5 h-8 mt-2"
+              onClick={() => {
+                const newOptions = [...(field.options || [])];
+                const nextNum = newOptions.length + 1;
+                newOptions.push({ label: `Option ${nextNum}`, value: `Option ${nextNum}` });
+                onUpdate(field.id, { options: newOptions });
+              }}
+            >
+              <Plus className="size-3.5" />
+              Add Option
+            </Button>
+          </div>
         </div>
       )}
     </div>

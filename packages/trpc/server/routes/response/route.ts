@@ -16,6 +16,8 @@ const responseSchema = z.object({
   completionTimeSeconds: z.number().nullable(),
   ipHash: z.string().nullable(),
   userAgent: z.string().nullable(),
+  respondentEmail: z.string().nullable(),
+  createdAt: z.date(),
 });
 
 export const responseRouter = router({

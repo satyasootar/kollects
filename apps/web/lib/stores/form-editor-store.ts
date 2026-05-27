@@ -29,6 +29,7 @@ interface FormEditorState {
   // Theme/design state
   themeId: string | null;
   coverImageUrl: string | null;
+  customTheme: any | null;
 
   // Dirty tracking
   isDirty: boolean;
@@ -42,6 +43,7 @@ interface FormEditorState {
     fields: EditorField[];
     themeId?: string | null;
     coverImageUrl?: string | null;
+    customTheme?: any | null;
   }) => void;
   setTitle: (title: string) => void;
   setDescription: (description: string) => void;
@@ -49,6 +51,7 @@ interface FormEditorState {
   // Actions — Theme/design
   setThemeId: (themeId: string | null) => void;
   setCoverImageUrl: (url: string | null) => void;
+  updateCustomTheme: (updates: any) => void;
 
   // Actions — Fields (all local, no API calls)
   addField: (type: FieldType) => void;
@@ -80,6 +83,7 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
   selectedFieldId: null,
   themeId: null,
   coverImageUrl: null,
+  customTheme: null,
   isDirty: false,
   lastSavedAt: null,
 
@@ -91,6 +95,7 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
       fields: data.fields,
       themeId: data.themeId ?? null,
       coverImageUrl: data.coverImageUrl ?? null,
+      customTheme: data.customTheme ?? null,
       isDirty: false,
       selectedFieldId: null,
     }),
@@ -100,6 +105,23 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
 
   setThemeId: (themeId) => set({ themeId, isDirty: true }),
   setCoverImageUrl: (coverImageUrl) => set({ coverImageUrl, isDirty: true }),
+  updateCustomTheme: (updates) =>
+    set((state) => {
+      const base = state.customTheme || {};
+      return {
+        customTheme: {
+          ...base,
+          ...updates,
+          colors: { ...(base.colors || {}), ...(updates.colors || {}) },
+          fonts: { ...(base.fonts || {}), ...(updates.fonts || {}) },
+          shape: { ...(base.shape || {}), ...(updates.shape || {}) },
+          motion: { ...(base.motion || {}), ...(updates.motion || {}) },
+          chrome: { ...(base.chrome || {}), ...(updates.chrome || {}) },
+        },
+        isDirty: true,
+        themeId: "custom",
+      };
+    }),
 
   addField: (type) => {
     const newField: EditorField = {
@@ -149,6 +171,7 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
       selectedFieldId: null,
       themeId: null,
       coverImageUrl: null,
+      customTheme: null,
       isDirty: false,
       lastSavedAt: null,
     }),

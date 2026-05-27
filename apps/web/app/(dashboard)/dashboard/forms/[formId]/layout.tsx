@@ -153,7 +153,8 @@ export default function FormEditorLayout({
   const basePath = `/dashboard/forms/${formId}`;
   const isDraftRoute = ["/fields", "/theme", "/preview"].some(p => pathname.startsWith(`${basePath}${p}`));
   const isPublished = (form as any)?.status === "published";
-  const activeSteps = isPublished && !isDraftRoute ? PUBLISHED_STEPS : DRAFT_STEPS;
+  const isPublishedTabs = isPublished && !isDraftRoute;
+  const activeSteps = isPublishedTabs ? PUBLISHED_STEPS : DRAFT_STEPS;
 
   // Determine active step from pathname
   const currentStepIndex = activeSteps.findIndex((s) => {
@@ -287,7 +288,7 @@ export default function FormEditorLayout({
                 const isCompleted = index < activeStepIndex;
                 return (
                   <React.Fragment key={step.id}>
-                    {index > 0 && (
+                    {index > 0 && !isPublishedTabs && (
                       <div
                         className={cn(
                           "w-8 h-px mx-1",
@@ -300,18 +301,18 @@ export default function FormEditorLayout({
                       className={cn(
                         "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                         isActive && "bg-foreground text-background",
-                        isCompleted && "bg-tint-mint text-tint-mint-ink",
-                        !isActive && !isCompleted && "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                        isCompleted && !isPublishedTabs && "bg-tint-mint text-tint-mint-ink",
+                        !isActive && (!isCompleted || isPublishedTabs) && "text-muted-foreground hover:text-foreground hover:bg-secondary",
                       )}
                     >
-                      {isCompleted && !isPublished ? (
+                      {isCompleted && !isPublishedTabs ? (
                         <Check className="size-3" />
                       ) : (
                         <span className={cn(
                           "size-4 rounded-full flex items-center justify-center text-[10px] font-bold border",
                           isActive ? "border-background/50" : "border-current",
                         )}>
-                          {isPublished ? <step.icon className="size-3" /> : index + 1}
+                          {isPublishedTabs ? <step.icon className="size-3" /> : index + 1}
                         </span>
                       )}
                       {step.label}
@@ -355,7 +356,7 @@ export default function FormEditorLayout({
 
             {isPublished && !isDraftRoute && (
               <Button
-                variant="outline"
+                variant="destructive"
                 size="sm"
                 onClick={() => unpublishMutation.mutate({ formId })}
                 disabled={unpublishMutation.isPending}
