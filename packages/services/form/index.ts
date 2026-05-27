@@ -128,6 +128,83 @@ export class FormService {
   }
 
   /**
+   * Creates a new form from a template, inserting predefined fields in the same transaction.
+   */
+  async createFromTemplate(userId: string, data: { title: string; description?: string; themeId?: string; fields: any[] }) {
+    const [user] = await db
+      .select({ formLimit: usersTable.formLimit })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .limit(1);
+
+    if (!user) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+    }
+
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(formsTable)
+      .where(and(eq(formsTable.creatorId, userId), sql`${formsTable.deletedAt} IS NULL`));
+
+    const count = countResult[0]?.count ?? 0;
+
+    if (count >= user.formLimit) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Form limit reached for your plan. Please upgrade to create more forms.",
+      });
+    }
+
+    const slug = await slugService.generateSlug(data.title);
+
+    try {
+      return await db.transaction(async (tx) => {
+        const formId = crypto.randomUUID();
+
+        const [newForm] = await tx
+          .insert(formsTable)
+          .values({
+            id: formId,
+            creatorId: userId,
+            title: data.title,
+            description: data.description,
+            slug,
+            themeId: data.themeId,
+            status: "draft",
+          })
+          .returning();
+
+        if (data.fields && data.fields.length > 0) {
+          const fieldsToInsert = data.fields.map((field, index) => ({
+            id: crypto.randomUUID(),
+            formId: formId,
+            type: field.type,
+            label: field.label,
+            helpText: field.helpText || null,
+            placeholder: field.placeholder || null,
+            required: field.required || false,
+            order: index,
+            pageNumber: 1,
+            options: field.options || null,
+            settings: field.settings || null,
+          }));
+          await tx.insert(formFieldsTable).values(fieldsToInsert);
+        }
+
+        return newForm;
+      });
+    } catch (error: any) {
+      if (error.code === "23505") {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Slug is already taken. Please try another one.",
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Updates form settings (title, description, slug, theme, cover image, etc.).
    */
   async update(

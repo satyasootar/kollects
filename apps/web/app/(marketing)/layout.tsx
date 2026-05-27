@@ -4,8 +4,8 @@ import { Button } from "~/components/ui/button";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-50 h-16 flex items-center justify-between px-6 bg-background/85 backdrop-blur-md border-b border-border/60">
+    <div className="min-h-screen flex flex-col bg-[#f0efe3]">
+      <header className="sticky top-0 z-50 h-16 flex items-center justify-between px-6 bg-[#f0efe3]/85 backdrop-blur-md border-b border-border/60">
         <Link href="/" className="text-lg font-semibold text-foreground">
           kollects.tech
         </Link>

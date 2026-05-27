@@ -88,8 +88,8 @@
 :root {
   --radius: 0.75rem;
 
-  /* core surfaces — warm cream */
-  --background: #f0efe3;
+  /* core surfaces — white */
+  --background: #ffffff;
   --foreground: #1a1a1a;
   
   /* cards and popovers — clean white */

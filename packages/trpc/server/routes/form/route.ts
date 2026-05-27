@@ -17,6 +17,21 @@ export const formRouter = router({
       });
     }),
 
+  createFromTemplate: scopedProcedure("write:all")
+    .meta({
+      openapi: { method: "POST", path: "/forms/template", tags: ["Forms"], summary: "Create a form from template", description: "Creates a new form and fields from a template." },
+    })
+    .input(z.object({
+      title: z.string(),
+      description: z.string().optional(),
+      themeId: z.string().optional(),
+      fields: z.array(z.any()),
+    }))
+    .output(z.any())
+    .mutation(async ({ ctx, input }) => {
+      return formService.createFromTemplate(ctx.user.id, input);
+    }),
+
   update: scopedProcedure("write:all")
     .meta({
       openapi: { method: "PATCH", path: "/forms/{formId}", tags: ["Forms"], summary: "Update a form", description: "Updates form metadata (title, description, slug, theme). Custom slugs are validated for format (lowercase, alphanumeric, hyphens) and uniqueness. Invalidates public cache on slug change." },

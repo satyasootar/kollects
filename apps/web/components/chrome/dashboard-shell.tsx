@@ -23,7 +23,7 @@ export function DashboardShell({
 
   if (isFormEditorPage) {
     return (
-      <div className="flex h-svh w-full flex-col overflow-hidden">
+      <div className="flex h-svh w-full flex-col overflow-hidden bg-white">
         {children}
       </div>
     );
@@ -32,7 +32,7 @@ export function DashboardShell({
   return (
     <SidebarProvider>
       {sidebar}
-      <SidebarInset>{children}</SidebarInset>
+      <SidebarInset className="bg-white">{children}</SidebarInset>
     </SidebarProvider>
   );
 }

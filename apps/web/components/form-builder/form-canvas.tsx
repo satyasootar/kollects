@@ -106,7 +106,7 @@ export function FormCanvas({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#fafafa] p-8">
+    <div className="flex-1 overflow-y-auto bg-white p-8">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-border/60 shadow-sm p-8 min-h-[600px] relative group">
         
         {/* Banner Section */}
