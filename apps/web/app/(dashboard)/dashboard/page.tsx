@@ -7,6 +7,7 @@ import { PLAN_LIMITS } from "@repo/database/constants/user-plan";
 import { trpc } from "~/trpc/client";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
+import { Sparkles } from "lucide-react";
 import {
   TintCard,
   NumberTicker,
@@ -102,9 +103,12 @@ export default function DashboardPage() {
 
   // Stats
   const totalForms = formList.length;
-  const totalResponses = formList.reduce((sum: number, f: any) => sum + (f.submissionCount ?? f.responseCount ?? 0), 0);
+  const totalResponses = formList.reduce((sum: number, f: any) => sum + (f.totalSubmissions ?? 0), 0);
   const avgCompletion = formList.length > 0
-    ? Math.round(formList.reduce((sum: number, f: any) => sum + (f.completionRate ?? 0), 0) / formList.length)
+    ? Math.round(formList.reduce((sum: number, f: any) => {
+        const rate = (f.totalStarts && f.totalStarts > 0) ? (f.totalSubmissions / f.totalStarts) * 100 : 0;
+        return sum + rate;
+      }, 0) / formList.length)
     : 0;
 
   // Plan limit warning
@@ -136,7 +140,7 @@ export default function DashboardPage() {
           onClick={() => createMutation.mutate({ title: "Untitled Form" })}
           disabled={createMutation.isPending}
         >
-          <Doodle name="sparkle" className="size-4 mr-2" />
+          <Sparkles className="size-4 mr-2" />
           {createMutation.isPending ? "Creating…" : "Create form"}
         </Button>
       </div>
@@ -263,7 +267,7 @@ export default function DashboardPage() {
                     )}
                     {/* Stats */}
                     <div className="mt-auto pt-4 text-mono-sm text-muted-foreground">
-                      {form.viewCount ?? 0} views · {form.startCount ?? 0} starts · {form.submissionCount ?? 0} subs
+                      {form.totalViews ?? 0} views · {form.totalStarts ?? 0} starts · {form.totalSubmissions ?? 0} subs
                     </div>
                   </EditorialCard>
                 </Link>
