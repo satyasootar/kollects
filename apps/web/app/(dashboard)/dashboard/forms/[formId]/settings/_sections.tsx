@@ -159,14 +159,18 @@ export function BehaviorSection({
   register,
   showProgressBar,
   allowMultiple,
+  showFieldIcons,
   onProgressBarChange,
   onAllowMultipleChange,
+  onShowFieldIconsChange,
 }: {
   register: any;
   showProgressBar: boolean | undefined;
   allowMultiple: boolean | undefined;
+  showFieldIcons: boolean | undefined;
   onProgressBarChange: (value: boolean) => void;
   onAllowMultipleChange: (value: boolean) => void;
+  onShowFieldIconsChange: (value: boolean) => void;
 }) {
   return (
     <EditorialCard>
@@ -205,6 +209,14 @@ export function BehaviorSection({
             id="allowMultiple"
             checked={allowMultiple ?? false}
             onCheckedChange={onAllowMultipleChange}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="showFieldIcons">Show field icons</Label>
+          <Switch
+            id="showFieldIcons"
+            checked={showFieldIcons ?? false}
+            onCheckedChange={onShowFieldIconsChange}
           />
         </div>
       </div>

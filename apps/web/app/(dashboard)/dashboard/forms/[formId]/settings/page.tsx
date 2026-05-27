@@ -247,16 +247,22 @@ export default function FormSettingsPage() {
           />
 
           <BehaviorSection
-            register={register}
-            showProgressBar={showProgressBar}
-            allowMultiple={allowMultiple}
-            onProgressBarChange={(v) =>
-              setValue("settings.showProgressBar", v, { shouldDirty: true })
-            }
-            onAllowMultipleChange={(v) =>
-              setValue("settings.allowMultipleSubmissions", v, { shouldDirty: true })
-            }
-          />
+              register={register}
+              showProgressBar={watch("settings.showProgressBar")}
+              allowMultiple={watch("settings.allowMultipleSubmissions")}
+              showFieldIcons={watch("settings.showFieldIcons")}
+              onProgressBarChange={(v) =>
+                setValue("settings.showProgressBar", v, { shouldDirty: true })
+              }
+              onAllowMultipleChange={(v) =>
+                setValue("settings.allowMultipleSubmissions", v, {
+                  shouldDirty: true,
+                })
+              }
+              onShowFieldIconsChange={(v) =>
+                setValue("settings.showFieldIcons", v, { shouldDirty: true })
+              }
+            />
 
           <DangerZoneSection onDelete={() => setShowDeleteDialog(true)} />
 

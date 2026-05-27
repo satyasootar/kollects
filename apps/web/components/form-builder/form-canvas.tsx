@@ -19,6 +19,7 @@ import {
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2, ChevronDown } from "lucide-react";
+import { FIELD_TYPE_ICON_MAP } from "./field-type-picker";
 import { cn } from "~/lib/utils";
 import { env } from "~/env.js";
 import { Button } from "~/components/ui/button";
@@ -34,8 +35,10 @@ interface FormCanvasProps {
   onSelectField: (id: string) => void;
   onReorder: (fieldIds: string[]) => void;
   onDeleteField: (id: string) => void;
+  onUpdateField?: (id: string, data: any) => void;
   coverImageUrl: string | null;
   onUpdateCoverImage: (url: string | null) => void;
+  showFieldIcons?: boolean;
 }
 
 export function FormCanvas({
@@ -48,8 +51,10 @@ export function FormCanvas({
   onSelectField,
   onReorder,
   onDeleteField,
+  onUpdateField,
   coverImageUrl,
   onUpdateCoverImage,
+  showFieldIcons = false,
 }: FormCanvasProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -188,6 +193,8 @@ export function FormCanvas({
                     isSelected={field.id === selectedFieldId}
                     onSelect={() => onSelectField(field.id)}
                     onDelete={() => onDeleteField(field.id)}
+                    onUpdateField={onUpdateField}
+                    showFieldIcons={showFieldIcons}
                   />
                 ))}
               </div>
@@ -205,11 +212,15 @@ function SortableCanvasField({
   isSelected,
   onSelect,
   onDelete,
+  onUpdateField,
+  showFieldIcons,
 }: {
   field: any;
   isSelected: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onUpdateField?: (id: string, data: any) => void;
+  showFieldIcons?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: field.id });
@@ -251,19 +262,33 @@ function SortableCanvasField({
 
       {/* Field preview */}
       <div className="pl-5">
-        <label className="text-sm font-medium text-foreground">
-          {field.label}
-          {field.required && <span className="text-destructive ml-0.5">*</span>}
-        </label>
+        <div className="flex items-center text-sm font-medium text-foreground relative">
+          {showFieldIcons && (
+            <span className="mr-2 text-muted-foreground shrink-0">
+              {React.createElement(FIELD_TYPE_ICON_MAP[field.type as keyof typeof FIELD_TYPE_ICON_MAP] || "div", { className: "size-4" })}
+            </span>
+          )}
+          {onUpdateField ? (
+            <input 
+              type="text"
+              value={field.label}
+              onChange={(e) => onUpdateField(field.id, { label: e.target.value })}
+              className="bg-transparent border-none focus:outline-none focus:ring-0 p-0 m-0 w-full hover:bg-muted/30 focus:bg-muted/30 rounded px-1 -ml-1 transition-colors"
+            />
+          ) : (
+            <label className="text-sm font-medium text-foreground">{field.label}</label>
+          )}
+          {field.required && <span className="text-destructive absolute right-0">*</span>}
+        </div>
         <div className="mt-2">
-          <FieldPreviewInput field={field} />
+          <FieldPreviewInput field={field} onUpdateField={onUpdateField} />
         </div>
       </div>
     </div>
   );
 }
 
-function FieldPreviewInput({ field }: { field: any }) {
+function FieldPreviewInput({ field, onUpdateField }: { field: any, onUpdateField?: (id: string, data: any) => void }) {
   const type = field.type;
   
   let defaultPlaceholder = "Your answer...";
@@ -275,16 +300,36 @@ function FieldPreviewInput({ field }: { field: any }) {
   else if (type === "single_select" || type === "multi_select") defaultPlaceholder = "Select an option...";
 
   const placeholder = field.placeholder || defaultPlaceholder;
-  const baseClass = "w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground pointer-events-none flex items-center";
+  const baseClass = "w-full rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground flex items-center transition-colors";
+  
+  // Base classes when editable vs not editable
+  const editableClass = onUpdateField ? "hover:bg-muted/30 focus:bg-muted/30 focus:outline-none focus:ring-0 cursor-text" : "pointer-events-none";
 
   switch (type) {
     case "long_text":
-      return <div className={cn(baseClass, "h-20 items-start py-2")}>{placeholder}</div>;
+      return (
+        <textarea 
+          className={cn(baseClass, "h-20 items-start py-2 resize-none", editableClass)} 
+          placeholder={defaultPlaceholder}
+          value={field.placeholder || ""}
+          onChange={(e) => onUpdateField?.(field.id, { placeholder: e.target.value })}
+          readOnly={!onUpdateField}
+        />
+      );
     case "checkbox":
       return (
         <div className="flex items-center gap-2">
           <div className="size-4 rounded border border-border" />
-          <span className="text-sm text-muted-foreground">{placeholder || "Checkbox"}</span>
+          {onUpdateField ? (
+             <input
+               className={cn("text-sm text-muted-foreground bg-transparent border-none p-0 focus:ring-0", editableClass)}
+               placeholder={defaultPlaceholder || "Checkbox"}
+               value={field.placeholder || ""}
+               onChange={(e) => onUpdateField(field.id, { placeholder: e.target.value })}
+             />
+          ) : (
+            <span className="text-sm text-muted-foreground">{placeholder || "Checkbox"}</span>
+          )}
         </div>
       );
     case "rating":
@@ -298,13 +343,22 @@ function FieldPreviewInput({ field }: { field: any }) {
     case "single_select":
     case "multi_select":
       return (
-        <div className="space-y-3 pointer-events-none mt-1">
-          <div className={cn(baseClass, "flex justify-between items-center")}>
-            {placeholder}
-            <ChevronDown className="size-4 opacity-50" />
+        <div className="space-y-3 mt-1">
+          <div className={cn(baseClass, "h-10 flex justify-between items-center")}>
+            {onUpdateField ? (
+              <input
+                 className={cn("bg-transparent border-none p-0 focus:ring-0 w-full text-sm", editableClass)}
+                 placeholder={defaultPlaceholder}
+                 value={field.placeholder || ""}
+                 onChange={(e) => onUpdateField(field.id, { placeholder: e.target.value })}
+              />
+            ) : (
+              <span>{placeholder}</span>
+            )}
+            <ChevronDown className="size-4 opacity-50 pointer-events-none" />
           </div>
           {field.options && field.options.length > 0 && (
-            <div className="space-y-2 pl-3 border-l-2 border-border/30">
+            <div className="space-y-2 pl-3 border-l-2 border-border/30 pointer-events-none">
               {field.options.map((opt: any, i: number) => (
                 <div key={i} className="flex items-center gap-2">
                   <div className={cn("size-4 border border-border shrink-0 bg-background", type === "single_select" ? "rounded-full" : "rounded")} />
@@ -316,8 +370,17 @@ function FieldPreviewInput({ field }: { field: any }) {
         </div>
       );
     case "date":
-      return <input type="date" className={baseClass} readOnly />;
+      return <input type="date" className={cn(baseClass, "h-10 pointer-events-none")} readOnly />;
     default:
-      return <div className={baseClass}>{placeholder}</div>;
+      return (
+        <input 
+          type="text" 
+          className={cn(baseClass, "h-10", editableClass)}
+          placeholder={defaultPlaceholder}
+          value={field.placeholder || ""}
+          onChange={(e) => onUpdateField?.(field.id, { placeholder: e.target.value })}
+          readOnly={!onUpdateField}
+        />
+      );
   }
 }

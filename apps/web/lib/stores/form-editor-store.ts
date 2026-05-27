@@ -30,6 +30,7 @@ interface FormEditorState {
   themeId: string | null;
   coverImageUrl: string | null;
   customTheme: any | null;
+  showFieldIcons: boolean;
 
   // Dirty tracking
   isDirty: boolean;
@@ -44,9 +45,11 @@ interface FormEditorState {
     themeId?: string | null;
     coverImageUrl?: string | null;
     customTheme?: any | null;
+    showFieldIcons?: boolean;
   }) => void;
   setTitle: (title: string) => void;
   setDescription: (description: string) => void;
+  setShowFieldIcons: (show: boolean) => void;
 
   // Actions — Theme/design
   setThemeId: (themeId: string | null) => void;
@@ -84,6 +87,7 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
   themeId: null,
   coverImageUrl: null,
   customTheme: null,
+  showFieldIcons: false,
   isDirty: false,
   lastSavedAt: null,
 
@@ -96,12 +100,14 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
       themeId: data.themeId ?? null,
       coverImageUrl: data.coverImageUrl ?? null,
       customTheme: data.customTheme ?? null,
+      showFieldIcons: data.showFieldIcons ?? false,
       isDirty: false,
       selectedFieldId: null,
     }),
 
   setTitle: (title) => set({ title, isDirty: true }),
   setDescription: (description) => set({ description, isDirty: true }),
+  setShowFieldIcons: (showFieldIcons) => set({ showFieldIcons, isDirty: true }),
 
   setThemeId: (themeId) => set({ themeId, isDirty: true }),
   setCoverImageUrl: (coverImageUrl) => set({ coverImageUrl, isDirty: true }),
@@ -171,6 +177,7 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
       themeId: null,
       coverImageUrl: null,
       customTheme: null,
+      showFieldIcons: false,
       isDirty: false,
       lastSavedAt: null,
     }),

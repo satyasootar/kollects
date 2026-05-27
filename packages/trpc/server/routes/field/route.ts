@@ -138,6 +138,7 @@ export const fieldRouter = router({
               .object({
                 ratingMax: z.number().int().min(1).max(10).optional(),
                 placeholder: z.string().max(255).optional(),
+                showIcon: z.boolean().optional(),
               })
               .optional(),
           }),

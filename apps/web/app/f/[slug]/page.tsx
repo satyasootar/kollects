@@ -12,6 +12,7 @@ import { useCompletionTimer } from "~/hooks/use-completion-timer";
 import { toast } from "~/lib/toast";
 import { FieldInput } from "./_field-input";
 import { Info } from "lucide-react";
+import { FIELD_TYPE_ICON_MAP } from "~/components/form-builder/field-type-picker";
 import { buildValidationSchema } from "@repo/database/schemas/dynamic-validator";
 
 import "~/components/form-themes/themes/_register-all";
@@ -192,20 +193,28 @@ export default function FormFillPage() {
                 <div key={field.id} id={`field-${field.id}`} className="space-y-2">
                   <label
                     htmlFor={`input-${field.id}`}
+                    className="flex items-center"
                     style={{ fontSize: `${theme.fonts.scale.question}rem`, fontWeight: 500 }}
                   >
-                    {field.label}
-                    {field.required && (
-                      <span style={{ color: theme.colors.danger }}> *</span>
-                    )}
-                    {field.helpText && (
-                      <span
-                        title={field.helpText}
-                        className="ml-2 inline-flex cursor-help opacity-50 hover:opacity-100 transition-opacity"
-                      >
-                        <Info className="size-4 inline-block" />
+                    {formData.settings?.showFieldIcons && (
+                      <span className="mr-2 opacity-50 shrink-0">
+                        {React.createElement(FIELD_TYPE_ICON_MAP[field.type as keyof typeof FIELD_TYPE_ICON_MAP] || "div", { className: "size-4 inline-block" })}
                       </span>
                     )}
+                    <span>
+                      {field.label}
+                      {field.required && (
+                        <span style={{ color: theme.colors.danger }}> *</span>
+                      )}
+                      {field.helpText && (
+                        <span
+                          title={field.helpText}
+                          className="ml-2 inline-flex cursor-help opacity-50 hover:opacity-100 transition-opacity"
+                        >
+                          <Info className="size-4 inline-block" />
+                        </span>
+                      )}
+                    </span>
                   </label>
                   <FieldInput
                     field={field}

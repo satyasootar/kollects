@@ -58,6 +58,7 @@ export default function FieldsPage() {
         themeId: formData.themeId,
         coverImageUrl: formData.coverImageUrl,
         customTheme: formData.settings?.customTheme,
+        showFieldIcons: formData.settings?.showFieldIcons ?? false,
       });
     }
   }, [form, formId]);
@@ -81,12 +82,17 @@ export default function FieldsPage() {
   const handleSaveAndContinue = async () => {
     setIsSaving(true);
     try {
-      // 1. Update form title/description
+      // 1. Update form title/description/settings
       await updateFormMutation.mutateAsync({
         formId,
         title: store.title,
         description: store.description || undefined,
         coverImageUrl: store.coverImageUrl,
+        settings: {
+          ...((form as any)?.settings || {}),
+          showFieldIcons: store.showFieldIcons,
+          customTheme: store.customTheme,
+        },
       });
 
       // 2. Bulk sync all fields
@@ -131,6 +137,11 @@ export default function FieldsPage() {
         title: store.title,
         description: store.description || undefined,
         coverImageUrl: store.coverImageUrl,
+        settings: {
+          ...((form as any)?.settings || {}),
+          showFieldIcons: store.showFieldIcons,
+          customTheme: store.customTheme,
+        },
       });
 
       const fieldsToSync = store.fields.map((field) => ({
@@ -219,12 +230,16 @@ export default function FieldsPage() {
           onSelectField={store.selectField}
           onReorder={store.reorderFields}
           onDeleteField={store.deleteField}
+          onUpdateField={store.updateField}
+          showFieldIcons={store.showFieldIcons}
           coverImageUrl={store.coverImageUrl}
           onUpdateCoverImage={store.setCoverImageUrl}
         />
         <FieldSettings
           field={selectedField}
           onUpdate={store.updateField}
+          showFieldIcons={store.showFieldIcons}
+          onUpdateShowFieldIcons={store.setShowFieldIcons}
         />
       </div>
 
