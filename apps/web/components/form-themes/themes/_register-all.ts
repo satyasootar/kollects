@@ -2,7 +2,6 @@ import { registerTheme } from "../_registry";
 
 // Register all built-in themes
 registerTheme("default-light", () => import("./default-light"));
-registerTheme("marvel.spiderman", () => import("./marvel-spiderman"));
 registerTheme("marvel.spidyform", () => import("./marvel-spidyform"));
 registerTheme("marvel.ironman", () => import("./marvel-ironman"));
 registerTheme("marvel.captainamerica", () => import("./marvel-captainamerica"));

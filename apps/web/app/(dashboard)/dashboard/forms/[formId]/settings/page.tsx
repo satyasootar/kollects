@@ -212,9 +212,9 @@ export default function FormSettingsPage() {
 
   return (
     <div className="flex flex-1 min-h-0 h-full">
-      {/* Left panel — Settings */}
-      <div className="flex-1 overflow-y-auto p-6 lg:border-r lg:border-border">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-3xl">
+      {/* Main panel — Settings */}
+      <div className="flex-1 overflow-y-auto p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-3xl mx-auto">
           {/* Sticky save button */}
           <div className="sticky top-0 z-30 flex justify-end py-2 bg-background/95 backdrop-blur">
             <Button
@@ -297,63 +297,6 @@ export default function FormSettingsPage() {
             </AlertDialogContent>
           </AlertDialog>
         </form>
-      </div>
-
-      {/* Right panel — Live Preview */}
-      <div 
-        className="w-[450px] hidden lg:flex flex-col transition-colors duration-300 min-h-0"
-        style={{ backgroundColor: activeThemeConfig?.colors?.background ?? "#fafafa" }}
-      >
-        {/* Sticky header */}
-        <div
-          className="flex items-center justify-between px-6 py-3 shrink-0 border-b border-border/20 mix-blend-difference text-white"
-          style={{ backgroundColor: activeThemeConfig?.colors?.background ?? "#fafafa" }}
-        >
-          <h3 className="text-xs font-semibold uppercase tracking-wider opacity-80">
-            Live Preview
-          </h3>
-          <div className="flex items-center gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
-              asChild
-              className="bg-background text-foreground hover:bg-background/90 h-8"
-            >
-              <Link href={`/dashboard/forms/${formId}/fields`}>
-                <Layout className="size-3.5 mr-1.5" />
-                Edit Fields
-              </Link>
-            </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm" 
-              asChild
-              className="bg-background text-foreground hover:bg-background/90 h-8"
-            >
-              <Link href={`/dashboard/forms/${formId}/theme`}>
-                <Palette className="size-3.5 mr-1.5" />
-                Edit Design
-              </Link>
-            </Button>
-          </div>
-        </div>
-
-        {/* Scrollable form preview */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {activeThemeConfig ? (
-            <FormPreviewRenderer
-              fields={store.fields}
-              formTitle={store.title}
-              formDescription={store.description}
-              coverImageUrl={store.coverImageUrl}
-              themeConfig={activeThemeConfig}
-            />
-          ) : (
-            <Skeleton className="h-96 w-full rounded-2xl" />
-          )}
-        </div>
       </div>
     </div>
   );

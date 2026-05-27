@@ -1,0 +1,119 @@
+/* marvel-ironman.css */
+
+[data-theme="marvel.ironman"] {
+  background: radial-gradient(circle at center, #3c0303 0%, #050000 70%) !important;
+  color: #fca5a5;
+}
+
+/* Glowing arc reactor in the background */
+[data-theme="marvel.ironman"]::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 400px;
+  height: 400px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  animation: arc-pulse 4s infinite alternate;
+}
+
+@keyframes arc-pulse {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+  100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
+}
+
+[data-theme="marvel.ironman"] form {
+  position: relative;
+  background: rgba(15, 0, 0, 0.85) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.2), inset 0 0 20px rgba(245, 158, 11, 0.1) !important;
+  backdrop-filter: blur(10px);
+  padding: 40px !important;
+  /* Hexagonal-ish corners using clip-path */
+  clip-path: polygon(
+    20px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px), 
+    calc(100% - 20px) 100%, 20px 100%, 0 calc(100% - 20px), 0 20px
+  );
+  z-index: 1;
+}
+
+/* Faux metallic border overlay */
+[data-theme="marvel.ironman"] form::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border: 2px solid #F59E0B;
+  clip-path: polygon(
+    20px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 20px), 
+    calc(100% - 20px) 100%, 20px 100%, 0 calc(100% - 20px), 0 20px
+  );
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Corner highlights */
+[data-theme="marvel.ironman"] form::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: 
+    linear-gradient(135deg, #F59E0B 10px, transparent 10px) top left,
+    linear-gradient(225deg, #F59E0B 10px, transparent 10px) top right,
+    linear-gradient(45deg, #F59E0B 10px, transparent 10px) bottom left,
+    linear-gradient(315deg, #F59E0B 10px, transparent 10px) bottom right;
+  background-size: 50% 50%;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+[data-theme="marvel.ironman"] form input,
+[data-theme="marvel.ironman"] form textarea,
+[data-theme="marvel.ironman"] form select,
+[data-theme="marvel.ironman"] form [role="combobox"] {
+  background: rgba(255, 0, 0, 0.05) !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  border-radius: 4px !important;
+  color: #FCA5A5 !important;
+  font-family: 'Share Tech Mono', monospace !important;
+  transition: all 0.3s ease !important;
+}
+
+[data-theme="marvel.ironman"] form input:focus,
+[data-theme="marvel.ironman"] form textarea:focus,
+[data-theme="marvel.ironman"] form select:focus {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: #F59E0B !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5) !important;
+}
+
+[data-theme="marvel.ironman"] form label {
+  color: #F59E0B !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+/* Glowing Submit Button */
+[data-theme="marvel.ironman"] form button[type="submit"] {
+  background: linear-gradient(90deg, #991b1b, #ef4444) !important;
+  border: 1px solid #F59E0B !important;
+  color: #ffffff !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  clip-path: polygon(15px 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 15px 100%, 0 50%);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.6) !important;
+  transition: all 0.3s ease !important;
+  border-radius: 0 !important;
+}
+
+[data-theme="marvel.ironman"] form button[type="submit"]:hover {
+  background: linear-gradient(90deg, #b91c1c, #f87171) !important;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.9) !important;
+}

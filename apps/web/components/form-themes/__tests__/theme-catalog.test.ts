@@ -2,7 +2,6 @@ import { themeConfigSchema } from "../_types";
 
 // Import all theme configs directly for validation
 import defaultLight from "../themes/default-light";
-import spiderman from "../themes/marvel-spiderman";
 import ironman from "../themes/marvel-ironman";
 import captainamerica from "../themes/marvel-captainamerica";
 import hulk from "../themes/marvel-hulk";
@@ -16,11 +15,11 @@ import osaka from "../themes/city-osaka";
 import mumbai from "../themes/city-mumbai";
 
 const ALL_THEMES = [
-  defaultLight, spiderman, ironman, captainamerica, hulk,
+  defaultLight, ironman, captainamerica, hulk,
   batman, superman, windowsxp, macos, linuxTerminal, forest, osaka, mumbai,
 ];
 
-describe("Theme Catalog — all 13 themes validate", () => {
+describe("Theme Catalog — all 12 themes validate", () => {
   it.each(ALL_THEMES.map((t) => [t.id, t]))(
     "%s validates against schema",
     (_id, theme) => {
