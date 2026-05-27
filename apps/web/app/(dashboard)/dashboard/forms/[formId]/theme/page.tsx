@@ -10,6 +10,7 @@ import { Skeleton } from "~/components/ui/skeleton";
 import { Badge } from "~/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "~/components/ui/resizable";
 import {
   loadTheme,
   getRegisteredThemeIds,
@@ -248,10 +249,14 @@ export default function ThemeDesignPage() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
         {/* Left panel — Theme selection */}
-        <div className="w-full lg:w-[450px] shrink-0 overflow-y-auto p-6 space-y-6">
-          <Tabs defaultValue="presets" className="space-y-4">
+        <ResizablePanel 
+          defaultSize={35}
+          className="h-full bg-background"
+        >
+          <div className="h-full overflow-y-auto p-6 space-y-6">
+            <Tabs defaultValue="presets" className="space-y-4">
             <TabsList>
               <TabsTrigger value="presets" className="gap-1.5">
                 <Sparkles className="size-4" />
@@ -473,14 +478,22 @@ export default function ThemeDesignPage() {
               )}
             </TabsContent>
           </Tabs>
-        </div>
+          </div>
+        </ResizablePanel>
+
+        {/* Dragger */}
+        <ResizableHandle withHandle className="hidden lg:flex" />
 
         {/* Right panel — Live preview */}
-        <div 
-          className="flex-1 border-l border-border p-6 overflow-y-auto hidden lg:block transition-colors duration-300"
-          style={{ backgroundColor: activeThemeConfig.colors.background }}
+        <ResizablePanel 
+          defaultSize={65} 
+          className="hidden lg:block h-full transition-colors duration-300"
         >
-          <div className="sticky top-0 space-y-4 max-w-[500px] mx-auto">
+          <div 
+            className="h-full overflow-y-auto p-6"
+            style={{ backgroundColor: activeThemeConfig.colors.background }}
+          >
+            <div className="sticky top-0 space-y-4 max-w-[500px] mx-auto">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Live Preview
             </h3>
@@ -491,9 +504,10 @@ export default function ThemeDesignPage() {
               coverImageUrl={store.coverImageUrl}
               themeConfig={activeThemeConfig}
             />
+            </div>
           </div>
-        </div>
-      </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   );
 }
