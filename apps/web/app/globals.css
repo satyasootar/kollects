@@ -83,38 +83,43 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   LIGHT MODE — Clean white canvas + dark primary (redesigned)
+   LIGHT MODE — Auxia Editorial Aesthetic
    ═══════════════════════════════════════════════════════════════════════════════ */
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
-  /* core surfaces — clean white */
-  --background: oklch(0.995 0 0);
-  --foreground: oklch(0.15 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: var(--foreground);
-  --popover: oklch(1 0 0);
-  --popover-foreground: var(--foreground);
+  /* core surfaces — warm cream */
+  --background: #f0efe3;
+  --foreground: #1a1a1a;
+  
+  /* cards and popovers — clean white */
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
 
   /* primary action — near-black */
-  --primary: oklch(0.15 0 0);
-  --primary-foreground: oklch(0.98 0 0);
+  --primary: #1a1a1a;
+  --primary-foreground: #ffffff;
 
-  /* secondary — very light gray */
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: var(--foreground);
+  /* secondary — off-white / light gray */
+  --secondary: #fafafa;
+  --secondary-foreground: #1a1a1a;
 
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.50 0 0);
+  /* muted text and backgrounds */
+  --muted: #e6e5d8;
+  --muted-foreground: #737373;
 
-  --accent: oklch(0.96 0 0);
-  --accent-foreground: var(--foreground);
+  /* accents */
+  --accent: #e6e5d8;
+  --accent-foreground: #1a1a1a;
 
   --destructive: oklch(0.58 0.20 28);
 
-  --border: oklch(0.92 0 0);
-  --input: oklch(0.92 0 0);
-  --ring: oklch(0.40 0 0);
+  /* borders and inputs */
+  --border: #e5e5e5;
+  --input: #e5e5e5;
+  --ring: #4d65ff;
 
   /* chart colors */
   --chart-1: oklch(0.646 0.222 41.116);

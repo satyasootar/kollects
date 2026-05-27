@@ -8,10 +8,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema } from "@repo/database/schemas/auth";
 import type { z } from "zod";
 import { trpc } from "~/trpc/client";
-import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Doodle } from "~/components/chrome";
 import { applyServerFieldErrors } from "~/lib/form-helpers";
 import { handleTrpcError } from "~/lib/api-error";
 import { GoogleLogin } from "@react-oauth/google";
@@ -36,7 +32,6 @@ function LoginForm() {
     register,
     handleSubmit,
     setError,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -62,43 +57,21 @@ function LoginForm() {
     },
   });
 
-  const emailValue = watch("email");
-  const [showDoodle, setShowDoodle] = React.useState(true);
-
-  React.useEffect(() => {
-    if (emailValue && emailValue.length > 0) {
-      setShowDoodle(false);
-    }
-  }, [emailValue]);
-
   const onSubmit = (data: LoginInput) => {
     loginMutation.mutate(data);
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link href="/" className="text-sm font-semibold text-foreground">
-          kollects.tech
-        </Link>
-      </div>
-
-      <div>
-        <h1 className="text-display-md text-foreground">
-          Welcome{" "}
-          <span className="text-tint-blush-ink relative inline-block">
-            back
-            <Doodle
-              name="underline-wave"
-              className="absolute -bottom-1 left-0 w-full h-2"
-            />
-          </span>
-          .
-        </h1>
+    <div
+      className="w-full bg-white border border-[#e5e5e5] rounded-3xl p-10 mx-auto shadow-[0_20px_40px_-12px_rgba(0,0,0,0.05)]"
+    >
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-serif text-[#1a1a1a] mb-2">Welcome back.</h1>
+        <p className="text-sm text-[#737373]">Sign in to continue to Kolletcs</p>
       </div>
 
       {/* Google Sign-In */}
-      <div className="w-full flex justify-center">
+      <div className="w-full flex justify-center mb-8">
         <GoogleLogin
           onSuccess={(credentialResponse) => {
             if (credentialResponse.credential) {
@@ -108,95 +81,88 @@ function LoginForm() {
           onError={() => {
             toast.error("Google sign-in failed. Please try again.");
           }}
-          width="340"
+          width="320"
           size="large"
           shape="rectangular"
           text="signin_with"
-          logo_alignment="left"
+          logo_alignment="center"
         />
       </div>
 
       {/* Divider */}
-      <div className="relative">
+      <div className="relative mb-8">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
+          <div className="w-full border-t border-[#e5e5e5]" />
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="bg-background px-3 text-muted-foreground">or continue with email</span>
+          <span className="bg-white px-3 text-[#737373] uppercase tracking-widest font-medium">or email</span>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2 relative">
-          {showDoodle && (
-            <Doodle
-              name="arrow-down-right"
-              className="absolute -top-6 -left-6 size-5 text-doodle-soft transition-opacity duration-300"
-            />
-          )}
-          <Label htmlFor="email">
-            Email <span className="text-destructive">*</span>
-          </Label>
-          <Input
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <div>
+          <label htmlFor="email" className="block text-xs font-medium text-[#737373] ml-1 mb-2 uppercase tracking-widest">
+            Email <span className="text-red-500">*</span>
+          </label>
+          <input
             id="email"
             type="email"
             placeholder="you@example.com"
-            className="h-11"
+            className="w-full h-12 px-4 rounded-xl text-sm bg-[#fafafa] border border-[#e5e5e5] text-[#1a1a1a] placeholder:text-[#a3a3a3] outline-none focus:ring-2 focus:ring-[#4d65ff]/20 focus:border-[#4d65ff] transition-all"
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? "email-error" : undefined}
             {...register("email")}
           />
           {errors.email && (
-            <p id="email-error" className="text-xs text-destructive" aria-live="polite">
+            <p id="email-error" className="text-xs text-red-500 mt-2 ml-1" aria-live="polite">
               {errors.email.message}
             </p>
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">
-            Password <span className="text-destructive">*</span>
-          </Label>
-          <Input
+        <div>
+          <label htmlFor="password" className="block text-xs font-medium text-[#737373] ml-1 mb-2 uppercase tracking-widest">
+            Password <span className="text-red-500">*</span>
+          </label>
+          <input
             id="password"
             type="password"
             placeholder="••••••••"
-            className="h-11"
+            className="w-full h-12 px-4 rounded-xl text-sm bg-[#fafafa] border border-[#e5e5e5] text-[#1a1a1a] placeholder:text-[#a3a3a3] outline-none focus:ring-2 focus:ring-[#4d65ff]/20 focus:border-[#4d65ff] transition-all"
             aria-invalid={!!errors.password}
             aria-describedby={errors.password ? "password-error" : undefined}
             {...register("password")}
           />
           {errors.password && (
-            <p id="password-error" className="text-xs text-destructive" aria-live="polite">
+            <p id="password-error" className="text-xs text-red-500 mt-2 ml-1" aria-live="polite">
               {errors.password.message}
             </p>
           )}
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end mt-2">
           <Link
             href="/auth/forgot-password"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="text-xs text-[#737373] hover:text-[#1a1a1a] transition-colors"
           >
             Forgot password?
           </Link>
         </div>
 
-        <Button
+        <button
           type="submit"
-          variant="forest"
-          className="w-full h-11"
+          className="w-full h-12 mt-4 rounded-xl text-sm font-bold bg-[#1a1a1a] text-white hover:bg-[#333] transition-colors active:scale-[0.98] disabled:opacity-50 disabled:hover:bg-[#1a1a1a] disabled:active:scale-100"
           disabled={isSubmitting || loginMutation.isPending}
         >
           {loginMutation.isPending ? "Logging in…" : "Login"}
-        </Button>
+        </button>
       </form>
 
-      <p className="text-sm text-muted-foreground text-center">
+      <p className="text-sm text-[#737373] text-center mt-8">
         Don&apos;t have an account?{" "}
-        <Button variant="link-soft" asChild className="p-0 h-auto">
-          <Link href="/signup">Sign up</Link>
-        </Button>
+        <Link href="/signup" className="text-[#1a1a1a] font-medium hover:underline">
+          Sign up
+        </Link>
       </p>
     </div>
   );

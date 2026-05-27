@@ -7,7 +7,7 @@ import { PLAN_LIMITS } from "@repo/database/constants/user-plan";
 import { trpc } from "~/trpc/client";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
-import { Sparkles, MoreVertical } from "lucide-react";
+import { Plus, MoreVertical } from "lucide-react";
 import {
   TintCard,
   NumberTicker,
@@ -155,8 +155,8 @@ export default function DashboardPage() {
           onClick={() => createMutation.mutate({ title: "Untitled Form" })}
           disabled={createMutation.isPending}
         >
-          <Sparkles className="size-4 mr-2" />
           {createMutation.isPending ? "Creating…" : "Create form"}
+          {!createMutation.isPending && <Plus className="size-4 ml-2" />}
         </Button>
       </div>
 
@@ -174,31 +174,33 @@ export default function DashboardPage() {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <TintCard tint="mint">
-          <TintCard.Number>
+        <div className="bg-white border border-[#e5e5e5] rounded-3xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <div className="text-3xl md:text-4xl font-display text-[#1a1a1a] mb-1 flex items-center">
             <NumberTicker value={totalForms} />
-            <Doodle name="swirl" className="inline-block size-4 ml-1" />
-          </TintCard.Number>
-          <TintCard.Caption>Forms</TintCard.Caption>
-        </TintCard>
-        <TintCard tint="peach">
-          <TintCard.Number>
+          </div>
+          <div className="text-xs font-semibold text-[#a3a3a3] uppercase tracking-widest">Forms</div>
+        </div>
+
+        <div className="bg-white border border-[#e5e5e5] rounded-3xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <div className="text-3xl md:text-4xl font-display text-[#1a1a1a] mb-1">
             <NumberTicker value={totalResponses} />
-          </TintCard.Number>
-          <TintCard.Caption>Total responses</TintCard.Caption>
-        </TintCard>
-        <TintCard tint="forest">
-          <TintCard.Number>
+          </div>
+          <div className="text-xs font-semibold text-[#a3a3a3] uppercase tracking-widest">Total responses</div>
+        </div>
+
+        <div className="bg-white border border-[#e5e5e5] rounded-3xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <div className="text-3xl md:text-4xl font-display text-[#1a1a1a] mb-1">
             <NumberTicker value={avgCompletion} suffix="%" />
-          </TintCard.Number>
-          <TintCard.Caption>Avg completion</TintCard.Caption>
-        </TintCard>
-        <TintCard tint="butter">
-          <TintCard.Number>
+          </div>
+          <div className="text-xs font-semibold text-[#a3a3a3] uppercase tracking-widest">Avg completion</div>
+        </div>
+
+        <div className="bg-white border border-[#e5e5e5] rounded-3xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <div className="text-3xl md:text-4xl font-display text-[#1a1a1a] mb-1">
             <NumberTicker value={totalResponses > 0 ? Math.min(totalResponses, 99) : 0} />
-          </TintCard.Number>
-          <TintCard.Caption>This week</TintCard.Caption>
-        </TintCard>
+          </div>
+          <div className="text-xs font-semibold text-[#a3a3a3] uppercase tracking-widest">This week</div>
+        </div>
       </div>
 
       {/* Filter bar */}
@@ -232,12 +234,16 @@ export default function DashboardPage() {
 
       {!isLoading && filteredForms.length === 0 && (
         <EmptyState
-          illustration="ship-form"
           headline="Nothing here yet."
           description="Create your first form to start collecting."
           action={
-            <Button variant="forest" asChild>
-              <Link href="/dashboard/forms/new">Create form</Link>
+            <Button 
+              variant="forest" 
+              onClick={() => createMutation.mutate({ title: "Untitled Form" })}
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? "Creating…" : "Create form"}
+              {!createMutation.isPending && <Plus className="size-4 ml-2" />}
             </Button>
           }
         />

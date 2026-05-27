@@ -55,6 +55,7 @@ export function DashboardSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
+
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -72,6 +73,14 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup className="mt-auto">
+          <div className="px-4 pb-4 w-full">
+            <a href="https://pollrange.vercel.app/" target="_blank" rel="noopener noreferrer" data-discover="true" className="w-full block">
+              <button data-slot="button" data-variant="default" data-size="lg" className="w-full group/button inline-flex shrink-0 items-center justify-center border-2 border-foreground bg-clip-padding outline-none select-none active:translate-x-0.5 active:translate-y-0.5 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] h-14 px-4 rounded-none bg-foreground text-background hover:bg-primary text-xs font-black uppercase tracking-widest transition-all">
+                Create Free Poll 
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-right ml-2 w-4 h-4" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+              </button>
+            </a>
+          </div>
           <SidebarGroupContent>
             <SidebarMenu>
               {SETTINGS_ITEMS.map((item) => (
