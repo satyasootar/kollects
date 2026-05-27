@@ -10,6 +10,7 @@ services:
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=https://api.kollects.tech/trpc
+      - PORT=3000
     env_file:
       - .env
     networks:
