@@ -24,6 +24,10 @@ import {
   SidebarSeparator,
 } from "~/components/ui/sidebar";
 
+import { useUserStore } from "~/lib/stores/user-store";
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+import { trpc } from "~/trpc/client";
+
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Templates", href: "/dashboard/templates", icon: LayoutTemplate },
@@ -36,6 +40,12 @@ const SETTINGS_ITEMS = [
 
 export function DashboardSidebar() {
   const pathname = usePathname();
+  const user = useUserStore((state) => state.user);
+  const logoutMutation = trpc.auth.logout.useMutation({
+    onSuccess: () => {
+      window.location.href = "/login";
+    },
+  });
 
   return (
     <Sidebar>
@@ -97,11 +107,35 @@ export function DashboardSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4">
-        <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full">
-          <LogOut className="size-4" />
-          <span>Logout</span>
-        </button>
+      <SidebarFooter className="p-4 border-t border-sidebar-border">
+        {user ? (
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <Avatar className="size-8 border border-border">
+                <AvatarImage src={user.avatarUrl || ""} alt={user.name} />
+                <AvatarFallback className="bg-muted text-xs">
+                  {user.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-sm font-medium text-foreground truncate">{user.name}</span>
+                <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+              </div>
+            </div>
+            <button 
+              className="text-muted-foreground hover:text-destructive transition-colors shrink-0 p-1"
+              title="Logout"
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+            >
+              <LogOut className="size-4" />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-2">
+            <div className="size-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          </div>
+        )}
       </SidebarFooter>
     </Sidebar>
   );

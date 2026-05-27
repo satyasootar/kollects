@@ -19,6 +19,10 @@ import { hashIP } from "../ip";
 import crypto from "crypto";
 import { logger } from "@repo/logger";
 import { cache } from "../cache";
+import { OAuth2Client } from "google-auth-library";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_OAUTH_CLIENT_ID);
+
 
 export class AuthService {
   /**
@@ -59,6 +63,91 @@ export class AuthService {
     // Create a session for the newly registered user
     const ipHash = reqContext?.ip ? hashIP(reqContext.ip) : undefined;
     const sessionResult = await createSession(user.id, ipHash, reqContext?.userAgent);
+
+    return {
+      user: this.sanitizeUser(user),
+      token: sessionResult.token,
+      session: sessionResult.session,
+    };
+  }
+
+  /**
+   * Register a new user with Google OAuth credential (ID token).
+   * Upserts: finds by email or creates a new user.
+   */
+  async googleLogin(
+    credential: string,
+    reqContext?: { ip?: string; userAgent?: string },
+  ) {
+    // Verify the Google ID token
+    let ticket;
+    try {
+      ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_OAUTH_CLIENT_ID,
+      });
+    } catch (err) {
+      logger.warn("Google OAuth token verification failed", { err });
+      throw new Error("Invalid Google credential. Please try again.");
+    }
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      throw new Error("Could not retrieve email from Google account.");
+    }
+
+    const { email, name, picture, sub: googleId } = payload;
+
+    // Find or create user
+    const [existing] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.email, email))
+      .limit(1);
+
+    let user: SelectUser;
+
+    if (existing) {
+      // Update avatar if changed
+      if (picture && existing.avatarUrl !== picture) {
+        const [updated] = await db
+          .update(usersTable)
+          .set({ avatarUrl: picture })
+          .where(eq(usersTable.id, existing.id))
+          .returning();
+        user = updated!;
+      } else {
+        user = existing;
+      }
+    } else {
+      // Create new user — no passwordHash for OAuth users
+      const [created] = await db
+        .insert(usersTable)
+        .values({
+          name: name ?? email.split("@")[0] ?? "User",
+          email,
+          avatarUrl: picture ?? null,
+          emailVerified: true, // Google already verified it
+          passwordHash: null,
+        })
+        .returning();
+      if (!created) throw new Error("Failed to create user via Google OAuth");
+      user = created;
+      logger.info("New user registered via Google OAuth", { userId: user.id });
+    }
+
+    const ipHash = reqContext?.ip ? hashIP(reqContext.ip) : undefined;
+    const sessionResult = await createSession(user.id, ipHash, reqContext?.userAgent);
+
+    await db.insert(auditLogsTable).values({
+      userId: user.id,
+      action: "login",
+      entityType: "user",
+      entityId: user.id,
+      ipAddress: reqContext?.ip || null,
+    });
+
+    logger.info("User signed in via Google OAuth", { userId: user.id });
 
     return {
       user: this.sanitizeUser(user),

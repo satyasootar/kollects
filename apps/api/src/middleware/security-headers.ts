@@ -11,4 +11,7 @@ export const securityHeaders = helmet({
     },
   },
   crossOriginResourcePolicy: { policy: "cross-origin" },
+  // Required for Google OAuth popup mode — allows the popup to postMessage back
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
 });
+

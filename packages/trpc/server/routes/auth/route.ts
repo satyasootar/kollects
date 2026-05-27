@@ -57,6 +57,30 @@ export const authRouter = router({
       return { user, token };
     }),
 
+  googleLogin: publicProcedure
+    .meta({ openapi: { method: "POST", path: getPath("/google"), tags: TAGS, summary: "Sign in with Google", description: "Verifies a Google ID token credential from the frontend, upserts the user account (creates if new, updates avatar if returning), creates a session, and sets the session cookie. Works for both sign-up and sign-in flows." } })
+    .input(z.object({ credential: z.string().min(1, "Google credential is required") }))
+    .output(
+      z.object({
+        user: z
+          .object({
+            id: z.string(),
+            name: z.string(),
+            email: z.string().email(),
+          })
+          .passthrough(),
+        token: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { user, token } = await authService.googleLogin(input.credential, {
+        ip: ctx.ipHash,
+        userAgent: ctx.userAgent,
+      });
+      setSessionCookie(ctx.res, token);
+      return { user, token };
+    }),
+
   login: publicProcedure
     .use(loginRateLimit)
     .meta({ openapi: { method: "POST", path: getPath("/login"), tags: TAGS, summary: "Log in", description: "Authenticates a user with email and password. Sets a secure session cookie (30-day expiry) and returns the user object with session token. Rate limited to 10 requests per 15 minutes per IP. Failed attempts are logged for security auditing." } })

@@ -16,9 +16,12 @@ import { themeRouter } from "./routes/theme/route";
 import { templateRouter } from "./routes/template/route";
 import { apiKeyRouter } from "./routes/api-key/route";
 
+import { userRouter } from "./routes/user/route";
+
 export const serverRouter = router({
   health: healthRouter,
   auth: authRouter,
+  user: userRouter,
   form: formRouter,
   field: fieldRouter,
   media: mediaRouter,

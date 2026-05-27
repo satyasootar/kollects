@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { trpc } from "~/trpc/client";
+import { useUserStore } from "~/lib/stores/user-store";
 import { Skeleton } from "~/components/ui/skeleton";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -12,11 +13,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     retry: false,
   });
 
+  const setUser = useUserStore((state) => state.setUser);
+
   React.useEffect(() => {
     if (error) {
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    } else if (data?.user) {
+      setUser(data.user as any);
     }
-  }, [error, router, pathname]);
+  }, [error, data, router, pathname, setUser]);
 
   if (isLoading) {
     return (

@@ -14,6 +14,8 @@ import { Label } from "~/components/ui/label";
 import { Doodle } from "~/components/chrome";
 import { applyServerFieldErrors } from "~/lib/form-helpers";
 import { handleTrpcError } from "~/lib/api-error";
+import { GoogleLogin } from "@react-oauth/google";
+import { toast } from "~/lib/toast";
 
 type RegisterInput = z.infer<typeof registerSchema>;
 
@@ -49,6 +51,15 @@ export default function SignupPage() {
     },
   });
 
+  const googleLoginMutation = trpc.auth.googleLogin.useMutation({
+    onSuccess: () => {
+      router.replace("/dashboard");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Google sign-up failed. Please try again.");
+    },
+  });
+
   const passwordValue = watch("password") ?? "";
 
   const onSubmit = (data: RegisterInput) => {
@@ -75,6 +86,35 @@ export default function SignupPage() {
           </span>
           .
         </h1>
+      </div>
+
+      {/* Google Sign-Up */}
+      <div className="w-full flex justify-center">
+        <GoogleLogin
+          onSuccess={(credentialResponse) => {
+            if (credentialResponse.credential) {
+              googleLoginMutation.mutate({ credential: credentialResponse.credential });
+            }
+          }}
+          onError={() => {
+            toast.error("Google sign-up failed. Please try again.");
+          }}
+          width="340"
+          size="large"
+          shape="rectangular"
+          text="signup_with"
+          logo_alignment="left"
+        />
+      </div>
+
+      {/* Divider */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-background px-3 text-muted-foreground">or sign up with email</span>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
