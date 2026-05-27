@@ -3,6 +3,7 @@ import { formsTable } from "@repo/database/models/form";
 import { formFieldsTable } from "@repo/database/models/form-field";
 import { TRPCError } from "@trpc/server";
 import { assertOwnership, assertNotDeleted } from "../form/access-control";
+import { cache } from "../cache";
 import crypto from "crypto";
 
 export class FieldService {
@@ -274,11 +275,21 @@ export class FieldService {
       }
 
       // 6. Return all fields in order
-      return tx
+      const finalFields = await tx
         .select()
         .from(formFieldsTable)
         .where(eq(formFieldsTable.formId, formId))
         .orderBy(asc(formFieldsTable.order));
+      
+      const form = await tx.query.formsTable.findFirst({
+        where: eq(formsTable.id, formId)
+      });
+      
+      if (form?.slug) {
+        await cache.invalidate(`public-form-with-fields:slug:${form.slug}`);
+      }
+
+      return finalFields;
     });
   }
 }

@@ -35,7 +35,7 @@ export function buildValidationSchema(fields: SelectFormField[]): z.ZodObject<an
         break;
       }
       case "number": {
-        let numSchema = z.number();
+        let numSchema = z.coerce.number();
         if (validations.min !== undefined) numSchema = numSchema.min(Number(validations.min));
         if (validations.max !== undefined) numSchema = numSchema.max(Number(validations.max));
         fieldSchema = numSchema;

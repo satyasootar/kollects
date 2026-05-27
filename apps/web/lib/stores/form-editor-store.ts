@@ -119,7 +119,6 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
           chrome: { ...(base.chrome || {}), ...(updates.chrome || {}) },
         },
         isDirty: true,
-        themeId: "custom",
       };
     }),
 

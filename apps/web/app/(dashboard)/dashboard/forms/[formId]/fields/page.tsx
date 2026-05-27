@@ -57,6 +57,7 @@ export default function FieldsPage() {
         })),
         themeId: formData.themeId,
         coverImageUrl: formData.coverImageUrl,
+        customTheme: formData.settings?.customTheme,
       });
     }
   }, [form, formId]);

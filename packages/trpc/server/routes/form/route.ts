@@ -25,6 +25,7 @@ export const formRouter = router({
     .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const { formId, ...data } = input;
+      console.log("UPDATE DATA SETTINGS:", data.settings);
       return formService.update(ctx.user.id, formId, data);
     }),
 

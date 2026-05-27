@@ -54,7 +54,6 @@ const CATEGORIES = [
   { id: "os", label: "OS" },
   { id: "nature", label: "Nature" },
   { id: "city", label: "City" },
-  { id: "custom", label: "Custom" },
 ] as const;
 
 export default function ThemeDesignPage() {
@@ -130,9 +129,11 @@ export default function ThemeDesignPage() {
   const handleSaveAndContinue = async () => {
     setIsSaving(true);
     try {
-      const settings = (form as any)?.settings || {};
-      if (store.themeId === "custom" && store.customTheme) {
+      const settings = { ...((form as any)?.settings || {}) };
+      if (store.customTheme) {
         settings.customTheme = store.customTheme;
+      } else {
+        delete settings.customTheme;
       }
 
       await updateFormMutation.mutateAsync({
@@ -156,9 +157,11 @@ export default function ThemeDesignPage() {
     if (!store.isDirty) return;
     setIsSaving(true);
     try {
-      const settings = (form as any)?.settings || {};
-      if (store.themeId === "custom" && store.customTheme) {
+      const settings = { ...((form as any)?.settings || {}) };
+      if (store.customTheme) {
         settings.customTheme = store.customTheme;
+      } else {
+        delete settings.customTheme;
       }
 
       await updateFormMutation.mutateAsync({
@@ -178,9 +181,9 @@ export default function ThemeDesignPage() {
   };
 
   const activeThemeConfig = React.useMemo(() => {
-    if (store.themeId === "custom" && store.customTheme) {
+    if (store.customTheme) {
       const custom = store.customTheme;
-      const base = themes.find((t) => t.id === "default-light") || themes[0];
+      const base = themes.find((t) => t.id === store.themeId) || themes.find((t) => t.id === "default-light") || themes[0];
       if (!base) return custom;
       return {
         ...base,
@@ -252,10 +255,6 @@ export default function ThemeDesignPage() {
                 <Sparkles className="size-4" />
                 Themes
               </TabsTrigger>
-              <TabsTrigger value="header" className="gap-1.5">
-                <ImageIcon className="size-4" />
-                Cover Image
-              </TabsTrigger>
               <TabsTrigger value="customize" className="gap-1.5">
                 <Palette className="size-4" />
                 Customize
@@ -289,49 +288,6 @@ export default function ThemeDesignPage() {
                     onSelect={() => store.setThemeId(theme.id)}
                   />
                 ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="header" className="space-y-4">
-              <div className="max-w-md space-y-4">
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-2 block">Cover Image URL</Label>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Add a cover image that appears at the top of your form.
-                  </p>
-                  <Input 
-                    placeholder="https://example.com/image.jpg" 
-                    value={store.coverImageUrl || ""}
-                    onChange={(e) => store.setCoverImageUrl(e.target.value)}
-                  />
-                </div>
-                {store.coverImageUrl ? (
-                  <div className="relative rounded-xl overflow-hidden border border-border">
-                    <img src={store.coverImageUrl} alt="Header" className="w-full h-40 object-cover" />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => store.setCoverImageUrl(null)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ) : (
-                  <Label className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-foreground/30 transition-colors cursor-pointer flex flex-col items-center justify-center">
-                    <Upload className="size-8 text-muted-foreground mb-2" />
-                    <p className="text-sm font-medium text-foreground">
-                      {isUploading ? "Uploading..." : "Click to upload or paste a URL above"}
-                    </p>
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={handleUploadBanner} 
-                      disabled={isUploading} 
-                    />
-                  </Label>
-                )}
               </div>
             </TabsContent>
 
@@ -454,9 +410,13 @@ export default function ThemeDesignPage() {
                   <Label className="text-xs">Border Radius (px)</Label>
                   <Input
                     type="number"
+                    min={0}
                     className="mt-1 w-24 text-xs h-8"
                     value={store.customTheme?.shape?.radius ?? activeThemeConfig.shape.radius}
-                    onChange={(e) => store.updateCustomTheme({ shape: { radius: Number(e.target.value) } })}
+                    onChange={(e) => {
+                      const val = Math.max(0, Number(e.target.value) || 0);
+                      store.updateCustomTheme({ shape: { radius: val } });
+                    }}
                   />
                 </div>
               </div>
@@ -481,7 +441,10 @@ export default function ThemeDesignPage() {
         </div>
 
         {/* Right panel — Live preview */}
-        <div className="w-[450px] border-l border-border bg-[#fafafa] p-6 overflow-y-auto hidden lg:block">
+        <div 
+          className="w-[450px] border-l border-border p-6 overflow-y-auto hidden lg:block transition-colors duration-300"
+          style={{ backgroundColor: activeThemeConfig.colors.background }}
+        >
           <div className="sticky top-0 space-y-4">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               Live Preview

@@ -49,17 +49,18 @@ export default function FormFillPage() {
   // Load theme
   React.useEffect(() => {
     if (formData?.themeId) {
-      if (formData.themeId === "custom" && formData.settings?.customTheme) {
+      if (formData.settings?.customTheme) {
         const custom = formData.settings.customTheme;
-        const base = DEFAULT_LIGHT_THEME;
-        setTheme({
-          ...base,
-          ...custom,
-          colors: { ...base.colors, ...(custom.colors || {}) },
-          fonts: { ...base.fonts, ...(custom.fonts || {}) },
-          shape: { ...base.shape, ...(custom.shape || {}) },
-          motion: { ...base.motion, ...(custom.motion || {}) },
-          chrome: { ...base.chrome, ...(custom.chrome || {}) },
+        loadTheme(formData.themeId).then((baseTheme) => {
+          setTheme({
+            ...baseTheme,
+            ...custom,
+            colors: { ...baseTheme.colors, ...(custom.colors || {}) },
+            fonts: { ...baseTheme.fonts, ...(custom.fonts || {}) },
+            shape: { ...baseTheme.shape, ...(custom.shape || {}) },
+            motion: { ...baseTheme.motion, ...(custom.motion || {}) },
+            chrome: { ...baseTheme.chrome, ...(custom.chrome || {}) },
+          });
         });
       } else {
         loadTheme(formData.themeId).then(setTheme);
@@ -109,7 +110,7 @@ export default function FormFillPage() {
     const completionTime = stop();
     submitMutation.mutate({
       slug,
-      answers,
+      answers: result.data,
       metadata: { completionTimeSeconds: completionTime },
     } as any);
   };

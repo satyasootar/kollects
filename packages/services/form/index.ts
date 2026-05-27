@@ -170,8 +170,10 @@ export class FormService {
         .returning();
 
       await cache.invalidate(`public-form:slug:${form.slug}`);
+      await cache.invalidate(`public-form-with-fields:slug:${form.slug}`);
       if (data.slug && data.slug !== form.slug) {
         await cache.invalidate(`public-form:slug:${data.slug}`);
+        await cache.invalidate(`public-form-with-fields:slug:${data.slug}`);
       }
 
       return updatedForm;

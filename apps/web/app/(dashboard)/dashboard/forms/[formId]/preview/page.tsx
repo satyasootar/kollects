@@ -35,6 +35,7 @@ export default function PreviewPage() {
         fields: formData.fields ?? [],
         themeId: formData.themeId,
         coverImageUrl: formData.coverImageUrl,
+        customTheme: formData.settings?.customTheme,
       });
     }
   }, [form, store]);
@@ -55,7 +56,24 @@ export default function PreviewPage() {
     }
   }, [store.themeId, store.formId]);
 
-  if (isLoading || !themeConfig) {
+  const activeThemeConfig = React.useMemo(() => {
+    if (!themeConfig) return null;
+    if (store.customTheme) {
+      const custom = store.customTheme;
+      return {
+        ...themeConfig,
+        ...custom,
+        colors: { ...themeConfig.colors, ...(custom.colors || {}) },
+        fonts: { ...themeConfig.fonts, ...(custom.fonts || {}) },
+        shape: { ...themeConfig.shape, ...(custom.shape || {}) },
+        motion: { ...themeConfig.motion, ...(custom.motion || {}) },
+        chrome: { ...themeConfig.chrome, ...(custom.chrome || {}) },
+      };
+    }
+    return themeConfig;
+  }, [themeConfig, store.customTheme]);
+
+  if (isLoading || !activeThemeConfig) {
     return (
       <div className="p-6 h-[calc(100vh-8rem)]">
         <Skeleton className="h-full rounded-2xl" />
@@ -97,7 +115,10 @@ export default function PreviewPage() {
       </div>
 
       {/* Preview container */}
-      <div className="bg-[#fafafa] rounded-2xl p-8 flex-1 overflow-auto flex justify-center border border-border/50">
+      <div 
+        className="rounded-2xl p-8 flex-1 overflow-auto flex justify-center border border-border/50 transition-colors duration-300"
+        style={{ backgroundColor: activeThemeConfig.colors.background }}
+      >
         <div
           className="transition-all duration-300 ease-in-out"
           style={{ width: `${selectedDevice.width}px`, maxWidth: "100%" }}
@@ -107,8 +128,8 @@ export default function PreviewPage() {
             formTitle={store.title ?? ""}
             formDescription={store.description ?? ""}
             coverImageUrl={store.coverImageUrl}
-            themeConfig={themeConfig}
-            className="min-h-[600px] shadow-sm"
+            themeConfig={activeThemeConfig}
+            className="min-h-[600px] shadow-sm max-w-2xl mx-auto"
           />
         </div>
       </div>

@@ -32,6 +32,14 @@ import {
   DangerZoneSection,
 } from "./_sections";
 
+import { useFormContext } from "../layout";
+import { useFormEditorStore } from "~/lib/stores/form-editor-store";
+import { FormPreviewRenderer } from "~/components/form-builder/form-preview-renderer";
+import { loadTheme, type ThemeConfig } from "~/components/form-themes";
+import "~/components/form-themes/themes/_register-all";
+import Link from "next/link";
+import { Layout, Palette } from "lucide-react";
+
 type UpdateFormInput = z.infer<typeof updateFormSchema>;
 
 const SLUG_REGEX = /^[a-z0-9-]{3,80}$/;
@@ -41,10 +49,10 @@ export default function FormSettingsPage() {
   const router = useRouter();
   const formId = params.formId;
 
-  const { data: formData, isLoading } = trpc.form.getById.useQuery(
-    { formId },
-    { enabled: !!formId },
-  );
+  const { form, isLoading } = useFormContext();
+  const store = useFormEditorStore();
+  
+  const [themeConfig, setThemeConfig] = React.useState<ThemeConfig | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -63,29 +71,77 @@ export default function FormSettingsPage() {
 
   // Reset form when data loads
   React.useEffect(() => {
-    if (formData) {
+    if (form) {
+      const formData = form as any;
       reset({
         formId,
-        title: (formData as any).title ?? "",
-        description: (formData as any).description ?? "",
-        visibility: (formData as any).visibility ?? "public",
-        coverImageUrl: (formData as any).coverImageUrl ?? null,
-        metaTitle: (formData as any).metaTitle ?? "",
-        metaDescription: (formData as any).metaDescription ?? "",
+        title: formData.title ?? "",
+        description: formData.description ?? "",
+        visibility: formData.visibility ?? "public",
+        coverImageUrl: formData.coverImageUrl ?? null,
+        metaTitle: formData.metaTitle ?? "",
+        metaDescription: formData.metaDescription ?? "",
         settings: {
-          successMessage: (formData as any).settings?.successMessage ?? "",
-          redirectUrl: (formData as any).settings?.redirectUrl ?? null,
-          showProgressBar: (formData as any).settings?.showProgressBar ?? true,
-          allowMultipleSubmissions:
-            (formData as any).settings?.allowMultipleSubmissions ?? false,
+          successMessage: formData.settings?.successMessage ?? "",
+          redirectUrl: formData.settings?.redirectUrl ?? null,
+          showProgressBar: formData.settings?.showProgressBar ?? true,
+          allowMultipleSubmissions: formData.settings?.allowMultipleSubmissions ?? false,
+          customTheme: formData.settings?.customTheme,
         },
       });
+
+      // Hydrate store for integrated editor
+      if (store.formId !== formId) {
+        store.setFormData({
+          formId,
+          title: formData.title ?? "",
+          description: formData.description ?? "",
+          fields: formData.fields ?? [],
+          themeId: formData.themeId,
+          coverImageUrl: formData.coverImageUrl,
+          customTheme: formData.settings?.customTheme,
+        });
+      }
     }
-  }, [formData, formId, reset]);
+  }, [form, formId, reset, store]);
+
+  // Load theme
+  React.useEffect(() => {
+    async function fetchTheme() {
+      if (store.themeId) {
+        const t = await loadTheme(store.themeId);
+        setThemeConfig(t);
+      } else {
+        const defaultTheme = await loadTheme("default-light");
+        setThemeConfig(defaultTheme);
+      }
+    }
+    if (store.formId) {
+      fetchTheme();
+    }
+  }, [store.themeId, store.formId]);
+
+  const activeThemeConfig = React.useMemo(() => {
+    if (!themeConfig) return null;
+    if (store.customTheme) {
+      const custom = store.customTheme;
+      return {
+        ...themeConfig,
+        ...custom,
+        colors: { ...themeConfig.colors, ...(custom.colors || {}) },
+        fonts: { ...themeConfig.fonts, ...(custom.fonts || {}) },
+        shape: { ...themeConfig.shape, ...(custom.shape || {}) },
+        motion: { ...themeConfig.motion, ...(custom.motion || {}) },
+        chrome: { ...themeConfig.chrome, ...(custom.chrome || {}) },
+      };
+    }
+    return themeConfig;
+  }, [themeConfig, store.customTheme]);
 
   const updateMutation = trpc.form.update.useMutation({
     onSuccess: () => {
       utils.form.getById.invalidate({ formId });
+      utils.form.getByIdWithFields.invalidate({ formId });
       utils.form.list.invalidate();
       toast.success("Settings saved.");
     },
@@ -114,10 +170,10 @@ export default function FormSettingsPage() {
 
   // Sync slug from loaded data
   React.useEffect(() => {
-    if (formData) {
-      setSlugValue((formData as any).slug ?? "");
+    if (form) {
+      setSlugValue((form as any).slug ?? "");
     }
-  }, [formData]);
+  }, [form]);
 
   const validateSlug = (value: string) => {
     if (!value) {
@@ -152,85 +208,140 @@ export default function FormSettingsPage() {
   const visibility = watch("visibility");
   const showProgressBar = watch("settings.showProgressBar");
   const allowMultiple = watch("settings.allowMultipleSubmissions");
-  const formTitle = (formData as any)?.title ?? "";
+  const formTitle = (form as any)?.title ?? "";
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6 max-w-3xl">
-      {/* Sticky save button */}
-      <div className="sticky top-0 z-30 flex justify-end py-2 bg-background/95 backdrop-blur">
-        <Button
-          type="submit"
-          variant="forest"
-          disabled={!isDirty || isSubmitting || updateMutation.isPending}
-        >
-          {updateMutation.isPending ? "Saving…" : "Save settings"}
-        </Button>
+    <div className="flex h-[calc(100vh-8rem)]">
+      {/* Left panel — Settings */}
+      <div className="flex-1 overflow-y-auto p-6 lg:border-r lg:border-border">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-3xl">
+          {/* Sticky save button */}
+          <div className="sticky top-0 z-30 flex justify-end py-2 bg-background/95 backdrop-blur">
+            <Button
+              type="submit"
+              variant="forest"
+              disabled={!isDirty || isSubmitting || updateMutation.isPending}
+            >
+              {updateMutation.isPending ? "Saving…" : "Save settings"}
+            </Button>
+          </div>
+
+          <GeneralSection register={register} errors={errors} />
+
+          <SeoSection
+            register={register}
+            slugValue={slugValue}
+            slugStatus={slugStatus}
+            onSlugChange={(v) => {
+              const cleaned = v.toLowerCase().replace(/[^a-z0-9-]/g, "");
+              setSlugValue(cleaned);
+              validateSlug(cleaned);
+            }}
+          />
+
+          <AccessControlSection
+            visibility={visibility}
+            onVisibilityChange={(v) =>
+              setValue("visibility", v as any, { shouldDirty: true })
+            }
+          />
+
+          <BehaviorSection
+            register={register}
+            showProgressBar={showProgressBar}
+            allowMultiple={allowMultiple}
+            onProgressBarChange={(v) =>
+              setValue("settings.showProgressBar", v, { shouldDirty: true })
+            }
+            onAllowMultipleChange={(v) =>
+              setValue("settings.allowMultipleSubmissions", v, { shouldDirty: true })
+            }
+          />
+
+          <DangerZoneSection onDelete={() => setShowDeleteDialog(true)} />
+
+          {/* Delete confirmation dialog */}
+          <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Delete &ldquo;{formTitle}&rdquo;?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Type the form title to confirm deletion. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder={formTitle}
+              />
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-white hover:bg-destructive/90"
+                  disabled={deleteConfirmText !== formTitle}
+                  onClick={() => deleteMutation.mutate({ formId })}
+                >
+                  Delete permanently
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </form>
       </div>
 
-      <GeneralSection register={register} errors={errors} />
-
-      <SeoSection
-        register={register}
-        slugValue={slugValue}
-        slugStatus={slugStatus}
-        onSlugChange={(v) => {
-          const cleaned = v.toLowerCase().replace(/[^a-z0-9-]/g, "");
-          setSlugValue(cleaned);
-          validateSlug(cleaned);
-        }}
-      />
-
-      <AccessControlSection
-        visibility={visibility}
-        onVisibilityChange={(v) =>
-          setValue("visibility", v as any, { shouldDirty: true })
-        }
-      />
-
-      <BehaviorSection
-        register={register}
-        showProgressBar={showProgressBar}
-        allowMultiple={allowMultiple}
-        onProgressBarChange={(v) =>
-          setValue("settings.showProgressBar", v, { shouldDirty: true })
-        }
-        onAllowMultipleChange={(v) =>
-          setValue("settings.allowMultipleSubmissions", v, { shouldDirty: true })
-        }
-      />
-
-      <DangerZoneSection onDelete={() => setShowDeleteDialog(true)} />
-
-      {/* Delete confirmation dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              Delete &ldquo;{formTitle}&rdquo;?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Type the form title to confirm deletion. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <Input
-            value={deleteConfirmText}
-            onChange={(e) => setDeleteConfirmText(e.target.value)}
-            placeholder={formTitle}
-          />
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteConfirmText("")}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
-              disabled={deleteConfirmText !== formTitle}
-              onClick={() => deleteMutation.mutate({ formId })}
+      {/* Right panel — Live Preview */}
+      <div 
+        className="w-[450px] overflow-y-auto p-6 hidden lg:flex flex-col transition-colors duration-300"
+        style={{ backgroundColor: activeThemeConfig?.colors?.background ?? "#fafafa" }}
+      >
+        <div className="flex items-center justify-between mb-4 sticky top-0 z-10 py-2 mix-blend-difference text-white">
+          <h3 className="text-xs font-semibold uppercase tracking-wider opacity-80">
+            Live Preview
+          </h3>
+          <div className="flex items-center gap-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              asChild
+              className="bg-background text-foreground hover:bg-background/90 h-8"
             >
-              Delete permanently
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </form>
+              <Link href={`/dashboard/forms/${formId}/fields`}>
+                <Layout className="size-3.5 mr-1.5" />
+                Edit Fields
+              </Link>
+            </Button>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              asChild
+              className="bg-background text-foreground hover:bg-background/90 h-8"
+            >
+              <Link href={`/dashboard/forms/${formId}/theme`}>
+                <Palette className="size-3.5 mr-1.5" />
+                Edit Design
+              </Link>
+            </Button>
+          </div>
+        </div>
+        
+        {activeThemeConfig ? (
+          <FormPreviewRenderer
+            fields={store.fields}
+            formTitle={store.title}
+            formDescription={store.description}
+            coverImageUrl={store.coverImageUrl}
+            themeConfig={activeThemeConfig}
+          />
+        ) : (
+          <Skeleton className="h-96 w-full rounded-2xl" />
+        )}
+      </div>
+    </div>
   );
 }

@@ -88,7 +88,7 @@
   --radius: 0.625rem;
 
   /* core surfaces — clean white */
-  --background: oklch(90.975% 0.0001 271.152);
+  --background: oklch(0.995 0 0);
   --foreground: oklch(0.15 0 0);
   --card: oklch(1 0 0);
   --card-foreground: var(--foreground);

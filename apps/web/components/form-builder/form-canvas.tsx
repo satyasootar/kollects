@@ -18,7 +18,7 @@ import {
 } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Trash2 } from "lucide-react";
+import { GripVertical, Trash2, ChevronDown } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { env } from "~/env.js";
 import { Button } from "~/components/ui/button";
@@ -237,12 +237,21 @@ function SortableCanvasField({
 
 function FieldPreviewInput({ field }: { field: any }) {
   const type = field.type;
-  const placeholder = field.placeholder;
+  
+  let defaultPlaceholder = "Your answer...";
+  if (type === "email") defaultPlaceholder = "john@example.com";
+  else if (type === "number") defaultPlaceholder = "123";
+  else if (type === "short_text") defaultPlaceholder = "John Doe";
+  else if (type === "long_text") defaultPlaceholder = "Enter your message...";
+  else if (type === "date") defaultPlaceholder = "mm/dd/yyyy";
+  else if (type === "single_select" || type === "multi_select") defaultPlaceholder = "Select an option...";
+
+  const placeholder = field.placeholder || defaultPlaceholder;
   const baseClass = "w-full h-10 rounded-lg border border-border bg-background px-3 text-sm text-muted-foreground pointer-events-none flex items-center";
 
   switch (type) {
     case "long_text":
-      return <div className={cn(baseClass, "h-20 items-start py-2")}>{placeholder || "Enter text..."}</div>;
+      return <div className={cn(baseClass, "h-20 items-start py-2")}>{placeholder}</div>;
     case "checkbox":
       return (
         <div className="flex items-center gap-2">
@@ -260,22 +269,27 @@ function FieldPreviewInput({ field }: { field: any }) {
       );
     case "single_select":
     case "multi_select":
-      if (field.options && field.options.length > 0) {
-        return (
-          <div className="space-y-2 pointer-events-none mt-2">
-            {field.options.map((opt: any, i: number) => (
-              <div key={i} className="flex items-center gap-2">
-                <div className={cn("size-4 border border-border shrink-0", type === "single_select" ? "rounded-full" : "rounded")} />
-                <span className="text-sm text-foreground">{opt.label}</span>
-              </div>
-            ))}
+      return (
+        <div className="space-y-3 pointer-events-none mt-1">
+          <div className={cn(baseClass, "flex justify-between items-center")}>
+            {placeholder}
+            <ChevronDown className="size-4 opacity-50" />
           </div>
-        );
-      }
-      return <div className={baseClass}>{placeholder || "Select an option..."}</div>;
+          {field.options && field.options.length > 0 && (
+            <div className="space-y-2 pl-3 border-l-2 border-border/30">
+              {field.options.map((opt: any, i: number) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className={cn("size-4 border border-border shrink-0 bg-background", type === "single_select" ? "rounded-full" : "rounded")} />
+                  <span className="text-sm text-foreground">{opt.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
     case "date":
       return <input type="date" className={baseClass} readOnly />;
     default:
-      return <div className={baseClass}>{placeholder || "Your answer..."}</div>;
+      return <div className={baseClass}>{placeholder}</div>;
   }
 }

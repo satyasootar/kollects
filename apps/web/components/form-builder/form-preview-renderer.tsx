@@ -3,7 +3,7 @@
 import * as React from "react";
 import type { ThemeConfig } from "~/components/form-themes";
 import { cn } from "~/lib/utils";
-import { Info } from "lucide-react";
+import { Info, ChevronDown } from "lucide-react";
 
 interface FormPreviewRendererProps {
   fields: any[];
@@ -74,7 +74,7 @@ export function FormPreviewRenderer({
       {bodyFontUrl && displayFontUrl !== bodyFontUrl && <link href={bodyFontUrl} rel="stylesheet" />}
       <div
         className={cn("rounded-2xl overflow-hidden border border-border shadow-sm", className)}
-        style={{ background: colors.background }}
+        style={{ backgroundColor: colors.surface }}
       >
       {/* Cover image */}
       {coverImageUrl && (
@@ -220,7 +220,15 @@ function renderFieldInput(
   shape: any,
   fonts: any,
 ) {
-  const placeholder = field.placeholder || "";
+  let defaultPlaceholder = "Your answer...";
+  if (field.type === "email") defaultPlaceholder = "john@example.com";
+  else if (field.type === "number") defaultPlaceholder = "123";
+  else if (field.type === "short_text") defaultPlaceholder = "John Doe";
+  else if (field.type === "long_text") defaultPlaceholder = "Enter your message...";
+  else if (field.type === "date") defaultPlaceholder = "mm/dd/yyyy";
+  else if (field.type === "single_select" || field.type === "multi_select") defaultPlaceholder = "Select an option...";
+
+  const placeholder = field.placeholder || defaultPlaceholder;
 
   switch (field.type) {
     case "long_text":
@@ -250,7 +258,7 @@ function renderFieldInput(
               fontSize: `${fonts.scale.body * 0.85}rem`,
             }}
           >
-            {placeholder || "Checkbox"}
+            {field.placeholder || "Checkbox"}
           </span>
         </div>
       );
@@ -266,36 +274,44 @@ function renderFieldInput(
 
     case "single_select":
     case "multi_select":
-      if (field.options && field.options.length > 0) {
-        return (
-          <div className="space-y-2">
-            {field.options.map((opt: any, i: number) => (
-              <div key={i} className="flex items-center gap-2">
-                <div
-                  className="shrink-0"
-                  style={{
-                    width: "18px",
-                    height: "18px",
-                    borderRadius: field.type === "single_select" ? "50%" : `${Math.min(shape.radius, 4)}px`,
-                    border: `${shape.border.width}px ${shape.border.style} ${colors.border}`,
-                    background: colors.surface,
-                  }}
-                />
-                <span
-                  style={{
-                    color: colors.foreground,
-                    fontFamily: fonts.body,
-                    fontSize: `${fonts.scale.body * 0.85}rem`,
-                  }}
-                >
-                  {opt.label}
-                </span>
-              </div>
-            ))}
+      return (
+        <div className="space-y-3 mt-1">
+          <div
+            className="flex justify-between items-center"
+            style={{ ...inputStyle, height: "40px" }}
+          >
+            {placeholder}
+            <ChevronDown className="size-4 opacity-50" />
           </div>
-        );
-      }
-      return <div style={{ ...inputStyle, height: "40px" }}>{placeholder || "Select an option..."}</div>;
+          {field.options && field.options.length > 0 && (
+            <div className="space-y-2 pl-3" style={{ borderLeft: `2px solid ${colors.border}` }}>
+              {field.options.map((opt: any, i: number) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div
+                    className="shrink-0"
+                    style={{
+                      width: "16px",
+                      height: "16px",
+                      borderRadius: field.type === "single_select" ? "50%" : `${Math.min(shape.radius, 4)}px`,
+                      border: `${shape.border.width}px ${shape.border.style} ${colors.border}`,
+                      background: colors.surface,
+                    }}
+                  />
+                  <span
+                    style={{
+                      color: colors.foreground,
+                      fontFamily: fonts.body,
+                      fontSize: `${fonts.scale.body * 0.85}rem`,
+                    }}
+                  >
+                    {opt.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
 
     default:
       return <div style={{ ...inputStyle, height: "40px" }}>{placeholder}</div>;

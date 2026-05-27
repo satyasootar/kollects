@@ -43,6 +43,8 @@ const DRAFT_STEPS = [
 ] as const;
 
 const PUBLISHED_STEPS = [
+  { id: "build", label: "Editor", path: "/fields", icon: Layout },
+  { id: "design", label: "Design", path: "/theme", icon: Palette },
   { id: "analytics", label: "Analytics", path: "/analytics", icon: BarChart2 },
   { id: "responses", label: "Responses", path: "/responses", icon: MessageSquare },
   { id: "settings", label: "Settings", path: "/settings", icon: Settings },
@@ -149,17 +151,14 @@ export default function FormEditorLayout({
   const [showShareModal, setShowShareModal] = React.useState(false);
 
   // Determine which step set to show
-  // If the form is published AND we are not explicitly in one of the draft routes, show PUBLISHED_STEPS
   const basePath = `/dashboard/forms/${formId}`;
-  const isDraftRoute = ["/fields", "/theme", "/preview"].some(p => pathname.startsWith(`${basePath}${p}`));
   const isPublished = (form as any)?.status === "published";
-  const isPublishedTabs = isPublished && !isDraftRoute;
-  const activeSteps = isPublishedTabs ? PUBLISHED_STEPS : DRAFT_STEPS;
+  const activeSteps = isPublished ? PUBLISHED_STEPS : DRAFT_STEPS;
 
   // Determine active step from pathname
   const currentStepIndex = activeSteps.findIndex((s) => {
     if (s.id === "build") {
-      return pathname === basePath || pathname.startsWith(`${basePath}/fields`) || (pathname.startsWith(`${basePath}/settings`) && !isPublished);
+      return pathname === basePath || pathname.startsWith(`${basePath}/fields`);
     }
     return pathname.startsWith(`${basePath}${s.path}`);
   });
@@ -264,20 +263,6 @@ export default function FormEditorLayout({
               </button>
             )}
             <StatusBadge status={formData.status ?? "draft"} />
-            {isPublished && !isDraftRoute && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon-sm" asChild className="ml-2">
-                      <Link href={`/dashboard/forms/${formId}/fields`}>
-                        <Edit2 className="size-3.5 text-muted-foreground" />
-                      </Link>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Edit Form Structure</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
           </div>
 
           {/* Stepper — centered */}
@@ -288,7 +273,7 @@ export default function FormEditorLayout({
                 const isCompleted = index < activeStepIndex;
                 return (
                   <React.Fragment key={step.id}>
-                    {index > 0 && !isPublishedTabs && (
+                    {index > 0 && !isPublished && (
                       <div
                         className={cn(
                           "w-8 h-px mx-1",
@@ -301,18 +286,18 @@ export default function FormEditorLayout({
                       className={cn(
                         "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                         isActive && "bg-foreground text-background",
-                        isCompleted && !isPublishedTabs && "bg-tint-mint text-tint-mint-ink",
-                        !isActive && (!isCompleted || isPublishedTabs) && "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                        isCompleted && !isPublished && "bg-tint-mint text-tint-mint-ink",
+                        !isActive && (!isCompleted || isPublished) && "text-muted-foreground hover:text-foreground hover:bg-secondary",
                       )}
                     >
-                      {isCompleted && !isPublishedTabs ? (
+                      {isCompleted && !isPublished ? (
                         <Check className="size-3" />
                       ) : (
                         <span className={cn(
                           "size-4 rounded-full flex items-center justify-center text-[10px] font-bold border",
                           isActive ? "border-background/50" : "border-current",
                         )}>
-                          {isPublishedTabs ? <step.icon className="size-3" /> : index + 1}
+                          {isPublished ? <step.icon className="size-3" /> : index + 1}
                         </span>
                       )}
                       {step.label}
@@ -354,7 +339,7 @@ export default function FormEditorLayout({
               </>
             )}
 
-            {isPublished && !isDraftRoute && (
+            {isPublished && (
               <Button
                 variant="destructive"
                 size="sm"
@@ -362,12 +347,6 @@ export default function FormEditorLayout({
                 disabled={unpublishMutation.isPending}
               >
                 Unpublish
-              </Button>
-            )}
-
-            {isPublished && isDraftRoute && (
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/dashboard/forms/${formId}/analytics`}>Done</Link>
               </Button>
             )}
 
