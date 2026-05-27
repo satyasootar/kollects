@@ -37,6 +37,8 @@ COPY turbo.json turbo.json
 # ARG TURBO_TOKEN
 # ENV TURBO_TOKEN=$TURBO_TOKEN
 
+ENV NEXT_PUBLIC_API_URL="https://api.kollects.tech/trpc"
+
 RUN pnpm turbo build --filter=web...
 
 FROM base AS runner
