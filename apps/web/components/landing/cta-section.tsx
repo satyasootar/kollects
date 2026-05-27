@@ -1,90 +1,82 @@
 "use client";
 
 import * as React from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
+import Link from "next/link";
 
 export function CTASection() {
-  const [email, setEmail] = React.useState("");
-  const [submitted, setSubmitted] = React.useState(false);
-  const [isFocused, setIsFocused] = React.useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
-  };
-
   return (
-    <section className="px-6 py-40 text-center bg-[#f0efe3]">
-      <motion.h2
-        className="text-[4.5rem] leading-[1.05] tracking-tight text-[#1a1a1a] font-serif mb-6"
-        initial={{ opacity: 0, y: 30 }}
+    <section className="bg-[#1a1a1a] px-6 pt-32 pb-20">
+      {/* Light Rounded CTA Box */}
+      <motion.div
+        className="max-w-6xl mx-auto bg-[#f0efe3] rounded-[3rem] p-16 md:p-24 text-center shadow-2xl relative"
+        initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
       >
-        Ready to build?
-      </motion.h2>
-      <motion.p
-        className="text-xl text-[#4a4a4a] mb-12 max-w-xl mx-auto"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.2, duration: 0.8 }}
-      >
-        Join the AI-native system behind every customer interaction. Start building for free.
-      </motion.p>
+        <h2 className="text-4xl md:text-6xl font-serif text-[#1a1a1a] mb-6 tracking-tight">
+          Ready to <span className="text-[#e78a53]">Master</span> your forms?
+        </h2>
+        <p className="text-xl text-[#4a4a4a] mb-10 max-w-xl mx-auto leading-relaxed">
+          Join a builder community that practices, pushes, and grows with you, every day.
+        </p>
+        <Link href="/signup">
+          <button className="bg-[#1a1a1a] text-[#f0efe3] px-8 py-4 rounded-full font-medium hover:scale-105 active:scale-95 transition-all shadow-xl text-lg">
+            Get Started Free
+          </button>
+        </Link>
+      </motion.div>
 
-      <motion.form
-        className="relative max-w-lg mx-auto"
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.3, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        onSubmit={handleSubmit}
-      >
-        {/* Pulse rings on focus */}
-        <AnimatePresence>
-          {isFocused && (
-            <>
-              <motion.div
-                className="absolute inset-0 rounded-[2rem] border-2 border-[#4d65ff]/20 pointer-events-none"
-                initial={{ scale: 1, opacity: 0.4 }}
-                animate={{ scale: 1.08, opacity: 0 }}
-                transition={{ repeat: Infinity, duration: 1.5, ease: "easeOut" }}
-              />
-            </>
-          )}
-        </AnimatePresence>
-
-        <div className="relative bg-white border border-[#e5e5e5] rounded-[2rem] p-8 shadow-[0_20px_40px_-12px_rgba(0,0,0,0.05)]">
-          <h3 className="text-lg font-serif text-[#1a1a1a] mb-2 text-left">
-            Get started
-          </h3>
-          
-          <div className="relative mb-6">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              placeholder="name@company.com"
-              className="w-full h-14 rounded-xl border border-[#e5e5e5] bg-[#fafafa] px-4 text-base text-[#1a1a1a] placeholder:text-[#a3a3a3] outline-none focus:ring-2 focus:ring-[#4d65ff]/20 focus:border-[#4d65ff] transition-all"
-            />
+      {/* 4-Column Footer */}
+      <div className="max-w-6xl mx-auto mt-40 text-left grid grid-cols-1 md:grid-cols-4 gap-12 text-[#f0efe3]">
+        {/* Col 1: Logo & Copyright */}
+        <div className="flex flex-col justify-between h-full">
+          <div>
+            <Link href="/" className="text-2xl font-bold font-serif tracking-tight flex items-center gap-2">
+              <div className="w-6 h-6 rounded bg-[#f0efe3] text-[#1a1a1a] flex items-center justify-center text-xs font-sans font-black">K</div>
+              Kolletcs
+            </Link>
           </div>
-
-          <div className="relative">
-            <button
-              type="submit"
-              className="w-full bg-[#4d65ff] text-white rounded-xl h-14 px-6 text-base font-medium hover:bg-[#3b4ecc] active:scale-[0.98] transition-all duration-200"
-            >
-              {submitted ? "🎉 Welcome aboard!" : "Request access"}
-            </button>
+          <div className="mt-16 md:mt-0">
+            <p className="text-sm font-medium">Developed by Kolletcs Team</p>
+            <p className="text-sm text-[#737373] mt-2">© 2026 Kolletcs. All rights reserved.</p>
           </div>
         </div>
-      </motion.form>
+
+        {/* Col 2: Products */}
+        <div>
+          <h4 className="font-bold mb-8 text-xs tracking-[0.2em] uppercase text-[#f0efe3]">Products</h4>
+          <ul className="space-y-4 text-sm font-medium text-[#a3a3a3]">
+            <li><Link href="#" className="hover:text-white transition-colors">Forms</Link></li>
+            <li><Link href="#" className="hover:text-white transition-colors">Themes</Link></li>
+            <li><Link href="#" className="hover:text-white transition-colors">Integrations</Link></li>
+            <li><Link href="#" className="hover:text-white transition-colors">Enterprise</Link></li>
+          </ul>
+        </div>
+
+        {/* Col 3: Resources */}
+        <div>
+          <h4 className="font-bold mb-8 text-xs tracking-[0.2em] uppercase text-[#f0efe3]">Resources</h4>
+          <ul className="space-y-4 text-sm font-medium text-[#a3a3a3]">
+            <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+            <li><Link href="#" className="hover:text-white transition-colors">Terms of Service</Link></li>
+            <li><Link href="#" className="hover:text-white transition-colors">Pricing Policy</Link></li>
+            <li><Link href="#" className="hover:text-white transition-colors">Refund Policy</Link></li>
+          </ul>
+        </div>
+
+        {/* Col 4: Social */}
+        <div>
+          <h4 className="font-bold mb-8 text-xs tracking-[0.2em] uppercase text-[#f0efe3]">Social</h4>
+          <ul className="space-y-4 text-sm font-medium text-[#a3a3a3]">
+            <li><Link href="#" className="hover:text-white transition-colors">X.com</Link></li>
+            <li><Link href="#" className="hover:text-white transition-colors">GitHub</Link></li>
+            <li><Link href="#" className="hover:text-white transition-colors">LinkedIn</Link></li>
+            <li><Link href="#" className="hover:text-white transition-colors">Instagram</Link></li>
+          </ul>
+        </div>
+      </div>
     </section>
   );
 }

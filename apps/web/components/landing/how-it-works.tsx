@@ -3,20 +3,26 @@
 import * as React from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 
+import { MoonStar, Sparkles, LayoutTemplate, Palette, EyeOff } from "lucide-react";
+
 const STEPS = [
   {
     number: "01",
-    title: "Marketing didn't get harder.",
-    description: "It got stuck. Teams are buried in campaigns and tools, yet customers are still treated like segments, not individuals.",
+    title: "Forms shouldn't be boring.",
+    description: "They got stuck in the 2010s. Stop settling for generic, rigid templates that don't match your brand's unique identity.",
     content: (
       <div className="space-y-3">
-        {["Email blast", "Retargeting", "Generic promo"].map((label) => (
+        {[
+          { label: "Boring layout", icon: <LayoutTemplate size={14} /> },
+          { label: "Limited colors", icon: <Palette size={14} /> },
+          { label: "Brand mismatch", icon: <EyeOff size={14} /> }
+        ].map((item) => (
           <div
-            key={label}
+            key={item.label}
             className="flex items-center gap-3 bg-[#2a2a2a] border border-[#444] rounded-xl px-4 py-3"
           >
-            <div className="w-2 h-2 rounded-full bg-[#ff4444]" />
-            <span className="text-sm font-medium text-[#e5e5e5]">{label}</span>
+            <div className="text-[#ff4444]">{item.icon}</div>
+            <span className="text-sm font-medium text-[#e5e5e5]">{item.label}</span>
           </div>
         ))}
       </div>
@@ -24,19 +30,19 @@ const STEPS = [
   },
   {
     number: "02",
-    title: "Your journeys are a mess.",
-    description: "Clean them up. We create a unique journey for every customer, personalizing every interaction so performance compounds.",
+    title: "Your brand is unique.",
+    description: "Show it off. Choose from over 60+ beautifully crafted presets or build your own custom theme from scratch.",
     content: (
       <div className="flex flex-col gap-3">
         {[
-          { name: "App Notification", icon: "📱", color: "#4d65ff" },
-          { name: "Personalized Offer", icon: "✨", color: "#4d65ff" },
+          { name: "Darkmater Theme", icon: <MoonStar size={16} />, color: "#e78a53" },
+          { name: "Cyberpunk Glow", icon: <Sparkles size={16} />, color: "#ff00c8" },
         ].map((t) => (
           <div
             key={t.name}
             className="flex items-center gap-3 bg-[#2a2a2a] border border-[#444] rounded-xl px-4 py-3"
           >
-            <span className="text-lg">{t.icon}</span>
+            <span className="text-[#a3a3a3]">{t.icon}</span>
             <span className="text-sm font-medium text-[#e5e5e5]">{t.name}</span>
             <div className="ml-auto w-2 h-2 rounded-full" style={{ backgroundColor: t.color }} />
           </div>
@@ -46,16 +52,16 @@ const STEPS = [
   },
   {
     number: "03",
-    title: "Publish and Optimize.",
-    description: "One click to launch. Our system constantly learns and adapts to drive maximum conversion.",
+    title: "Publish and Collect.",
+    description: "One click to launch. Gather data beautifully and watch your completion rates soar when users actually enjoy filling out your forms.",
     content: (
       <div className="space-y-3">
         <div className="bg-[#4d65ff] text-white rounded-full px-6 py-3 text-sm font-medium text-center shadow-lg cursor-pointer hover:bg-[#3b4ecc] transition-colors">
-          Publish Journey →
+          Publish Form →
         </div>
         <div className="flex items-center justify-between bg-[#2a2a2a] border border-[#444] rounded-xl px-4 py-3">
-          <span className="text-sm text-[#a3a3a3]">Conversion Rate</span>
-          <span className="text-sm font-bold text-[#4d65ff]">+24%</span>
+          <span className="text-sm text-[#a3a3a3]">Completion Rate</span>
+          <span className="text-sm font-bold text-[#4d65ff]">+42%</span>
         </div>
       </div>
     ),
@@ -85,8 +91,8 @@ export function HowItWorks() {
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="text-[#a3a3a3]">Marketing didn&apos;t get harder.</span><br/>
-            It got stuck.
+            <span className="text-[#a3a3a3]">Forms shouldn&apos;t be boring.</span><br/>
+            Make them yours.
           </motion.h2>
         </div>
 

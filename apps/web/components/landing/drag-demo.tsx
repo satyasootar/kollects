@@ -170,10 +170,10 @@ export function DragDemo() {
               strategy={verticalListSortingStrategy}
             >
               <div
-                className="min-h-[160px] rounded-xl border-2 border-dashed border-border p-3 space-y-2"
+                className="min-h-[320px] rounded-xl border-2 border-dashed border-border p-4 space-y-3"
               >
                 {canvasItems.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-8">
+                  <p className="text-sm text-muted-foreground text-center py-12">
                     Drop fields here ←
                   </p>
                 )}

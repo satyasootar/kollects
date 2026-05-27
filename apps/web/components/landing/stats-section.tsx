@@ -5,21 +5,21 @@ import { motion, useInView } from "motion/react";
 
 const STATS = [
   {
-    value: 37000000,
-    suffix: "",
-    label: "hours returned to clinicians",
+    value: 10000000,
+    suffix: "+",
+    label: "form submissions collected",
     color: "#ffffff",
   },
   {
-    value: 2400000,
-    suffix: "",
-    label: "patient visits supported each week",
+    value: 60,
+    suffix: "+",
+    label: "beautifully crafted themes",
     color: "#f6ee6b", // Yellow highlight from reference
   },
   {
-    value: 200,
+    value: 11,
     suffix: "+",
-    label: "clinical specialties choose Kolletcs",
+    label: "powerful field types",
     color: "#ffffff",
   },
 ];
