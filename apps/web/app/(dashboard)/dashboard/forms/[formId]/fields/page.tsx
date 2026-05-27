@@ -174,7 +174,7 @@ export default function FieldsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-[calc(100vh-8rem)]">
+      <div className="flex h-screen">
         <div className="w-56 p-4 border-r"><Skeleton className="h-full rounded-xl" /></div>
         <div className="flex-1 p-8"><Skeleton className="h-96 rounded-xl" /></div>
         <div className="w-64 p-4 border-l"><Skeleton className="h-full rounded-xl" /></div>
@@ -185,7 +185,7 @@ export default function FieldsPage() {
   const selectedField = store.fields.find((f) => f.id === store.selectedFieldId) ?? null;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col h-screen">
       {/* Save bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-background">
         <div className="flex items-center gap-3">

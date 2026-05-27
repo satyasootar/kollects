@@ -131,10 +131,24 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
   setCustomTheme: (theme) => set({ customTheme: theme, isDirty: true }),
 
   addField: (type) => {
+    let placeholder = "";
+    switch (type) {
+      case "short_text": placeholder = "Type your answer here..."; break;
+      case "long_text": placeholder = "Type your detailed answer here..."; break;
+      case "email": placeholder = "you@example.com"; break;
+      case "number": placeholder = "e.g., 42"; break;
+      case "date": placeholder = "Pick a date"; break;
+      case "single_select": placeholder = "Select an option"; break;
+      case "multi_select": placeholder = "Select options"; break;
+      case "url": placeholder = "https://example.com"; break;
+      case "phone": placeholder = "e.g., +1 234 567 8900"; break;
+    }
+
     const newField: EditorField = {
       id: generateTempId(),
       type,
       label: `New ${type.replace(/_/g, " ")} field`,
+      placeholder: placeholder || undefined,
       required: false,
     };
     set((state) => ({

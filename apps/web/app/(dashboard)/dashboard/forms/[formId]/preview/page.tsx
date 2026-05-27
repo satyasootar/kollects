@@ -75,14 +75,14 @@ export default function PreviewPage() {
 
   if (isLoading || !activeThemeConfig) {
     return (
-      <div className="p-6 h-[calc(100vh-8rem)]">
+      <div className="p-6 h-screen">
         <Skeleton className="h-full rounded-2xl" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 flex flex-col h-[calc(100vh-8rem)]">
+    <div className="p-6 flex flex-col h-screen">
       {/* Banner */}
       <div className="flex items-center justify-between mb-4 shrink-0">
         <div className="flex items-center gap-3">
