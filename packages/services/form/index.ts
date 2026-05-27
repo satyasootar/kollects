@@ -143,6 +143,7 @@ export class FormService {
       metaDescription?: string;
       visibility?: "public" | "unlisted" | "private";
       settings?: Record<string, any>;
+    }
   ) {
     console.log("UPDATE FORM CALLED WITH DATA:", data);
     const form = await this.getById(formId, userId);
@@ -330,14 +331,21 @@ export class FormService {
     slug: string,
     verifyToken?: (formId: string) => Promise<boolean> | boolean,
   ) {
-    const cacheKey = `public-form:slug:${slug}`;
-    const cached = await cache.get<typeof formsTable.$inferSelect>(cacheKey);
+    const cacheKey = `public-form-with-fields:slug:${slug}`;
+    const cached = await cache.get<any>(cacheKey);
 
     let form;
     if (cached) {
       form = cached;
     } else {
-      const [dbForm] = await db.select().from(formsTable).where(eq(formsTable.slug, slug)).limit(1);
+      const dbForm = await db.query.formsTable.findFirst({
+        where: eq(formsTable.slug, slug),
+        with: {
+          fields: {
+            orderBy: (fields: any, { asc }: any) => [asc(fields.order)],
+          },
+        },
+      });
 
       if (!dbForm) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Form not found" });

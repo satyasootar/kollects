@@ -53,6 +53,7 @@ export const publicFormRouter = router({
         metaTitle: form.metaTitle,
         metaDescription: form.metaDescription,
         passwordProtected: !!form.passwordHash,
+        fields: (form as any).fields,
       };
     }),
 

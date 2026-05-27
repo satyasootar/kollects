@@ -8,7 +8,7 @@ import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Spinner } from "~/components/ui/spinner";
 import { StatusBadge } from "~/components/chrome";
-import { ArrowLeft, Check, MoreHorizontal, Share2 } from "lucide-react";
+import { ArrowLeft, Check, MoreHorizontal, Share2, Edit2, BarChart2, MessageSquare, Settings, Mail, Layout, Palette, Eye } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,10 +36,17 @@ import { handleTrpcError } from "~/lib/api-error";
 import { ShareModal } from "~/components/form-builder/share-modal";
 import { cn } from "~/lib/utils";
 
-const STEPS = [
-  { id: "build", label: "Editor", path: "/fields" },
-  { id: "design", label: "Design", path: "/theme" },
-  { id: "preview", label: "Preview", path: "/preview" },
+const DRAFT_STEPS = [
+  { id: "build", label: "Editor", path: "/fields", icon: Layout },
+  { id: "design", label: "Design", path: "/theme", icon: Palette },
+  { id: "preview", label: "Preview", path: "/preview", icon: Eye },
+] as const;
+
+const PUBLISHED_STEPS = [
+  { id: "analytics", label: "Analytics", path: "/analytics", icon: BarChart2 },
+  { id: "responses", label: "Responses", path: "/responses", icon: MessageSquare },
+  { id: "settings", label: "Settings", path: "/settings", icon: Settings },
+  { id: "email", label: "Email", path: "/email-settings", icon: Mail },
 ] as const;
 
 // ─── Form Data Context ─────────────────────────────────────────────────────────
@@ -141,17 +148,24 @@ export default function FormEditorLayout({
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [showShareModal, setShowShareModal] = React.useState(false);
 
-  // Determine active step from pathname
+  // Determine which step set to show
+  // If the form is published AND we are not explicitly in one of the draft routes, show PUBLISHED_STEPS
   const basePath = `/dashboard/forms/${formId}`;
-  const currentStepIndex = STEPS.findIndex((s) => {
-    if (s.id === "build")
-      return pathname === basePath || pathname.startsWith(`${basePath}/fields`) || pathname.startsWith(`${basePath}/settings`);
+  const isDraftRoute = ["/fields", "/theme", "/preview"].some(p => pathname.startsWith(`${basePath}${p}`));
+  const isPublished = (form as any)?.status === "published";
+  const activeSteps = isPublished && !isDraftRoute ? PUBLISHED_STEPS : DRAFT_STEPS;
+
+  // Determine active step from pathname
+  const currentStepIndex = activeSteps.findIndex((s) => {
+    if (s.id === "build") {
+      return pathname === basePath || pathname.startsWith(`${basePath}/fields`) || (pathname.startsWith(`${basePath}/settings`) && !isPublished);
+    }
     return pathname.startsWith(`${basePath}${s.path}`);
   });
   const activeStepIndex = currentStepIndex === -1 ? 0 : currentStepIndex;
 
   const navigateToStep = (index: number) => {
-    const step = STEPS[index];
+    const step = activeSteps[index];
     if (step) {
       router.push(`${basePath}${step.path}`);
     }
@@ -202,9 +216,8 @@ export default function FormEditorLayout({
 
   const formData = form as any;
   const isDraft = formData.status === "draft";
-  const isPublished = formData.status === "published";
+  const isOnPreview = activeSteps[activeStepIndex]?.id === "preview";
   const isArchived = formData.status === "archived";
-  const isOnPreview = activeStepIndex === 2;
 
   return (
     <FormContext.Provider value={{ form, isLoading, refetch }}>
@@ -250,12 +263,26 @@ export default function FormEditorLayout({
               </button>
             )}
             <StatusBadge status={formData.status ?? "draft"} />
+            {isPublished && !isDraftRoute && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon-sm" asChild className="ml-2">
+                      <Link href={`/dashboard/forms/${formId}/fields`}>
+                        <Edit2 className="size-3.5 text-muted-foreground" />
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Edit Form Structure</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
 
           {/* Stepper — centered */}
           <div className="flex-1 flex justify-center">
-            <nav className="flex items-center gap-1" aria-label="Form editor steps">
-              {STEPS.map((step, index) => {
+            <nav className="flex items-center gap-1" aria-label="Form navigation">
+              {activeSteps.map((step, index) => {
                 const isActive = index === activeStepIndex;
                 const isCompleted = index < activeStepIndex;
                 return (
@@ -277,14 +304,14 @@ export default function FormEditorLayout({
                         !isActive && !isCompleted && "text-muted-foreground hover:text-foreground hover:bg-secondary",
                       )}
                     >
-                      {isCompleted ? (
+                      {isCompleted && !isPublished ? (
                         <Check className="size-3" />
                       ) : (
                         <span className={cn(
                           "size-4 rounded-full flex items-center justify-center text-[10px] font-bold border",
                           isActive ? "border-background/50" : "border-current",
                         )}>
-                          {index + 1}
+                          {isPublished ? <step.icon className="size-3" /> : index + 1}
                         </span>
                       )}
                       {step.label}
@@ -323,17 +350,24 @@ export default function FormEditorLayout({
                     {publishMutation.isPending ? "Publishing…" : "Publish"}
                   </Button>
                 )}
-                {isPublished && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => unpublishMutation.mutate({ formId })}
-                    disabled={unpublishMutation.isPending}
-                  >
-                    Unpublish
-                  </Button>
-                )}
               </>
+            )}
+
+            {isPublished && !isDraftRoute && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => unpublishMutation.mutate({ formId })}
+                disabled={unpublishMutation.isPending}
+              >
+                Unpublish
+              </Button>
+            )}
+
+            {isPublished && isDraftRoute && (
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/dashboard/forms/${formId}/analytics`}>Done</Link>
+              </Button>
             )}
 
             {/* Non-preview steps don't show publish/draft — child pages handle Save & Continue */}
