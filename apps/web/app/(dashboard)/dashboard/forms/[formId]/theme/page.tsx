@@ -27,6 +27,8 @@ import {
   Upload,
   ArrowRight,
   Save,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useFormEditorStore } from "~/lib/stores/form-editor-store";
 import { useFormContext } from "../layout";
@@ -72,6 +74,24 @@ export default function ThemeDesignPage() {
   const [activeCategory, setActiveCategory] = React.useState("all");
   const [isSaving, setIsSaving] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
+  const [presetMode, setPresetMode] = React.useState<"light" | "dark">("light");
+  const [selectedPresetId, setSelectedPresetId] = React.useState<string | null>(null);
+
+  const basePresets = React.useMemo(() => {
+    const map = new Map<string, { id: string; name: string; light: any; dark: any }>();
+    CUSTOM_PRESETS.forEach(p => {
+      const isDark = p.id.includes("-dark");
+      const baseId = p.id.replace(/-light-preset|-dark-preset/, "");
+      const baseName = p.name.replace(/ Light| Dark/, "");
+      
+      if (!map.has(baseId)) {
+        map.set(baseId, { id: baseId, name: baseName, light: null, dark: null });
+      }
+      if (isDark) map.get(baseId)!.dark = p;
+      else map.get(baseId)!.light = p;
+    });
+    return Array.from(map.values());
+  }, []);
 
   const handleUploadBanner = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -303,11 +323,16 @@ export default function ThemeDesignPage() {
                 <h3 className="text-sm font-semibold">Quick Presets</h3>
                 <div className="flex items-center gap-2">
                   <Select
+                    value={selectedPresetId || undefined}
                     onValueChange={(val) => {
-                      const preset = CUSTOM_PRESETS.find(p => p.id === val);
-                      if (preset) {
-                        store.setThemeId("default-light");
-                        store.setCustomTheme(preset.config as any);
+                      setSelectedPresetId(val);
+                      const presetGroup = basePresets.find(p => p.id === val);
+                      if (presetGroup) {
+                        const targetPreset = presetGroup[presetMode] || presetGroup.light;
+                        if (targetPreset) {
+                          store.setThemeId("default-light");
+                          store.setCustomTheme(targetPreset.config as any);
+                        }
                       }
                     }}
                   >
@@ -315,20 +340,46 @@ export default function ThemeDesignPage() {
                       <SelectValue placeholder="Select a preset..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {CUSTOM_PRESETS.map((preset) => (
-                        <SelectItem key={preset.id} value={preset.id}>
-                          <div className="flex items-center gap-2">
-                            <div className="flex -space-x-1">
-                              <div className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/20" style={{ backgroundColor: preset.config.colors?.background }} />
-                              <div className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/20" style={{ backgroundColor: preset.config.colors?.surface }} />
-                              <div className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/20" style={{ backgroundColor: preset.config.colors?.accent }} />
+                      {basePresets.map((preset) => {
+                        const config = preset[presetMode]?.config || preset.light?.config;
+                        if (!config) return null;
+                        return (
+                          <SelectItem key={preset.id} value={preset.id}>
+                            <div className="flex items-center gap-2">
+                              <div className="flex -space-x-1">
+                                <div className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/20" style={{ backgroundColor: config.colors?.background }} />
+                                <div className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/20" style={{ backgroundColor: config.colors?.surface }} />
+                                <div className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/20" style={{ backgroundColor: config.colors?.accent }} />
+                              </div>
+                              <span>{preset.name}</span>
                             </div>
-                            <span>{preset.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="size-9 shrink-0" 
+                    onClick={() => {
+                      const nextMode = presetMode === "light" ? "dark" : "light";
+                      setPresetMode(nextMode);
+                      if (selectedPresetId) {
+                        const presetGroup = basePresets.find(p => p.id === selectedPresetId);
+                        if (presetGroup) {
+                          const targetPreset = presetGroup[nextMode] || presetGroup.light;
+                          if (targetPreset) {
+                            store.setThemeId("default-light");
+                            store.setCustomTheme(targetPreset.config as any);
+                          }
+                        }
+                      }
+                    }}
+                    title={`Switch to ${presetMode === 'light' ? 'Dark' : 'Light'} presets`}
+                  >
+                    {presetMode === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}
+                  </Button>
                 </div>
               </div>
 
