@@ -8,8 +8,9 @@ services:
         - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
     restart: unless-stopped
     container_name: kollects-web
-    ports:
-      - "3000:3000"
+    # Do NOT expose port 3000 externally to avoid overriding Caddy's SSL
+    expose:
+      - "3000"
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=https://api.kollects.tech/trpc
@@ -27,8 +28,9 @@ services:
       dockerfile: apps/api/Dockerfile
     restart: unless-stopped
     container_name: kollects-api
-    ports:
-      - "8000:8000"
+    # Do NOT expose port 8000 externally to avoid overriding Caddy's SSL
+    expose:
+      - "8000"
     environment:
       - NODE_ENV=production
       - CORS_ORIGINS=https://kollects.tech,http://localhost:3000
