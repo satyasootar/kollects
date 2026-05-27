@@ -23,7 +23,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
           </Button>
         </div>
       </header>
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1">{children}</main>
       <footer className="border-t border-border py-6 px-6 text-center">
         <p className="text-mono-sm text-muted-foreground">kollects.tech © 2026 · made with care</p>
       </footer>
