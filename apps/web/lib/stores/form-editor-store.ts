@@ -55,6 +55,7 @@ interface FormEditorState {
   setThemeId: (themeId: string | null) => void;
   setCoverImageUrl: (url: string | null) => void;
   updateCustomTheme: (updates: any) => void;
+  setCustomTheme: (theme: any) => void;
 
   // Actions — Fields (all local, no API calls)
   addField: (type: FieldType) => void;
@@ -127,6 +128,7 @@ export const useFormEditorStore = create<FormEditorState>((set, get) => ({
         isDirty: true,
       };
     }),
+  setCustomTheme: (theme) => set({ customTheme: theme, isDirty: true }),
 
   addField: (type) => {
     const newField: EditorField = {

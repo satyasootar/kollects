@@ -1,0 +1,154 @@
+/* marvel-spidyform.css */
+[data-theme="marvel.spidyform"] {
+  background: url('/form-themes/spiderman/4664.jpg') center/cover no-repeat !important;
+  position: relative;
+  overflow: hidden;
+  font-family: var(--theme-font-body), sans-serif;
+  color: white;
+}
+
+/* Remove the old CSS-generated SVG webs since we have a real asset now */
+[data-theme="marvel.spidyform"]::before,
+[data-theme="marvel.spidyform"]::after {
+  display: none;
+}
+
+/* Add bottom webs via a fixed overlay since we only have 2 pseudo elements on the main wrapper */
+[data-theme="marvel.spidyform"] > div {
+  position: relative;
+  z-index: 10;
+}
+
+/* Form Container */
+[data-theme="marvel.spidyform"] form {
+  position: relative;
+  /* Dark red honeycomb */
+  background: 
+    linear-gradient(rgba(120, 0, 0, 0.7), rgba(120, 0, 0, 0.7)),
+    url('data:image/svg+xml;utf8,<svg width="40" height="69.28" xmlns="http://www.w3.org/2000/svg"><path d="M40 17.32l-20 11.547L0 17.32V0h40v17.32zm0 34.64l-20 11.548L0 51.96V34.64l20-11.548L40 34.64v17.32z" fill="rgba(0,0,0,0.4)"/></svg>') !important;
+  background-color: #5a0000 !important;
+  border: none !important;
+  box-shadow: inset 0 0 0 4px #444, inset 0 0 0 8px #111, 0 10px 30px rgba(0,0,0,0.8) !important;
+  border-radius: 12px; /* Chamfer effect approximation via strict rounded corners combined with inset box-shadow */
+  padding-top: 60px !important; /* Make room for spider badge */
+  margin-top: 40px;
+}
+
+/* Corner highlights for the form to simulate the spiderweb metallic corners */
+[data-theme="marvel.spidyform"] form::before {
+  content: "";
+  position: absolute;
+  top: -45px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90px;
+  height: 100px;
+  background: radial-gradient(circle, #880000 0%, #330000 100%);
+  clip-path: polygon(50% 100%, 100% 75%, 100% 0, 0 0, 0 75%);
+  border-bottom: 2px solid #111;
+  z-index: 20;
+}
+
+/* Spider Logo in the top badge */
+[data-theme="marvel.spidyform"] form::after {
+  content: "";
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="%23111" d="M50 20 c -5 0, -8 5, -8 10 c 0 5, 3 8, 8 8 c 5 0, 8 -3, 8 -8 c 0 -5, -3 -10, -8 -10 z M 50 40 c -8 0, -12 10, -12 25 c 0 15, 4 25, 12 25 c 8 0, 12 -10, 12 -25 c 0 -15, -4 -25, -12 -25 z M 38 45 c -10 -5, -20 -20, -25 -10 c 5 15, 10 20, 15 25 M 62 45 c 10 -5, 20 -20, 25 -10 c -5 15, -10 20, -15 25 M 38 60 c -10 5, -20 10, -25 20 c 15 -5, 20 -10, 25 -15 M 62 60 c 10 5, 20 10, 25 20 c -15 -5, -20 -10, -25 -15 M 40 30 c -15 -10, -25 -5, -30 5 c 15 -5, 20 0, 25 10 M 60 30 c 15 -10, 25 -5, 30 5 c -15 -5, -20 0, -25 10 M 42 20 c -10 -15, -20 -20, -25 -10 c 5 5, 10 10, 15 20 M 58 20 c 10 -15, 20 -20, 25 -10 c -5 5, -10 10, -15 20" /></svg>');
+  background-size: contain;
+  background-repeat: no-repeat;
+  z-index: 21;
+}
+
+/* Headers */
+[data-theme="marvel.spidyform"] form h1 {
+  text-align: center;
+  color: #fff;
+  text-shadow: 2px 2px 4px #000;
+  letter-spacing: 2px;
+}
+
+/* Field labels */
+[data-theme="marvel.spidyform"] form label {
+  color: #fff;
+  font-family: var(--theme-font-display), sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+}
+
+/* Hexagon icon wrappers */
+[data-theme="marvel.spidyform"] form label > span.shrink-0 {
+  background: #B30000;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  margin-right: 10px;
+  opacity: 1 !important;
+  color: white;
+  border: 1px solid #111;
+}
+
+/* Hide the default span opacity to let the hexagon shine */
+[data-theme="marvel.spidyform"] form label > span.shrink-0 svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Inputs */
+[data-theme="marvel.spidyform"] form input,
+[data-theme="marvel.spidyform"] form textarea,
+[data-theme="marvel.spidyform"] form select,
+[data-theme="marvel.spidyform"] form [role="combobox"] {
+  background-color: #111111 !important;
+  border: 1px solid #333 !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  padding: 12px !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.5) !important;
+  font-family: var(--theme-font-body), sans-serif !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+[data-theme="marvel.spidyform"] form input:focus,
+[data-theme="marvel.spidyform"] form textarea:focus {
+  border-color: #B30000 !important;
+  box-shadow: 0 0 0 2px rgba(179,0,0,0.5), inset 0 2px 4px rgba(0,0,0,0.5) !important;
+  outline: none !important;
+}
+
+/* Submit Button */
+[data-theme="marvel.spidyform"] form button[type="submit"] {
+  background: 
+    linear-gradient(rgba(179, 0, 0, 0.8), rgba(179, 0, 0, 0.8)),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="none" stroke="%23550000" stroke-width="2" d="M0,0 L100,100 M100,0 L0,100 M50,0 L50,100 M0,50 L100,50 M25,25 Q50,0 75,25 Q100,50 75,75 Q50,100 25,75 Q0,50 25,25"/></svg>') !important;
+  background-color: #B30000 !important;
+  color: white !important;
+  border: 2px solid #111 !important;
+  box-shadow: inset 0 0 0 2px #ff4444, 0 4px 10px rgba(0,0,0,0.5) !important;
+  text-transform: uppercase !important;
+  font-family: var(--theme-font-display), sans-serif !important;
+  font-size: 1.5rem !important;
+  letter-spacing: 2px !important;
+  height: auto !important;
+  padding: 12px 24px !important;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0 50%);
+  transition: transform 0.1s, filter 0.2s !important;
+}
+
+[data-theme="marvel.spidyform"] form button[type="submit"]:hover {
+  filter: brightness(1.2) !important;
+  transform: scale(1.02) !important;
+}
+
+[data-theme="marvel.spidyform"] form button[type="submit"]:active {
+  transform: scale(0.98) !important;
+}

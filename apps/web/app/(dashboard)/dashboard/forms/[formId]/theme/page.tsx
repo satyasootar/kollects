@@ -34,6 +34,8 @@ import { env } from "~/env.js";
 
 import "~/components/form-themes/themes/_register-all";
 
+import { CUSTOM_PRESETS } from "~/components/form-themes/custom-presets";
+
 const FONT_OPTIONS = [
   { value: "system-ui, sans-serif", label: "System Default" },
   { value: "'Inter', sans-serif", label: "Inter" },
@@ -292,6 +294,40 @@ export default function ThemeDesignPage() {
             </TabsContent>
 
             <TabsContent value="customize" className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold">Quick Presets</h3>
+                <div className="flex items-center gap-2">
+                  <Select
+                    onValueChange={(val) => {
+                      const preset = CUSTOM_PRESETS.find(p => p.id === val);
+                      if (preset) {
+                        store.setThemeId("default-light");
+                        store.setCustomTheme(preset.config as any);
+                        toast.success(`Applied ${preset.name} preset`);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-[200px] h-9">
+                      <SelectValue placeholder="Select a preset..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CUSTOM_PRESETS.map((preset) => (
+                        <SelectItem key={preset.id} value={preset.id}>
+                          <div className="flex items-center gap-2">
+                            <div className="flex -space-x-1">
+                              <div className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/20" style={{ backgroundColor: preset.config.colors?.background }} />
+                              <div className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/20" style={{ backgroundColor: preset.config.colors?.surface }} />
+                              <div className="w-3.5 h-3.5 rounded-full border border-black/20 dark:border-white/20" style={{ backgroundColor: preset.config.colors?.accent }} />
+                            </div>
+                            <span>{preset.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold">Colors</h3>
                 <div className="grid grid-cols-2 gap-4">

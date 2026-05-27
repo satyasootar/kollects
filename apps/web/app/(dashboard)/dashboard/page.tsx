@@ -7,7 +7,7 @@ import { PLAN_LIMITS } from "@repo/database/constants/user-plan";
 import { trpc } from "~/trpc/client";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
-import { Sparkles } from "lucide-react";
+import { Sparkles, MoreVertical } from "lucide-react";
 import {
   TintCard,
   NumberTicker,
@@ -22,6 +22,12 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "~/components/ui/context-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,9 +61,18 @@ export default function DashboardPage() {
   });
 
   const publishMutation = trpc.form.publish.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       utils.form.list.invalidate();
-      toast.success("Form published!");
+      const url = `${window.location.origin}/f/${data.slug}`;
+      toast.success("Form published!", {
+        action: {
+          label: "Copy Link",
+          onClick: () => {
+            navigator.clipboard.writeText(url);
+            toast.success("Link copied!");
+          },
+        },
+      });
     },
     onError: () => toast.error("Failed to publish form."),
   });
@@ -233,11 +248,63 @@ export default function DashboardPage() {
           {filteredForms.map((form: any) => (
             <ContextMenu key={form.id}>
               <ContextMenuTrigger asChild>
-                <Link href={`/dashboard/forms/${form.id}`} className="block">
-                  <EditorialCard interactive className="h-full flex flex-col">
+                <div className="block h-full">
+                  <EditorialCard interactive className="h-full flex flex-col relative group overflow-hidden">
+                    <Link href={`/dashboard/forms/${form.id}`} className="absolute inset-0 z-0" />
+                    
+                    {/* Action menu */}
+                    <div className="absolute top-3 right-3 z-10">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="secondary" 
+                            size="icon" 
+                            className="h-8 w-8 rounded-full bg-background/80 hover:bg-background shadow-sm backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity focus-visible:opacity-100"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem onClick={() => router.push(`/dashboard/forms/${form.id}`)}>
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => router.push(`/dashboard/forms/${form.id}/analytics`)}>
+                            Analytics
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => router.push(`/dashboard/forms/${form.id}/settings`)}>
+                            Settings
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => cloneMutation.mutate({ formId: form.id })}>
+                            Duplicate
+                          </DropdownMenuItem>
+                          {form.status === "draft" && (
+                            <DropdownMenuItem onClick={() => publishMutation.mutate({ formId: form.id })}>
+                              Publish
+                            </DropdownMenuItem>
+                          )}
+                          {form.status === "published" && (
+                            <DropdownMenuItem onClick={() => unpublishMutation.mutate({ formId: form.id })}>
+                              Unpublish
+                            </DropdownMenuItem>
+                          )}
+                          {form.status !== "archived" && (
+                            <DropdownMenuItem onClick={() => archiveMutation.mutate({ formId: form.id })}>
+                              Archive
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            className="text-destructive focus:bg-destructive/10"
+                            onClick={() => setDeleteTarget({ id: form.id, title: form.title })}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
                     {/* Cover strip */}
                     <div
-                      className="h-32 -mx-6 -mt-6 rounded-t-2xl mb-4 overflow-hidden shrink-0"
+                      className="h-32 -mx-6 -mt-6 mb-4 shrink-0 relative z-0 pointer-events-none"
                       style={{
                         background: form.coverImageUrl
                           ? undefined
@@ -253,7 +320,7 @@ export default function DashboardPage() {
                       )}
                     </div>
                     {/* Title + badges */}
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap relative z-0 pointer-events-none px-1">
                       <h3 className="text-lg font-semibold text-foreground line-clamp-1">
                         {form.title}
                       </h3>
@@ -261,16 +328,16 @@ export default function DashboardPage() {
                     </div>
                     {/* Description */}
                     {form.description && (
-                      <p className="mt-1 text-sm text-muted-foreground line-clamp-1">
+                      <p className="mt-1 text-sm text-muted-foreground line-clamp-1 relative z-0 pointer-events-none px-1">
                         {form.description}
                       </p>
                     )}
                     {/* Stats */}
-                    <div className="mt-auto pt-4 text-mono-sm text-muted-foreground">
+                    <div className="mt-auto pt-4 text-mono-sm text-muted-foreground relative z-0 pointer-events-none px-1">
                       {form.totalViews ?? 0} views · {form.totalStarts ?? 0} starts · {form.totalSubmissions ?? 0} subs
                     </div>
                   </EditorialCard>
-                </Link>
+                </div>
               </ContextMenuTrigger>
               <ContextMenuContent>
                 <ContextMenuItem onClick={() => router.push(`/dashboard/forms/${form.id}`)}>

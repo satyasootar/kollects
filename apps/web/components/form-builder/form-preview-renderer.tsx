@@ -73,10 +73,13 @@ export function FormPreviewRenderer({
       {displayFontUrl && <link href={displayFontUrl} rel="stylesheet" />}
       {bodyFontUrl && displayFontUrl !== bodyFontUrl && <link href={bodyFontUrl} rel="stylesheet" />}
       <div
-        className={cn("rounded-2xl overflow-hidden border border-border shadow-sm", className)}
-        style={{ backgroundColor: colors.surface }}
+        data-theme={themeConfig?.id}
+        className={cn("rounded-2xl overflow-hidden shadow-sm relative", className)}
+        style={{ backgroundColor: colors.background }}
       >
-      {/* Cover image */}
+        <div className="relative z-10 w-full min-h-full h-full p-4">
+          <form className="relative" style={{ backgroundColor: colors.surface }}>
+            {/* Cover image */}
       {coverImageUrl && (
         <div className="w-full h-40 overflow-hidden">
           <img
@@ -155,6 +158,8 @@ export function FormPreviewRenderer({
           </button>
         )}
       </div>
+          </form>
+        </div>
       </div>
     </>
   );

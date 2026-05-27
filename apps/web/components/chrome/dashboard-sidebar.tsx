@@ -7,8 +7,6 @@ import {
   LayoutDashboard,
   LayoutTemplate,
   Settings,
-  KeyRound,
-  BookOpen,
   LogOut,
 } from "lucide-react";
 import {
@@ -35,7 +33,6 @@ const NAV_ITEMS = [
 
 const SETTINGS_ITEMS = [
   { label: "Settings", href: "/dashboard/settings", icon: Settings },
-  { label: "API Keys", href: "/dashboard/settings/api-keys", icon: KeyRound },
 ] as const;
 
 export function DashboardSidebar() {
@@ -74,8 +71,7 @@ export function DashboardSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarSeparator />
-        <SidebarGroup>
+        <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
               {SETTINGS_ITEMS.map((item) => (
@@ -88,21 +84,6 @@ export function DashboardSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-        <SidebarSeparator />
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <Link href="/docs">
-                    <BookOpen className="size-4" />
-                    <span>API Docs</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -101,11 +101,21 @@ export default function FormEditorLayout({
   });
 
   const publishMutation = trpc.form.publish.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       utils.form.getByIdWithFields.invalidate({ formId });
       utils.form.getById.invalidate({ formId });
       utils.form.list.invalidate();
-      toast.success("Form published!");
+      
+      const url = `${window.location.origin}/f/${data.slug}`;
+      toast.success("Form published!", {
+        action: {
+          label: "Copy Link",
+          onClick: () => {
+            navigator.clipboard.writeText(url);
+            toast.success("Link copied!");
+          },
+        },
+      });
     },
     onError: (err) => handleTrpcError(err),
   });
