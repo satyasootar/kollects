@@ -65,7 +65,7 @@ export function FieldPalette({ onAddField }: FieldPaletteProps) {
                 <button
                   key={type}
                   onClick={() => onAddField(type)}
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-border/60 bg-card hover:border-primary/30 hover:bg-secondary/50 transition-all text-center group cursor-grab active:cursor-grabbing"
+                  className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-border/60 bg-card hover:border-primary/30 hover:bg-secondary/50 transition-all text-center group cursor-pointer"
                 >
                   <div className="size-8 rounded-lg bg-tint-sky/60 flex items-center justify-center group-hover:bg-tint-sky transition-colors">
                     <Icon className="size-4 text-tint-sky-ink" />

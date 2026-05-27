@@ -28,6 +28,8 @@ interface FormCanvasProps {
   fields: any[];
   formTitle: string;
   formDescription?: string;
+  onUpdateTitle?: (title: string) => void;
+  onUpdateDescription?: (description: string) => void;
   selectedFieldId: string | null;
   onSelectField: (id: string) => void;
   onReorder: (fieldIds: string[]) => void;
@@ -40,6 +42,8 @@ export function FormCanvas({
   fields,
   formTitle,
   formDescription,
+  onUpdateTitle,
+  onUpdateDescription,
   selectedFieldId,
   onSelectField,
   onReorder,
@@ -131,9 +135,33 @@ export function FormCanvas({
 
         {/* Form header */}
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-foreground">{formTitle}</h2>
-          {formDescription && (
-            <p className="mt-1 text-sm text-muted-foreground">{formDescription}</p>
+          {onUpdateTitle ? (
+            <input
+              type="text"
+              value={formTitle}
+              onChange={(e) => onUpdateTitle(e.target.value)}
+              placeholder="Form Title"
+              className="text-2xl font-semibold text-foreground w-full bg-transparent border-none focus:outline-none focus:ring-0 p-0 placeholder:text-muted-foreground/50 transition-colors hover:bg-muted/30 focus:bg-muted/30 rounded px-1 -ml-1"
+            />
+          ) : (
+            <h2 className="text-2xl font-semibold text-foreground">{formTitle}</h2>
+          )}
+          
+          {onUpdateDescription ? (
+            <textarea
+              value={formDescription || ""}
+              onChange={(e) => onUpdateDescription(e.target.value)}
+              placeholder="Add a description (optional)"
+              className="mt-2 text-sm text-muted-foreground w-full bg-transparent border-none focus:outline-none focus:ring-0 p-0 resize-none placeholder:text-muted-foreground/50 overflow-hidden transition-colors hover:bg-muted/30 focus:bg-muted/30 rounded px-1 -ml-1"
+              rows={formDescription ? formDescription.split('\n').length : 1}
+              onInput={(e) => {
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = "auto";
+                target.style.height = target.scrollHeight + "px";
+              }}
+            />
+          ) : (
+            formDescription && <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">{formDescription}</p>
           )}
         </div>
 
@@ -141,7 +169,7 @@ export function FormCanvas({
         {fields.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <p className="text-muted-foreground text-sm">
-              Drag fields from the left panel to start building your form.
+              Click on fields from the left panel to start building your form.
             </p>
           </div>
         ) : (

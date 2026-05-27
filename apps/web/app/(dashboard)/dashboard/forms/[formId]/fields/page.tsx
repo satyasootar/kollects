@@ -213,6 +213,8 @@ export default function FieldsPage() {
           fields={store.fields}
           formTitle={store.title}
           formDescription={store.description}
+          onUpdateTitle={store.setTitle}
+          onUpdateDescription={store.setDescription}
           selectedFieldId={store.selectedFieldId}
           onSelectField={store.selectField}
           onReorder={store.reorderFields}
