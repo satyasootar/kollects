@@ -1,9 +1,13 @@
 import type { ThemeConfig } from "./_types";
 
+type DeepPartial<T> = T extends object ? {
+    [P in keyof T]?: DeepPartial<T[P]>;
+} : T;
+
 export interface CustomPreset {
   id: string;
   name: string;
-  config: Partial<ThemeConfig>;
+  config: DeepPartial<ThemeConfig>;
 }
 
 export const CUSTOM_PRESETS: CustomPreset[] = [

@@ -13,6 +13,7 @@ const mockAuthMe = vi.fn();
 vi.mock("~/trpc/client", () => ({
   trpc: {
     auth: { me: { useQuery: (...args: any[]) => mockAuthMe(...args) } },
+    useUtils: () => ({ auth: { me: { invalidate: vi.fn() } } }),
   },
 }));
 
@@ -30,6 +31,12 @@ vi.mock("~/components/chrome", () => ({
 
 vi.mock("~/lib/toast", () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
+}));
+
+vi.mock("~/lib/stores/user-store", () => ({
+  useUserStore: vi.fn((selector) =>
+    selector({ user: { id: "u1", name: "Test User", email: "test@example.com" }, setUser: vi.fn() })
+  ),
 }));
 
 import AccountSettingsPage from "../dashboard/settings/page";

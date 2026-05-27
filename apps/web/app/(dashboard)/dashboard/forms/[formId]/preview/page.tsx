@@ -4,7 +4,8 @@ import * as React from "react";
 import { Skeleton } from "~/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import { Monitor, Tablet, Smartphone } from "lucide-react";
-import { useFormContext } from "../layout";
+import { trpc } from "~/trpc/client";
+import { useParams } from "next/navigation";
 import { FormPreviewRenderer } from "~/components/form-builder/form-preview-renderer";
 import { loadTheme, type ThemeConfig } from "~/components/form-themes";
 import "~/components/form-themes/themes/_register-all";
@@ -17,7 +18,12 @@ const DEVICES = [
 ] as const;
 
 export default function PreviewPage() {
-  const { form, isLoading } = useFormContext();
+  const params = useParams<{ formId: string }>();
+  const formId = params.formId;
+  const { data: form, isLoading } = trpc.form.getByIdWithFields.useQuery(
+    { formId },
+    { enabled: !!formId }
+  );
   const store = useFormEditorStore();
   const [device, setDevice] = React.useState<string>("desktop");
   const [themeConfig, setThemeConfig] = React.useState<ThemeConfig | null>(null);

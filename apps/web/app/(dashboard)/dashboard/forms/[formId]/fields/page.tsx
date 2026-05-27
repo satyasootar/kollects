@@ -9,7 +9,7 @@ import { FieldPalette } from "~/components/form-builder/field-palette";
 import { FormCanvas } from "~/components/form-builder/form-canvas";
 import { FieldSettings } from "~/components/form-builder/field-settings";
 import { useFormEditorStore } from "~/lib/stores/form-editor-store";
-import { useFormContext } from "../layout";
+
 import { toast } from "~/lib/toast";
 import { handleTrpcError } from "~/lib/api-error";
 import {
@@ -30,7 +30,10 @@ export default function FieldsPage() {
   const params = useParams<{ formId: string }>();
   const router = useRouter();
   const formId = params.formId;
-  const { form, isLoading, refetch } = useFormContext();
+  const { data: form, isLoading, refetch } = trpc.form.getByIdWithFields.useQuery(
+    { formId },
+    { enabled: !!formId }
+  );
 
   const store = useFormEditorStore();
   const [showLeaveDialog, setShowLeaveDialog] = React.useState(false);
@@ -79,12 +82,14 @@ export default function FieldsPage() {
 
   // Save mutations
   const updateFormMutation = trpc.form.update.useMutation();
-  const bulkSyncMutation = trpc.field.bulkSync.useMutation();
+  const createFieldMutation = trpc.field.create.useMutation();
+  const updateFieldMutation = trpc.field.update.useMutation();
+  const deleteFieldMutation = trpc.field.delete.useMutation();
+  const reorderFieldMutation = trpc.field.reorder.useMutation();
 
   const handleSaveAndContinue = async () => {
     setIsSaving(true);
     try {
-      // 1. Update form title/description/settings
       await updateFormMutation.mutateAsync({
         formId,
         title: store.title,
@@ -97,31 +102,62 @@ export default function FieldsPage() {
         },
       });
 
-      // 2. Bulk sync all fields
-      const fieldsToSync = store.fields.map((field) => ({
-        // Only send real DB IDs, not temp IDs
-        id: field.id.startsWith("temp_") ? undefined : field.id,
-        type: field.type,
-        label: field.label,
-        placeholder: field.placeholder,
-        helpText: field.helpText,
-        required: field.required,
-        pageNumber: field.pageNumber,
-        options: field.options,
-        validations: field.validations,
-        settings: field.settings,
-      }));
+      // Find deleted fields (in form but not in store)
+      const initialFields = (form as any)?.fields || [];
+      const deletedIds = initialFields
+        .map((f: any) => f.id)
+        .filter((id: string) => !store.fields.find(f => f.id === id));
+        
+      for (const id of deletedIds) {
+        await deleteFieldMutation.mutateAsync({ formId, fieldId: id });
+      }
 
-      await bulkSyncMutation.mutateAsync({
+      // Create new fields and update existing
+      const createPromises = store.fields
+        .filter(f => f.id.startsWith("temp_"))
+        .map(async field => {
+          const res = await createFieldMutation.mutateAsync({
+            formId,
+            type: field.type as any,
+            label: field.label,
+            placeholder: field.placeholder,
+            helpText: field.helpText,
+            required: field.required,
+            options: field.options,
+            validations: field.validations,
+            settings: field.settings,
+          });
+          return { tempId: field.id, realId: res.id };
+        });
+
+      const updatePromises = store.fields
+        .filter(f => !f.id.startsWith("temp_"))
+        .map(field => updateFieldMutation.mutateAsync({
+            formId,
+            fieldId: field.id,
+            label: field.label,
+            placeholder: field.placeholder,
+            helpText: field.helpText,
+            required: field.required,
+            options: field.options,
+            validations: field.validations,
+            settings: field.settings,
+        }));
+
+      const created = await Promise.all(createPromises);
+      await Promise.all(updatePromises);
+
+      const idMap = new Map(created.map(c => [c.tempId, c.realId]));
+      const finalIds = store.fields.map(f => idMap.get(f.id) || f.id);
+
+      await reorderFieldMutation.mutateAsync({
         formId,
-        fields: fieldsToSync,
+        fieldIds: finalIds,
       });
 
       store.markSaved();
-      refetch(); // Refresh form data in context
+      refetch(); 
       toast.success("Form saved!");
-
-      // Navigate to theme designer
       router.push(`/dashboard/forms/${formId}/theme`);
     } catch (err) {
       handleTrpcError(err);
@@ -146,22 +182,55 @@ export default function FieldsPage() {
         },
       });
 
-      const fieldsToSync = store.fields.map((field) => ({
-        id: field.id.startsWith("temp_") ? undefined : field.id,
-        type: field.type,
-        label: field.label,
-        placeholder: field.placeholder,
-        helpText: field.helpText,
-        required: field.required,
-        pageNumber: field.pageNumber,
-        options: field.options,
-        validations: field.validations,
-        settings: field.settings,
-      }));
+      const initialFields = (form as any)?.fields || [];
+      const deletedIds = initialFields
+        .map((f: any) => f.id)
+        .filter((id: string) => !store.fields.find(f => f.id === id));
+        
+      for (const id of deletedIds) {
+        await deleteFieldMutation.mutateAsync({ formId, fieldId: id });
+      }
 
-      await bulkSyncMutation.mutateAsync({
+      const createPromises = store.fields
+        .filter(f => f.id.startsWith("temp_"))
+        .map(async field => {
+          const res = await createFieldMutation.mutateAsync({
+            formId,
+            type: field.type as any,
+            label: field.label,
+            placeholder: field.placeholder,
+            helpText: field.helpText,
+            required: field.required,
+            options: field.options,
+            validations: field.validations,
+            settings: field.settings,
+          });
+          return { tempId: field.id, realId: res.id };
+        });
+
+      const updatePromises = store.fields
+        .filter(f => !f.id.startsWith("temp_"))
+        .map(field => updateFieldMutation.mutateAsync({
+            formId,
+            fieldId: field.id,
+            label: field.label,
+            placeholder: field.placeholder,
+            helpText: field.helpText,
+            required: field.required,
+            options: field.options,
+            validations: field.validations,
+            settings: field.settings,
+        }));
+
+      const created = await Promise.all(createPromises);
+      await Promise.all(updatePromises);
+
+      const idMap = new Map(created.map(c => [c.tempId, c.realId]));
+      const finalIds = store.fields.map(f => idMap.get(f.id) || f.id);
+
+      await reorderFieldMutation.mutateAsync({
         formId,
-        fields: fieldsToSync,
+        fieldIds: finalIds,
       });
 
       store.markSaved();

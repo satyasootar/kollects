@@ -46,6 +46,7 @@ import ResponsesPage from "../dashboard/forms/[formId]/responses/page";
 describe("Responses Page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockResponseGetById.mockReturnValue({ data: undefined, isLoading: false });
   });
 
   it("renders empty state when no responses", () => {

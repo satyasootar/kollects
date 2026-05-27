@@ -152,11 +152,19 @@ export default function DashboardPage() {
         </div>
         <Button 
           variant="forest" 
-          onClick={() => createMutation.mutate({ title: "Untitled Form" })}
+          asChild
           disabled={createMutation.isPending}
         >
-          {createMutation.isPending ? "Creating…" : "Create form"}
-          {!createMutation.isPending && <Plus className="size-4 ml-2" />}
+          <Link
+            href={`/dashboard/forms/00000000-0000-0000-0000-000000000000/fields`}
+            onClick={(e) => {
+              e.preventDefault();
+              createMutation.mutate({ title: "Untitled Form" });
+            }}
+          >
+            {createMutation.isPending ? "Creating…" : "Create form"}
+            {!createMutation.isPending && <Plus className="size-4 ml-2" />}
+          </Link>
         </Button>
       </div>
 
@@ -239,11 +247,19 @@ export default function DashboardPage() {
           action={
             <Button 
               variant="forest" 
-              onClick={() => createMutation.mutate({ title: "Untitled Form" })}
+              asChild
               disabled={createMutation.isPending}
             >
-              {createMutation.isPending ? "Creating…" : "Create form"}
-              {!createMutation.isPending && <Plus className="size-4 ml-2" />}
+              <Link
+                href={`/dashboard/forms/00000000-0000-0000-0000-000000000000/fields`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  createMutation.mutate({ title: "Untitled Form" });
+                }}
+              >
+                {createMutation.isPending ? "Creating…" : "Create form"}
+                {!createMutation.isPending && <Plus className="size-4 ml-2" />}
+              </Link>
             </Button>
           }
         />

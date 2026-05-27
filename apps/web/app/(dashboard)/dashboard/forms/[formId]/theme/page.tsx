@@ -31,7 +31,7 @@ import {
   Moon,
 } from "lucide-react";
 import { useFormEditorStore } from "~/lib/stores/form-editor-store";
-import { useFormContext } from "../layout";
+
 import { FormPreviewRenderer } from "~/components/form-builder/form-preview-renderer";
 import { env } from "~/env.js";
 
@@ -66,7 +66,10 @@ export default function ThemeDesignPage() {
   const router = useRouter();
   const formId = params.formId;
 
-  const { form, isLoading: isFormLoading, refetch } = useFormContext();
+  const { data: form, isLoading, refetch } = trpc.form.getByIdWithFields.useQuery(
+    { formId },
+    { enabled: !!formId }
+  );
   const store = useFormEditorStore();
 
   const [themes, setThemes] = React.useState<ThemeConfig[]>([]);
@@ -269,7 +272,7 @@ export default function ThemeDesignPage() {
         </div>
       </div>
 
-      <ResizablePanelGroup direction="horizontal" className="flex-1 overflow-hidden">
+      <ResizablePanelGroup orientation="horizontal" className="flex-1 overflow-hidden">
         {/* Left panel — Theme selection */}
         <ResizablePanel 
           defaultSize={35}

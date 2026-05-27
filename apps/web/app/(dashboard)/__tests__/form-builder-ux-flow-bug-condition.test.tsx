@@ -51,6 +51,7 @@ const { mockTrpc, mockMutations, mockRouter } = vi.hoisted(() => ({
     fieldUpdate: vi.fn(),
     fieldDelete: vi.fn(),
     fieldReorder: vi.fn(),
+    fieldBulkSync: vi.fn(),
   },
   mockRouter: {
     push: vi.fn(),
@@ -114,6 +115,7 @@ vi.mock("~/trpc/client", () => {
       form: {
         list: { useQuery: queryFn(() => mockTrpc.formList) },
         getById: { useQuery: queryFn(() => mockTrpc.formData) },
+        getByIdWithFields: { useQuery: queryFn(() => mockTrpc.formData) },
         create: {
           useMutation: (opts?: any) => ({
             mutate: (input: any) => {
@@ -151,6 +153,7 @@ vi.mock("~/trpc/client", () => {
         update: { useMutation: mutationFactory(mockMutations.fieldUpdate) },
         delete: { useMutation: mutationFactory(mockMutations.fieldDelete) },
         reorder: { useMutation: mutationFactory(mockMutations.fieldReorder) },
+        bulkSync: { useMutation: mutationFactory(mockMutations.fieldBulkSync) },
       },
       useUtils: () => ({
         form: {

@@ -44,9 +44,23 @@ export class JobQueue {
     return hash;
   }
 
-  enqueue<T extends JobType>(type: T, payload: JobPayloads[T]) {
+  async enqueue<T extends JobType>(type: T, payload: JobPayloads[T]): Promise<void> {
     const key = this.generateIdempotencyKey(type, payload);
     if (this.processedKeys.has(key)) return; // Skip duplicate
+
+    if (process.env.VERCEL) {
+      // Run synchronously on Vercel to ensure completion before the serverless function exits
+      const handler = this.handlers.get(type);
+      if (handler) {
+        try {
+          await handler(payload);
+        } catch (error) {
+          logger.error(`Job execution failed on Vercel: ${type}`, { error, payload });
+        }
+      }
+      return;
+    }
+
     this.queue.push({ type, payload, attempts: 1, idempotencyKey: key });
     this.saveQueue();
     if (!this.running) {

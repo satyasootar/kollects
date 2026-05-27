@@ -1,135 +1,70 @@
-# Turborepo starter
+# Kollects.tech
 
-This Turborepo starter is maintained by the Turborepo core team.
+**Kollects.tech** is a modern, high-performance form builder designed with a stunning editorial aesthetic. Built to provide a premium user experience, it allows users to effortlessly create, design, and analyze beautiful forms, surveys, and polls.
 
-## Using this example
+## ✨ Features
 
-Run the following command:
+- **Intuitive Form Builder**: An interactive, drag-and-drop canvas for composing forms.
+- **Pre-configured Templates**: Start quickly with curated templates (Contact Us, Lead Generation, Event Registration, etc.).
+- **Editorial Aesthetic**: A refined, warm, and highly-polished UI that feels premium and responsive.
+- **Real-time Analytics**: Built-in dashboards to track form responses and performance.
+- **Customization & Theming**: Configure form colors, fonts, and layouts to match your brand.
+- **High Performance**: Built on a modern tech stack ensuring rapid load times and smooth interactions.
 
-```sh
-npx create-turbo@latest
-```
+## 🛠 Tech Stack
 
-## What's inside?
+Kollects is built inside a **Turborepo** monorepo to separate concerns efficiently and ensure fast builds.
 
-This Turborepo includes the following packages/apps:
+- **Frontend**: [Next.js](https://nextjs.org/) (App Router), React, Tailwind CSS, Lucide Icons, and specialized UI components.
+- **Backend**: Next.js API Routes, [tRPC](https://trpc.io/) for end-to-end typesafe APIs.
+- **Database**: PostgreSQL managed with [Drizzle ORM](https://orm.drizzle.team/).
+- **Monorepo Management**: [Turborepo](https://turborepo.org/) and pnpm.
 
-### Apps and Packages
+## 🚀 Getting Started
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+### Prerequisites
+Make sure you have Node.js and `pnpm` installed.
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+### Installation
 
-### Utilities
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-username/kollects.git
+   cd kollects
+   ```
 
-This Turborepo has some additional tools already setup for you:
+2. **Install dependencies:**
+   ```bash
+   pnpm install
+   ```
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+3. **Environment Setup:**
+   - Copy `.env.example` to `.env` in the required applications (`apps/web`, `packages/database`, etc.).
+   - Fill in your database URL and other necessary API keys.
 
-### Build
+4. **Database Push:**
+   Push the schema to your Postgres database:
+   ```bash
+   pnpm db:push
+   ```
 
-To build all apps and packages, run the following command:
+5. **Start the Development Server:**
+   ```bash
+   pnpm dev
+   ```
+   This will start the web application and all necessary services. The app will be available at `http://localhost:3000`.
 
-```
-cd my-turborepo
+## 📦 Workspace Structure
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
+- `apps/web`: The main Next.js application containing the marketing site, dashboard, and form builder.
+- `apps/api`: Auxiliary API services (if applicable).
+- `packages/database`: Drizzle ORM schema, migrations, and database connection logic.
+- `packages/trpc`: The tRPC routers bridging the database and the frontend.
+- `packages/services`: Business logic and backend services (Forms, Users, etc.).
+- `packages/ui`: Shared UI components used across the monorepo.
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
+## 🤝 Contributing
+Contributions are welcome! Please open an issue or submit a pull request for any bugs, improvements, or new features.
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+## 📄 License
+This project is licensed under the MIT License.

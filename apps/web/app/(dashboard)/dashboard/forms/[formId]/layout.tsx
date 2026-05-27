@@ -61,7 +61,7 @@ interface FormContextValue {
 
 const FormContext = React.createContext<FormContextValue>({
   form: null,
-  isLoading: true,
+  isLoading: false,
   refetch: () => {},
 });
 
@@ -172,7 +172,7 @@ export default function FormEditorLayout({
     }
     return pathname.startsWith(`${basePath}${s.path}`);
   });
-  const activeStepIndex = currentStepIndex === -1 ? 0 : currentStepIndex;
+  const activeStepIndex = currentStepIndex;
 
   const navigateToStep = (index: number) => {
     const step = activeSteps[index];
@@ -277,7 +277,7 @@ export default function FormEditorLayout({
 
           {/* Stepper — centered */}
           <div className="flex-1 flex justify-center">
-            <nav className="flex items-center gap-1" aria-label="Form navigation">
+            <nav className="flex items-center gap-1" aria-label="Form editor steps">
               {activeSteps.map((step, index) => {
                 const isActive = index === activeStepIndex;
                 const isCompleted = index < activeStepIndex;

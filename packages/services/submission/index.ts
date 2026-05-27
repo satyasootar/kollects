@@ -99,16 +99,20 @@ export class SubmissionService {
       return id;
     });
 
-    // Fire and forget background jobs
-    import("../jobs")
-      .then(({ jobQueue }) => {
-        jobQueue.enqueue("ANALYTICS_UPDATE", {
+    // Fire and forget background jobs (or await on Vercel)
+    const jobsPromise = import("../jobs")
+      .then(async ({ jobQueue }) => {
+        await jobQueue.enqueue("ANALYTICS_UPDATE", {
           formId: form.id,
           dateStr: new Date().toISOString(),
         });
-        jobQueue.enqueue("EMAIL_NOTIFICATION", { formId: form.id, responseId });
+        await jobQueue.enqueue("EMAIL_NOTIFICATION", { formId: form.id, responseId });
       })
       .catch(console.error);
+      
+    if (process.env.VERCEL) {
+      await jobsPromise;
+    }
 
     return {
       responseId,
