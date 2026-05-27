@@ -29,6 +29,7 @@ import {
 import { useFormEditorStore } from "~/lib/stores/form-editor-store";
 import { useFormContext } from "../layout";
 import { FormPreviewRenderer } from "~/components/form-builder/form-preview-renderer";
+import { env } from "~/env.js";
 
 import "~/components/form-themes/themes/_register-all";
 
@@ -54,6 +55,34 @@ export default function ThemeDesignPage() {
   const [themesLoading, setThemesLoading] = React.useState(true);
   const [activeCategory, setActiveCategory] = React.useState("all");
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
+
+  const handleUploadBanner = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const apiUrl = (env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/trpc").replace("/trpc", "/api/upload");
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Failed to upload image");
+      const data = await res.json();
+      store.setCoverImageUrl(data.url);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to upload banner.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const updateFormMutation = trpc.form.update.useMutation();
 
@@ -244,12 +273,19 @@ export default function ThemeDesignPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-foreground/30 transition-colors cursor-pointer">
-                    <Upload className="size-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">
-                      Paste a URL above
+                  <Label className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-foreground/30 transition-colors cursor-pointer flex flex-col items-center justify-center">
+                    <Upload className="size-8 text-muted-foreground mb-2" />
+                    <p className="text-sm font-medium text-foreground">
+                      {isUploading ? "Uploading..." : "Click to upload or paste a URL above"}
                     </p>
-                  </div>
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={handleUploadBanner} 
+                      disabled={isUploading} 
+                    />
+                  </Label>
                 )}
               </div>
             </TabsContent>

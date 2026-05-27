@@ -85,6 +85,7 @@ export default function FieldsPage() {
         formId,
         title: store.title,
         description: store.description || undefined,
+        coverImageUrl: store.coverImageUrl,
       });
 
       // 2. Bulk sync all fields
@@ -128,6 +129,7 @@ export default function FieldsPage() {
         formId,
         title: store.title,
         description: store.description || undefined,
+        coverImageUrl: store.coverImageUrl,
       });
 
       const fieldsToSync = store.fields.map((field) => ({
@@ -214,6 +216,8 @@ export default function FieldsPage() {
           onSelectField={store.selectField}
           onReorder={store.reorderFields}
           onDeleteField={store.deleteField}
+          coverImageUrl={store.coverImageUrl}
+          onUpdateCoverImage={store.setCoverImageUrl}
         />
         <FieldSettings
           field={selectedField}

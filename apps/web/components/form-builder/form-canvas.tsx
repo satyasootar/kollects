@@ -20,7 +20,9 @@ import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2 } from "lucide-react";
 import { cn } from "~/lib/utils";
+import { env } from "~/env.js";
 import { Button } from "~/components/ui/button";
+import { Label } from "~/components/ui/label";
 
 interface FormCanvasProps {
   fields: any[];
@@ -30,6 +32,8 @@ interface FormCanvasProps {
   onSelectField: (id: string) => void;
   onReorder: (fieldIds: string[]) => void;
   onDeleteField: (id: string) => void;
+  coverImageUrl: string | null;
+  onUpdateCoverImage: (url: string | null) => void;
 }
 
 export function FormCanvas({
@@ -40,11 +44,43 @@ export function FormCanvas({
   onSelectField,
   onReorder,
   onDeleteField,
+  coverImageUrl,
+  onUpdateCoverImage,
 }: FormCanvasProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+  
+  const [isUploading, setIsUploading] = React.useState(false);
+
+  const handleUploadBanner = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const apiUrl = (env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/trpc").replace("/trpc", "/api/upload");
+      // Using the exact API upload route expected
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Failed to upload image");
+      const data = await res.json();
+      onUpdateCoverImage(data.url);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to upload banner.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const fieldIds = fields.map((f: any) => f.id);
 
@@ -62,7 +98,37 @@ export function FormCanvas({
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#fafafa] p-8">
-      <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-border/60 shadow-sm p-8 min-h-[600px]">
+      <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-border/60 shadow-sm p-8 min-h-[600px] relative group">
+        
+        {/* Banner Section */}
+        <div className="mb-8 relative rounded-xl overflow-hidden bg-muted/30 group/banner transition-all">
+          {coverImageUrl ? (
+            <div className="relative w-full h-48 group">
+              <img src={coverImageUrl} alt="Banner" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <Button variant="secondary" size="sm" onClick={() => onUpdateCoverImage(null)}>
+                  <Trash2 className="size-4 mr-2" />
+                  Remove Banner
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full h-24 border-2 border-dashed border-border/60 rounded-xl flex items-center justify-center hover:bg-muted/50 transition-colors">
+              <Label className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground flex items-center gap-2">
+                {isUploading ? (
+                  "Uploading..."
+                ) : (
+                  <>
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="size-4"><path d="M7.5 1.5C7.77614 1.5 8 1.72386 8 2V7H13C13.2761 7 13.5 7.22386 13.5 7.5C13.5 7.77614 13.2761 8 13 8H8V13C8 13.2761 7.77614 13.5 7.5 13.5C7.22386 13.5 7 13.2761 7 13V8H2C1.72386 8 1.5 7.77614 1.5 7.5C1.5 7.22386 1.72386 7 2 7H7V2C7 1.72386 7.22386 1.5 7.5 1.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path></svg>
+                    Add Banner Image
+                  </>
+                )}
+                <input type="file" className="hidden" accept="image/*" onChange={handleUploadBanner} disabled={isUploading} />
+              </Label>
+            </div>
+          )}
+        </div>
+
         {/* Form header */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-foreground">{formTitle}</h2>

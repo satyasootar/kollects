@@ -18,6 +18,14 @@ import { handleTrpcError } from "~/lib/api-error";
 type LoginInput = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  return (
+    <React.Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </React.Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get("next") ?? "/dashboard";

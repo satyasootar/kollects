@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { trpc } from "~/trpc/client";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -32,10 +32,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
-import { EmptyState } from "~/components/chrome";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "~/components/ui/sheet";
+import { Badge } from "~/components/ui/badge";
+import { EmptyState, EditorialCard, SurfaceCard } from "~/components/chrome";
 import { toast } from "~/lib/toast";
 import { handleTrpcError } from "~/lib/api-error";
-import { Download, Trash2, Eye } from "lucide-react";
+import { Download, Trash2, Eye, Star, Link2 } from "lucide-react";
 
 export default function ResponsesPage() {
   const params = useParams<{ formId: string }>();
@@ -43,6 +51,7 @@ export default function ResponsesPage() {
   const [page, setPage] = React.useState(1);
   const [limit, setLimit] = React.useState(10);
   const [deleteId, setDeleteId] = React.useState<string | null>(null);
+  const [viewingResponseId, setViewingResponseId] = React.useState<string | null>(null);
 
   const { data, isLoading } = trpc.response.list.useQuery(
     { formId, page, limit },
@@ -59,7 +68,7 @@ export default function ResponsesPage() {
     onError: (err) => handleTrpcError(err),
   });
 
-  const responses = (data as any)?.items ?? (data as any)?.data ?? [];
+  const responses = (data as any)?.responses ?? (data as any)?.items ?? (data as any)?.data ?? [];
   const totalCount = (data as any)?.total ?? (data as any)?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / limit) || 1;
 
@@ -119,6 +128,7 @@ export default function ResponsesPage() {
             formId={formId}
             formatTime={formatTime}
             onDelete={setDeleteId}
+            onView={setViewingResponseId}
           />
 
           {/* Pagination */}
@@ -172,6 +182,12 @@ export default function ResponsesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Side Drawer for Response Details */}
+      <ResponseDetailDrawer
+        responseId={viewingResponseId}
+        onClose={() => setViewingResponseId(null)}
+      />
     </div>
   );
 }
@@ -182,11 +198,13 @@ function ResponsesTable({
   formId,
   formatTime,
   onDelete,
+  onView,
 }: {
   responses: any[];
   formId: string;
   formatTime: (s: number | null | undefined) => string;
   onDelete: (id: string) => void;
+  onView: (id: string) => void;
 }) {
   return (
     <div className="border border-border rounded-xl overflow-hidden">
@@ -219,10 +237,8 @@ function ResponsesTable({
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon-sm" asChild>
-                    <Link href={`/dashboard/forms/${formId}/responses/${r.id}`}>
-                      <Eye className="size-3.5" />
-                    </Link>
+                  <Button variant="ghost" size="icon-sm" onClick={() => onView(r.id)}>
+                    <Eye className="size-3.5" />
                   </Button>
                   <Button variant="ghost" size="icon-sm" onClick={() => onDelete(r.id)}>
                     <Trash2 className="size-3.5 text-destructive" />
@@ -235,4 +251,134 @@ function ResponsesTable({
       </Table>
     </div>
   );
+}
+
+/* ─── Drawer sub-component ─── */
+function ResponseDetailDrawer({ responseId, onClose }: { responseId: string | null; onClose: () => void }) {
+  const { data: response, isLoading } = trpc.response.getById.useQuery(
+    { responseId: responseId! },
+    { enabled: !!responseId },
+  );
+
+  return (
+    <Sheet open={!!responseId} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent className="w-full sm:max-w-xl md:max-w-2xl overflow-y-auto">
+        <SheetHeader className="mb-6">
+          <SheetTitle>Response Details</SheetTitle>
+          <SheetDescription>
+            View the complete submission details for this response.
+          </SheetDescription>
+        </SheetHeader>
+
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-32 rounded-2xl" />
+            <Skeleton className="h-48 rounded-xl" />
+          </div>
+        ) : !response ? (
+          <div className="py-12 text-center text-muted-foreground">
+            Response not found.
+          </div>
+        ) : (
+          <div className="space-y-6 pb-12">
+            <EditorialCard>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs">Submitted</p>
+                  <p className="font-medium">
+                    {response.createdAt ? format(new Date(response.createdAt), "PPP p") : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Completion time</p>
+                  <p className="font-mono">
+                    {response.completionTimeSeconds ? `${response.completionTimeSeconds}s` : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">Email</p>
+                  <p className="font-mono truncate">{response.respondentEmail ?? "—"}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-xs">IP hash</p>
+                  <p className="font-mono">{response.ipHash ? `${response.ipHash.slice(0, 8)}…` : "—"}</p>
+                </div>
+              </div>
+            </EditorialCard>
+
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold">Answers</h3>
+              {(!response.answers || (response.answers as any[]).length === 0) && (
+                <p className="text-sm text-muted-foreground">No answers recorded.</p>
+              )}
+              {(response.answers as any[])?.map((a: any, i: number) => (
+                <SurfaceCard key={i}>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground font-medium mb-1.5">
+                        {a.fieldLabel ?? `Field ${i + 1}`}
+                      </p>
+                      <div className="text-foreground">
+                        <AnswerValue answer={a} />
+                      </div>
+                    </div>
+                  </div>
+                </SurfaceCard>
+              ))}
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/* ─── Answer renderer ─── */
+function AnswerValue({ answer }: { answer: any }) {
+  const value = answer.value;
+  const type = answer.fieldType;
+
+  if (value === null || value === undefined) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  if (type === "checkbox") {
+    return <span className="font-mono text-sm">{value ? "Yes" : "No"}</span>;
+  }
+
+  if (type === "rating") {
+    return (
+      <div className="flex items-center gap-0.5">
+        {Array.from({ length: Number(value) }).map((_, i) => (
+          <Star key={i} className="size-4 fill-current text-amber-500" />
+        ))}
+      </div>
+    );
+  }
+
+  if (type === "multi_select" && Array.isArray(value)) {
+    return (
+      <div className="flex flex-wrap gap-1">
+        {value.map((v: string) => (
+          <Badge key={v} variant="outline" className="font-normal">{v}</Badge>
+        ))}
+      </div>
+    );
+  }
+
+  if (type === "url" && typeof value === "string") {
+    return (
+      <a
+        href={value}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm text-tint-sky-ink hover:underline flex items-center gap-1 w-fit"
+      >
+        <Link2 className="size-3.5" />
+        {value}
+      </a>
+    );
+  }
+
+  return <p className="text-sm whitespace-pre-wrap">{String(value)}</p>;
 }

@@ -135,6 +135,11 @@ export default function FormFillPage() {
           className="w-full max-w-lg space-y-6"
           onFocus={handleFocus}
         >
+          {formData.coverImageUrl && (
+            <div className="w-full h-48 rounded-xl overflow-hidden mb-6">
+              <img src={formData.coverImageUrl} alt="Form Banner" className="w-full h-full object-cover" />
+            </div>
+          )}
           <div>
             <h1
               style={{

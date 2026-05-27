@@ -42,7 +42,7 @@ export const publicFormRouter = router({
         .catch(console.error);
 
       // Return only the necessary public fields to the frontend
-      return {
+      const payload = {
         id: form.id,
         slug: form.slug,
         title: form.title,
@@ -55,6 +55,7 @@ export const publicFormRouter = router({
         passwordProtected: !!form.passwordHash,
         fields: (form as any).fields,
       };
+      return payload;
     }),
 
   validatePassword: publicProcedure
