@@ -23,6 +23,8 @@ import {
   AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
 import { ArrowRight, Save } from "lucide-react";
+import { Switch } from "~/components/ui/switch";
+import { Label } from "~/components/ui/label";
 
 export default function FieldsPage() {
   const params = useParams<{ formId: string }>();
@@ -195,25 +197,37 @@ export default function FieldsPage() {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSaveDraft}
-            disabled={!store.isDirty || isSaving}
-          >
-            <Save className="size-3.5 mr-1.5" />
-            {isSaving ? "Saving…" : "Save Draft"}
-          </Button>
-          <Button
-            variant="forest"
-            size="sm"
-            onClick={handleSaveAndContinue}
-            disabled={isSaving}
-          >
-            {isSaving ? "Saving…" : "Save & Continue"}
-            <ArrowRight className="size-3.5 ml-1.5" />
-          </Button>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="globalShowFieldIcons" className="text-sm cursor-pointer text-muted-foreground hover:text-foreground">
+              Show field icons
+            </Label>
+            <Switch
+              id="globalShowFieldIcons"
+              checked={store.showFieldIcons}
+              onCheckedChange={store.setShowFieldIcons}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSaveDraft}
+              disabled={!store.isDirty || isSaving}
+            >
+              <Save className="size-3.5 mr-1.5" />
+              {isSaving ? "Saving…" : "Save Draft"}
+            </Button>
+            <Button
+              variant="forest"
+              size="sm"
+              onClick={handleSaveAndContinue}
+              disabled={isSaving}
+            >
+              {isSaving ? "Saving…" : "Save & Continue"}
+              <ArrowRight className="size-3.5 ml-1.5" />
+            </Button>
+          </div>
         </div>
       </div>
 

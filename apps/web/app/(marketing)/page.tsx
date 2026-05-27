@@ -1,137 +1,98 @@
+"use client";
+
+import * as React from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
+import { motion } from "motion/react";
 import { Button } from "~/components/ui/button";
-import {
-  TintCard,
-  DotField,
-  Doodle,
-  NumberTicker,
-  EditorialCard,
-  Illustration,
-} from "~/components/chrome";
+import { HeroHeadline } from "~/components/landing/hero-headline";
+import { HeroFormCard } from "~/components/landing/hero-form-card";
+import { ThemeShowcase } from "~/components/landing/theme-showcase";
+import { HowItWorks } from "~/components/landing/how-it-works";
+import { StatsSection } from "~/components/landing/stats-section";
+import { CTASection } from "~/components/landing/cta-section";
+
+// Lazy-load drag demo — heavy @dnd-kit dependency
+const DragDemo = dynamic(
+  () => import("~/components/landing/drag-demo").then((mod) => ({ default: mod.DragDemo })),
+  { ssr: false, loading: () => <div className="h-48 animate-pulse bg-muted rounded-xl" /> }
+);
+
+function HeroCTAButtons() {
+  return (
+    <motion.div
+      className="flex items-center justify-center gap-4 mt-12"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 1, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <Button
+        variant="default"
+        size="lg"
+        asChild
+        className="rounded-full px-8 bg-[#4d65ff] hover:bg-[#3b4ecc] text-white"
+      >
+        <Link href="/signup">Request a Demo</Link>
+      </Button>
+      <Button variant="outline" size="lg" asChild className="rounded-full px-8">
+        <Link href="/explore">See how it works</Link>
+      </Button>
+    </motion.div>
+  );
+}
 
 export default function LandingPage() {
+  const heroRef = React.useRef<HTMLElement>(null);
+
+  // Auxia inspired warm cream background for the main page
   return (
-    <div className="relative">
-      {/* Hero */}
-      <section className="relative py-24 px-6 text-center overflow-hidden">
-        <DotField />
-        <div className="relative z-10 max-w-3xl mx-auto">
-          <h1 className="text-display-xl text-foreground">
-            Build forms that{" "}
-            <span className="text-tint-peach-ink relative inline-block">
-              people love
-              <Doodle name="underline-wave" className="absolute left-0 -bottom-3 w-full h-3" />
-            </span>
-            .
-          </h1>
-          <p className="mt-6 text-lg text-muted-foreground max-w-lg mx-auto">
-            Create dynamic forms with stunning themes, collect responses, and
-            understand your audience — all in one place.
-          </p>
-          <div className="mt-8 flex items-center justify-center gap-4">
-            <Button variant="forest" size="lg" asChild>
-              <Link href="/signup">Get started — it&apos;s free</Link>
-            </Button>
-            <Button variant="outline" size="lg" asChild>
-              <Link href="/explore">Explore forms</Link>
-            </Button>
+    <div className="bg-[#f0efe3] min-h-screen text-[#1a1a1a] selection:bg-[#0b4fff] selection:text-[#f0efe3]">
+      {/* ═══ HERO ═══ */}
+      <section
+        ref={heroRef}
+        className="relative pt-32 pb-40 px-6 overflow-hidden flex flex-col items-center"
+      >
+        <div className="relative z-10 w-full max-w-5xl mx-auto">
+          <HeroHeadline />
+          <HeroCTAButtons />
+          
+          {/* Hero visual */}
+          <div className="mt-24 relative flex justify-center w-full">
+            <HeroFormCard />
           </div>
-          <Doodle
-            name="arrow-loop"
-            className="absolute -bottom-8 right-0 md:right-12 size-16 text-doodle-soft"
-          />
         </div>
       </section>
 
-      {/* By the numbers */}
-      <section className="px-6 py-16 max-w-5xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <TintCard tint="peach">
-            <TintCard.Number>
-              <NumberTicker value={60} suffix="s" />
-              <Doodle name="arrow-curve" className="inline-block size-4 ml-1" />
-            </TintCard.Number>
-            <TintCard.Caption>to build a form</TintCard.Caption>
-          </TintCard>
-          <TintCard tint="mint">
-            <TintCard.Number>
-              <NumberTicker value={12} suffix="+" />
-              <Doodle name="swirl" className="inline-block size-4 ml-1" />
-            </TintCard.Number>
-            <TintCard.Caption>stunning themes</TintCard.Caption>
-          </TintCard>
-          <TintCard tint="forest">
-            <TintCard.Number>
-              <NumberTicker value={99} suffix="%" />
-            </TintCard.Number>
-            <TintCard.Caption>uptime</TintCard.Caption>
-          </TintCard>
-          <TintCard tint="blush">
-            <TintCard.Number>
-              <NumberTicker value={11} />
-            </TintCard.Number>
-            <TintCard.Caption>field types</TintCard.Caption>
-          </TintCard>
-          <TintCard tint="sky">
-            <TintCard.Number>
-              <NumberTicker value={100} suffix="%" />
-            </TintCard.Number>
-            <TintCard.Caption>free to start</TintCard.Caption>
-          </TintCard>
-          <TintCard tint="butter">
-            <TintCard.Number>∞</TintCard.Number>
-            <TintCard.Caption>possibilities</TintCard.Caption>
-          </TintCard>
-        </div>
+      {/* ═══ HOW IT WORKS ═══ */}
+      <div className="bg-[#1a1a1a] text-[#f0efe3]">
+        <HowItWorks />
+      </div>
+
+      {/* ═══ INTERACTIVE DRAG DEMO ═══ */}
+      <section className="px-6 py-32 max-w-5xl mx-auto bg-[#f0efe3]">
+        <motion.div
+          className="bg-white border border-[#e5e5e5] rounded-3xl p-10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.1)]"
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <h3 className="text-2xl font-serif text-[#1a1a1a] mb-2">Try it yourself</h3>
+          <p className="text-base text-[#737373] mb-8">
+            Drag fields onto the canvas — just like the real editor.
+          </p>
+          <DragDemo />
+        </motion.div>
       </section>
 
-      {/* Features */}
-      <section className="px-6 py-16 max-w-5xl mx-auto">
-        <h2 className="text-display-lg text-foreground text-center mb-12">
-          Everything you need to{" "}
-          <span className="text-tint-blush-ink">collect</span>.
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <EditorialCard className="text-center">
-            <Illustration name="collect" className="mx-auto mb-4 max-w-[160px]" />
-            <h3 className="text-lg font-semibold">Collect</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Build forms with 11 field types, validations, and multi-page flows.
-            </p>
-          </EditorialCard>
-          <EditorialCard className="text-center">
-            <Illustration name="analyze" className="mx-auto mb-4 max-w-[160px]" />
-            <h3 className="text-lg font-semibold">Understand</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Analytics, drop-off charts, and field-level stats to see what works.
-            </p>
-          </EditorialCard>
-          <EditorialCard className="text-center">
-            <Illustration name="share" className="mx-auto mb-4 max-w-[160px]" />
-            <h3 className="text-lg font-semibold">Share</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Publish with a custom slug, share via link or QR code.
-            </p>
-          </EditorialCard>
-        </div>
-      </section>
+      {/* ═══ THEME SHOWCASE (sticky scroll) ═══ */}
+      <ThemeShowcase />
 
-      {/* CTA */}
-      <section className="px-6 py-20 text-center">
-        <h2 className="text-display-md text-foreground">
-          Ready to start{" "}
-          <span className="text-tint-peach-ink relative inline-block">
-            collecting
-            <Doodle name="underline-wave" className="absolute left-0 -bottom-2 w-full h-2" />
-          </span>
-          ?
-        </h2>
-        <div className="mt-8">
-          <Button variant="forest" size="lg" asChild>
-            <Link href="/signup">Create your first form</Link>
-          </Button>
-        </div>
-      </section>
+      {/* ═══ STATS ═══ */}
+      <StatsSection />
+
+      {/* ═══ CTA ═══ */}
+      <CTASection />
     </div>
   );
 }

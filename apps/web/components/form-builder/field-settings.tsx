@@ -24,22 +24,6 @@ export function FieldSettings({ field, onUpdate, showFieldIcons, onUpdateShowFie
         <p className="text-sm text-muted-foreground">
           Select a field to edit its settings.
         </p>
-        
-        {onUpdateShowFieldIcons && (
-          <div className="pt-6 border-t border-border">
-            <h3 className="font-medium text-sm mb-4">Form Settings</h3>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="globalShowFieldIcons" className="text-sm cursor-pointer">
-                Show field icons
-              </Label>
-              <Switch
-                id="globalShowFieldIcons"
-                checked={showFieldIcons ?? false}
-                onCheckedChange={onUpdateShowFieldIcons}
-              />
-            </div>
-          </div>
-        )}
       </div>
     );
   }

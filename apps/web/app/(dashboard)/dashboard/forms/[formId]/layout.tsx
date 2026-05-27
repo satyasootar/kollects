@@ -334,6 +334,7 @@ export default function FormEditorLayout({
                   }}
                   disabled={updateMutation.isPending}
                 >
+                  <Eye className="size-4 mr-1" />
                   {updateMutation.isPending ? "Saving…" : "Save Draft"}
                 </Button>
                 {isDraft && (
