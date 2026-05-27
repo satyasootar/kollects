@@ -142,18 +142,9 @@ describe("Design tokens (DESIGN.md §2.1)", () => {
   });
 
   describe("Dark mode tokens", () => {
-    it("defines .dark block with forest-tinted background", () => {
-      expect(css).toMatch(/\.dark\s*\{[\s\S]*--background:\s*oklch\(0\.16/);
-    });
-
-    it("defines dark tint-mint (deeper)", () => {
-      expect(css).toMatch(
-        /\.dark\s*\{[\s\S]*--tint-mint:\s*oklch\(0\.32/,
-      );
-    });
-
-    it("defines dark doodle (lighter for contrast)", () => {
-      expect(css).toMatch(/\.dark\s*\{[\s\S]*--doodle:\s*oklch\(0\.85/);
+    it("dark mode is disabled (light-only product)", () => {
+      // We intentionally removed the .dark block — light mode only
+      expect(css).toContain("DARK MODE — disabled");
     });
   });
 });

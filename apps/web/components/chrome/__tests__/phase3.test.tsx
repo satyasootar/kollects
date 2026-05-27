@@ -15,7 +15,7 @@ describe("Button variants (DESIGN.md §3.1)", () => {
     const btn = screen.getByRole("button", { name: "Publish" });
     expect(btn.className).toContain("bg-foreground");
     expect(btn.className).toContain("text-background");
-    expect(btn.className).toContain("active:scale-[0.98]");
+    expect(btn.className).toContain("rounded-full");
   });
 
   it("renders chip variant with rounded-full", () => {
@@ -33,7 +33,7 @@ describe("Button variants (DESIGN.md §3.1)", () => {
     render(<Button variant="link-soft">Learn more</Button>);
     const btn = screen.getByRole("button", { name: "Learn more" });
     expect(btn.className).toContain("underline");
-    expect(btn.className).toContain("decoration-doodle/40");
+    expect(btn.className).toContain("decoration-foreground/30");
   });
 
   it("default variant has active:scale-[0.98]", () => {

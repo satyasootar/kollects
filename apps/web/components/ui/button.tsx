@@ -21,10 +21,10 @@ const buttonVariants = cva(
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
         forest:
-          "bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98] transition-all duration-200",
+          "bg-foreground text-background rounded-full px-6 hover:bg-foreground/85 active:scale-[0.97] transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.12)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.16)]",
         chip: "rounded-full border border-border bg-card hover:bg-secondary text-foreground font-medium",
         "link-soft":
-          "text-foreground underline decoration-doodle/40 decoration-2 underline-offset-4 hover:decoration-doodle",
+          "text-foreground underline decoration-foreground/30 decoration-1 underline-offset-4 hover:decoration-foreground/60",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

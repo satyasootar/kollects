@@ -14,4 +14,5 @@ export {
 } from "./underline-tabs";
 export { AuthGuard } from "./auth-guard";
 export { DashboardSidebar } from "./dashboard-sidebar";
+export { DashboardShell } from "./dashboard-shell";
 export { CommandPalette } from "./command-palette";

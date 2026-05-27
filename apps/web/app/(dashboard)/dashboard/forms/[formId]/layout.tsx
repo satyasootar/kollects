@@ -7,20 +7,8 @@ import { trpc } from "~/trpc/client";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Spinner } from "~/components/ui/spinner";
-import {
-  StatusBadge,
-  UnderlineTabs,
-  UnderlineTabsList,
-  UnderlineTabsTrigger,
-} from "~/components/chrome";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "~/components/ui/breadcrumb";
+import { StatusBadge } from "~/components/chrome";
+import { ArrowLeft, Check, MoreHorizontal, Share2, Eye } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,19 +31,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { MoreHorizontal, Share2, Eye } from "lucide-react";
 import { toast } from "~/lib/toast";
 import { handleTrpcError } from "~/lib/api-error";
 import { ShareModal } from "~/components/form-builder/share-modal";
+import { cn } from "~/lib/utils";
 
-const TABS = [
-  { value: "fields", label: "Fields", path: "" },
-  { value: "settings", label: "Settings", path: "/settings" },
-  { value: "theme", label: "Theme", path: "/theme" },
-  { value: "responses", label: "Responses", path: "/responses" },
-  { value: "analytics", label: "Analytics", path: "/analytics" },
-  { value: "emails", label: "Emails", path: "/email-settings" },
-  { value: "preview", label: "Preview", path: "/preview" },
+const STEPS = [
+  { id: "build", label: "Build", path: "/fields" },
+  { id: "design", label: "Design", path: "/theme" },
+  { id: "preview", label: "Preview", path: "/preview" },
 ] as const;
 
 export default function FormEditorLayout({
@@ -135,20 +119,19 @@ export default function FormEditorLayout({
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [showShareModal, setShowShareModal] = React.useState(false);
 
-  // Determine active tab from pathname
+  // Determine active step from pathname
   const basePath = `/dashboard/forms/${formId}`;
-  const activeTab =
-    TABS.find((t) => {
-      if (t.path === "")
-        return pathname === basePath || pathname.startsWith(`${basePath}/fields`);
-      return pathname.startsWith(`${basePath}${t.path}`);
-    })?.value ?? "fields";
+  const currentStepIndex = STEPS.findIndex((s) => {
+    if (s.id === "build")
+      return pathname === basePath || pathname.startsWith(`${basePath}/fields`) || pathname.startsWith(`${basePath}/settings`);
+    return pathname.startsWith(`${basePath}${s.path}`);
+  });
+  const activeStepIndex = currentStepIndex === -1 ? 0 : currentStepIndex;
 
-  const handleTabChange = (value: string) => {
-    const tab = TABS.find((t) => t.value === value);
-    if (tab) {
-      const path = tab.path === "" ? `${basePath}/fields` : `${basePath}${tab.path}`;
-      router.push(path);
+  const navigateToStep = (index: number) => {
+    const step = STEPS[index];
+    if (step) {
+      router.push(`${basePath}${step.path}`);
     }
   };
 
@@ -201,58 +184,95 @@ export default function FormEditorLayout({
   const isArchived = formData.status === "archived";
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0 h-full">
       {/* Top bar */}
-      <div className="sticky top-0 z-40 h-14 flex items-center gap-4 px-6 border-b border-border bg-background/95 backdrop-blur">
-        {/* Breadcrumb */}
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href="/dashboard">Dashboard</Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>
-                {isEditingTitle ? (
-                  <input
-                    ref={titleInputRef}
-                    value={titleDraft}
-                    onChange={(e) => setTitleDraft(e.target.value)}
-                    onBlur={saveTitle}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") saveTitle();
-                      if (e.key === "Escape") cancelEditTitle();
-                    }}
-                    className="bg-transparent border-b border-foreground outline-none text-sm font-medium w-48"
-                    aria-label="Form title"
-                  />
-                ) : (
-                  <button
-                    onClick={startEditingTitle}
-                    className="text-sm font-medium hover:underline cursor-text"
-                    title="Click to edit title"
-                  >
-                    {formData.title}
-                    {updateMutation.isPending && (
-                      <Spinner className="inline-block ml-1 size-3" />
-                    )}
-                  </button>
-                )}
-              </BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+      <div className="sticky top-0 z-40 h-14 flex items-center gap-4 px-6 border-b border-border bg-background/95 backdrop-blur shrink-0">
+        {/* Back button */}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => router.push("/dashboard")}
+          className="shrink-0"
+          aria-label="Back to dashboard"
+        >
+          <ArrowLeft className="size-4" />
+        </Button>
 
-        {/* Status badges */}
-        <div className="flex items-center gap-2 ml-2">
+        {/* Title */}
+        <div className="flex items-center gap-2 min-w-0">
+          {isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={saveTitle}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveTitle();
+                if (e.key === "Escape") cancelEditTitle();
+              }}
+              className="bg-transparent border-b border-foreground outline-none text-sm font-semibold w-48"
+              aria-label="Form title"
+            />
+          ) : (
+            <button
+              onClick={startEditingTitle}
+              className="text-sm font-semibold hover:underline cursor-text truncate max-w-[200px]"
+              title="Click to edit title"
+            >
+              {formData.title}
+              {updateMutation.isPending && (
+                <Spinner className="inline-block ml-1 size-3" />
+              )}
+            </button>
+          )}
           <StatusBadge status={formData.status ?? "draft"} />
-          {formData.visibility && <StatusBadge status={formData.visibility} />}
+        </div>
+
+        {/* Stepper — centered */}
+        <div className="flex-1 flex justify-center">
+          <nav className="flex items-center gap-1" aria-label="Form editor steps">
+            {STEPS.map((step, index) => {
+              const isActive = index === activeStepIndex;
+              const isCompleted = index < activeStepIndex;
+              return (
+                <React.Fragment key={step.id}>
+                  {index > 0 && (
+                    <div
+                      className={cn(
+                        "w-8 h-px mx-1",
+                        index <= activeStepIndex ? "bg-foreground" : "bg-border",
+                      )}
+                    />
+                  )}
+                  <button
+                    onClick={() => navigateToStep(index)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                      isActive && "bg-foreground text-background",
+                      isCompleted && "bg-tint-mint text-tint-mint-ink",
+                      !isActive && !isCompleted && "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                    )}
+                  >
+                    {isCompleted ? (
+                      <Check className="size-3" />
+                    ) : (
+                      <span className={cn(
+                        "size-4 rounded-full flex items-center justify-center text-[10px] font-bold border",
+                        isActive ? "border-background/50" : "border-current",
+                      )}>
+                        {index + 1}
+                      </span>
+                    )}
+                    {step.label}
+                  </button>
+                </React.Fragment>
+              );
+            })}
+          </nav>
         </div>
 
         {/* Action bar */}
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-2 shrink-0">
           {isDraft && (
             <Button
               variant="forest"
@@ -273,13 +293,6 @@ export default function FormEditorLayout({
               Unpublish
             </Button>
           )}
-
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`${basePath}/preview`}>
-              <Eye className="size-4 mr-1" />
-              Preview
-            </Link>
-          </Button>
 
           <TooltipProvider>
             <Tooltip>
@@ -332,19 +345,6 @@ export default function FormEditorLayout({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="px-6">
-        <UnderlineTabs value={activeTab} onValueChange={handleTabChange}>
-          <UnderlineTabsList>
-            {TABS.map((tab) => (
-              <UnderlineTabsTrigger key={tab.value} value={tab.value}>
-                {tab.label}
-              </UnderlineTabsTrigger>
-            ))}
-          </UnderlineTabsList>
-        </UnderlineTabs>
       </div>
 
       {/* Content */}
