@@ -109,7 +109,7 @@ export default function FieldsPage() {
         .filter((id: string) => !store.fields.find(f => f.id === id));
         
       for (const id of deletedIds) {
-        await deleteFieldMutation.mutateAsync({ formId, fieldId: id });
+        await deleteFieldMutation.mutateAsync({ fieldId: id });
       }
 
       // Create new fields and update existing
@@ -133,7 +133,6 @@ export default function FieldsPage() {
       const updatePromises = store.fields
         .filter(f => !f.id.startsWith("temp_"))
         .map(field => updateFieldMutation.mutateAsync({
-            formId,
             fieldId: field.id,
             label: field.label,
             placeholder: field.placeholder,
@@ -188,7 +187,7 @@ export default function FieldsPage() {
         .filter((id: string) => !store.fields.find(f => f.id === id));
         
       for (const id of deletedIds) {
-        await deleteFieldMutation.mutateAsync({ formId, fieldId: id });
+        await deleteFieldMutation.mutateAsync({ fieldId: id });
       }
 
       const createPromises = store.fields
@@ -211,7 +210,6 @@ export default function FieldsPage() {
       const updatePromises = store.fields
         .filter(f => !f.id.startsWith("temp_"))
         .map(field => updateFieldMutation.mutateAsync({
-            formId,
             fieldId: field.id,
             label: field.label,
             placeholder: field.placeholder,

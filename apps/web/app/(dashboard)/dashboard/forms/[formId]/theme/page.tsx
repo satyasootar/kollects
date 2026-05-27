@@ -224,7 +224,7 @@ export default function ThemeDesignPage() {
     return themes.find((t) => t.id === store.themeId) ?? themes[0];
   }, [themes, store.themeId, store.customTheme]);
 
-  if (isFormLoading || themesLoading) {
+  if (isLoading || themesLoading) {
     return (
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
