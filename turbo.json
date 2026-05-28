@@ -10,6 +10,7 @@
         "$TURBO_DEFAULT$",
         ".env*"
       ],
+      "env": ["STANDALONE_BUILD"],
       "outputs": [
         ".next/**",
         "!.next/cache/**"
