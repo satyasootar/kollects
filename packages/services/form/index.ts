@@ -7,7 +7,7 @@ import { TRPCError } from "@trpc/server";
 import { assertOwnership, assertNotDeleted } from "./access-control";
 import { SlugService } from "../slug";
 import crypto from "crypto";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { cache } from "../cache";
 
 const slugService = new SlugService();

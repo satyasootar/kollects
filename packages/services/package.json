@@ -5,7 +5,7 @@
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "@types/bcrypt": "^6.0.0",
+    "@types/bcryptjs": "^3.0.0",
     "@types/nodemailer": "^8.0.0",
     "@types/papaparse": "^5.5.2",
     "@types/sanitize-html": "^2.16.1",
@@ -16,7 +16,7 @@
     "@repo/database": "workspace:*",
     "@repo/logger": "workspace:*",
     "@trpc/server": "^11.8.1",
-    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.1",
     "google-auth-library": "^10.5.0",
     "imagekit": "^6.0.0",

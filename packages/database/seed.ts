@@ -1,6 +1,6 @@
 import { db } from "./index";
 import { usersTable, themesTable, formTemplatesTable } from "./schema";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
 async function main() {
