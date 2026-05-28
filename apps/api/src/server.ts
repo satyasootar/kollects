@@ -34,10 +34,7 @@ const apiLimiter = rateLimit({
 app.use(apiLimiter);
 app.use(express.json({ limit: "500kb" }));
 
-// Start background cron tasks (skip on Vercel due to serverless execution limits)
-if (!process.env.VERCEL) {
-  jobQueue.startCronTasks();
-}
+
 
 app.get("/", (req, res) => {
   return res.json({ message: "KOLLECTS.TECH is up and running..." });
@@ -47,34 +44,7 @@ app.get("/health", (req, res) => {
   return res.json({ message: "KOLLECTS.TECH server is healthy", healthy: true });
 });
 
-app.get("/api/cron/cleanup", async (req, res) => {
-  // Optional security: Check Authorization header if VERCEL_CRON_SECRET is set
-  if (process.env.VERCEL_CRON_SECRET) {
-    const auth = req.headers.authorization;
-    if (auth !== `Bearer ${process.env.VERCEL_CRON_SECRET}`) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-  }
-  
-  try {
-    // We can call JobQueue private cleanup methods if they were public,
-    // but since they are private, we can restart the cron tasks once to run immediately
-    // Or we can just call them if we make them public.
-    // Let's make a generic cleanup call.
-    await import("@repo/services/jobs").then(async ({ jobQueue }) => {
-      // @ts-ignore - calling private methods for cron trigger
-      await jobQueue.cleanupRateLimits();
-      // @ts-ignore
-      await jobQueue.cleanupSessions();
-      // @ts-ignore
-      await jobQueue.cleanupEmailLogs();
-    });
-    return res.json({ success: true, message: "Cleanups completed successfully" });
-  } catch (error) {
-    logger.error("Vercel Cron Cleanup failed", { error });
-    return res.status(500).json({ error: "Cleanup failed" });
-  }
-});
+
 
 if (env.NODE_ENV !== "production") {
   const openApiDocument = generateOpenApiDocument(serverRouter, {
