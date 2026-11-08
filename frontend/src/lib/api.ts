@@ -40,12 +40,15 @@ api.interceptors.response.use(
         await refreshPromise;
         return api.request(original);
       } catch {
-        // Refresh failed – clear auth and redirect
-        const { clearAuth } = await import("@/store/use-auth-store").then(
+        // Refresh failed – a real session expired: clear auth and redirect.
+        // Anonymous visitors had nothing to lose, so don't reload the page on them.
+        const { user, clearAuth } = await import("@/store/use-auth-store").then(
           (m) => m.useAuthStore.getState()
         );
-        clearAuth();
-        window.location.href = "/";
+        if (user) {
+          clearAuth();
+          window.location.href = "/";
+        }
       }
     }
 

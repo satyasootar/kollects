@@ -37,20 +37,20 @@ export function Hero() {
             answers come in live, all from one simple dashboard.
           </motion.p>
 
-          <motion.div variants={fadeUp} custom={3} className="mt-12 flex flex-wrap items-center gap-4">
+          <motion.div variants={fadeUp} custom={3} className="mt-12 grid grid-cols-1 sm:grid-cols-2 sm:w-fit gap-4">
             <Link to="/auth/register">
               <Button
                 size="lg"
-                className="h-14 px-8 rounded-none bg-foreground text-background hover:bg-primary text-sm font-black uppercase tracking-widest transition-all"
+                className="h-14 w-full px-8 rounded-none border border-foreground bg-foreground text-background hover:bg-primary hover:border-primary text-sm font-black uppercase tracking-widest transition-all"
               >
-                Create Free Poll <ArrowRight className="ml-2 w-4 h-4" />
+                Get Started Free <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
             <a href="#features">
               <Button
                 variant="outline"
                 size="lg"
-                className="h-14 px-8 rounded-none border-border text-sm font-bold uppercase tracking-widest hover:bg-muted transition-all"
+                className="h-14 w-full px-8 rounded-none border border-border text-sm font-bold uppercase tracking-widest hover:bg-muted transition-all"
               >
                 See Features
               </Button>
@@ -60,7 +60,7 @@ export function Hero() {
           {/* Hero visual — production dashboard preview */}
           <motion.div
             variants={fadeUp} custom={4}
-            className="mt-20 relative group/hero"
+            className="mt-20 relative group/hero hidden md:block"
           >
             <LandingDashboard />
           </motion.div>

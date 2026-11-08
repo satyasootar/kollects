@@ -11,7 +11,7 @@ export function Stats() {
             <SectionLabel>By The Numbers</SectionLabel>
             <h2 className="mt-5 text-4xl font-black uppercase tracking-tight">Built for scale.</h2>
           </motion.div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border border border-border">
             <div className="bg-background"><StatCard value="10K+" label="Polls Created" /></div>
             <div className="bg-background"><StatCard value="500K+" label="Responses Collected" /></div>
             <div className="bg-background"><StatCard value="< 50ms" label="Real-time Latency" /></div>

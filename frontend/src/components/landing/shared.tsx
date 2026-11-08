@@ -14,9 +14,9 @@ export function StatCard({ value, label }: { value: string; label: string }) {
   return (
     <motion.div
       variants={fadeUp}
-      className="border border-border p-8 flex flex-col gap-2 hover:border-primary/40 transition-colors"
+      className="h-full p-5 md:p-8 flex flex-col gap-2 hover:bg-muted/40 transition-colors"
     >
-      <span className="text-4xl font-black tracking-tighter text-foreground">{value}</span>
+      <span className="text-3xl md:text-4xl font-black tracking-tighter text-foreground whitespace-nowrap">{value}</span>
       <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">{label}</span>
     </motion.div>
   );

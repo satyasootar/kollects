@@ -12,15 +12,12 @@ import { cn } from "@/lib/utils";
 export function Pricing() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
-  const { data: plans, isError } = usePlans();
+  const { data: plans, isError, refetch, isFetching } = usePlans();
   const [period, setPeriod] = useState<BillingPeriod>("monthly");
-
-  // The catalog comes from the API; if it's unreachable, skip the section rather than show stale prices.
-  if (isError) return null;
 
   return (
     <section id="pricing" className="border-b border-border">
-      <div className="mx-auto max-w-350 px-4 py-24 md:px-12">
+      <div className="mx-auto max-w-350 px-12 py-24">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
           <motion.div variants={fadeUp} className="mb-12 flex flex-wrap items-end justify-between gap-6">
             <div>
@@ -71,8 +68,21 @@ export function Pricing() {
                   );
                 }}
               />
+            ) : isError ? (
+              // Prices come from the API; never show stale ones, but keep the section so #pricing still lands.
+              <div className="flex flex-col items-start gap-4 border border-border p-8">
+                <p className="text-muted-foreground">Couldn't load pricing right now.</p>
+                <button
+                  type="button"
+                  onClick={() => refetch()}
+                  disabled={isFetching}
+                  className="border border-border px-4 py-2 font-mono text-[11px] uppercase tracking-widest transition-colors hover:bg-foreground hover:text-background disabled:opacity-50"
+                >
+                  {isFetching ? "Retrying…" : "Try again"}
+                </button>
+              </div>
             ) : (
-              <div className="shimmer h-[28rem]" />
+              <div className="shimmer h-112" />
             )}
           </motion.div>
 
