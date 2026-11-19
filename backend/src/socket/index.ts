@@ -9,7 +9,8 @@ import { verifyAccessToken } from "../modules/auth/tokens.js";
 let io: SocketServer;
 
 // Abuse limits: open sockets per client IP, and incoming events per socket per window.
-const MAX_SOCKETS_PER_IP = 20;
+// Generous on purpose: a whole classroom joining a live quiz often shares one NAT'd IP.
+const MAX_SOCKETS_PER_IP = 200;
 const MAX_EVENTS_PER_WINDOW = 30;
 const EVENT_WINDOW_MS = 10_000;
 const socketsPerIp = new Map<string, number>();
