@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import config from "./config.js";
 import { User } from "../modules/user/user.model.js";
+import { Session } from "../modules/session/session.model.js";
 
 passport.use(
   new GoogleStrategy(
@@ -13,9 +14,14 @@ passport.use(
     async (_accessToken, _refreshToken, profile, done) => {
       try {
         const email = profile.emails?.[0]?.value;
+        const emailVerified = (profile.emails?.[0] as { verified?: boolean | string } | undefined)?.verified;
 
         if (!email) {
             return done(new Error("No email found in Google profile"), undefined);
+        }
+        // Only a Google-verified address may be matched to (or create) a Kollects account.
+        if (emailVerified !== true && emailVerified !== "true") {
+            return done(null, false);
         }
 
         // Check if user already exists
@@ -24,11 +30,17 @@ passport.use(
                 { googleId: profile.id },
                 { email: email }
             ]
-        });
+        }).select("+passwordHash");
 
         if (user) {
           // If user exists but doesn't have a googleId, link it
           if (!user.googleId) {
+            // Nobody ever proved they own this inbox, so the password may have been set by someone
+            // who pre-registered the address. Drop it and end its sessions; Google is the real owner.
+            if (!user.isEmailVerified) {
+              user.passwordHash = undefined;
+              await Session.deleteMany({ userId: user._id });
+            }
             user.googleId = profile.id;
             
             const avatarUrl = profile.photos?.[0]?.value;

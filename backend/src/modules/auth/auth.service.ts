@@ -111,6 +111,13 @@ export async function login(input: LoginInput) {
     const isPasswordValid = await bcrypt.compare(input.password, user.passwordHash);
     if (!isPasswordValid) throw new ApiError(401, "Invalid email or password");
 
+    // Password login needs a proven inbox, so nobody can pre-register someone else's address
+    // and keep using it. The session created at sign-up is the only unverified one.
+    if (!user.isEmailVerified) {
+        sendVerificationEmail(user._id.toString()).catch(console.error);
+        throw new ApiError(403, "Please verify your email first. We've sent you a new verification link.");
+    }
+
     const loggedInUser = await User.findById(user._id).select("-passwordHash");
     const tokens = await generateAccessAndRefreshTokens(user._id.toString());
 

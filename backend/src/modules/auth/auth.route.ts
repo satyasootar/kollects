@@ -2,6 +2,7 @@ import { Router } from "express";
 import passport from "passport";
 import * as AuthController from "./auth.controller.js";
 import { verifyJWT } from "../../middlewares/auth.middleware.js";
+import config from "../../config/config.js";
 
 import { authRateLimiter } from "../../middlewares/rateLimit.middleware.js";
 
@@ -36,7 +37,7 @@ authRouter.get("/google", (req, res, next) => {
 
 authRouter.get(
     "/google/callback",
-    passport.authenticate("google", { failureRedirect: "/login", session: false }),
+    passport.authenticate("google", { failureRedirect: `${config.CLIENT_URL}/auth/login`, session: false }),
     AuthController.googleAuthCallback
 );
 
