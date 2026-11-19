@@ -13,8 +13,12 @@ import config from "../../config/config.js";
 import { isAdminUser } from "../../middlewares/admin.middleware.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
+import { refreshTokenSchema } from "./auth.validation.js";
 
 const cookieOptions = config.COOKIE_OPTIONS as any;
+
+/** Cookie first, then body. Parsed as a bounded string so an object like {"$ne": null} never reaches a query. */
+const readRefreshToken = (req: Request) => refreshTokenSchema.parse(req.cookies?.refreshToken ?? req.body?.refreshToken);
 
 /**
  * Registers a new user and sets auth cookies.
@@ -46,7 +50,7 @@ export async function login(req: Request, res: Response) {
  * Logs out the user by clearing cookies and deleting the session.
  */
 export async function logout(req: Request, res: Response) {
-    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    const refreshToken = readRefreshToken(req);
     
     if (refreshToken) {
         await AuthService.logout(refreshToken);
@@ -62,7 +66,7 @@ export async function logout(req: Request, res: Response) {
  * Refreshes the access token using the refresh token.
  */
 export async function refreshAccessToken(req: Request, res: Response) {
-    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    const incomingRefreshToken = readRefreshToken(req);
 
     const { user, accessToken, refreshToken } = await AuthService.refreshAccessToken(incomingRefreshToken);
 

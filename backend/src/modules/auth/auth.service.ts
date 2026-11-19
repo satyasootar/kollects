@@ -140,7 +140,7 @@ export async function login(input: LoginInput) {
  * Logs out a user by deleting their session from the database.
  */
 export async function logout(refreshToken: string) {
-    if (!refreshToken) throw new ApiError(400, "Refresh token is required");
+    if (typeof refreshToken !== "string" || !refreshToken) throw new ApiError(400, "Refresh token is required");
     await Session.findOneAndDelete({ refreshToken });
     return { success: true };
 }
@@ -148,7 +148,7 @@ export async function logout(refreshToken: string) {
 /**
  * Implements token rotation by verifying the refresh token and generating a new pair.
  */
-export async function refreshAccessToken(incomingRefreshToken: string) {
+export async function refreshAccessToken(incomingRefreshToken: string | undefined) {
     if (!incomingRefreshToken) throw new ApiError(401, "Refresh token is required");
 
     const session = await Session.findOne({ 
