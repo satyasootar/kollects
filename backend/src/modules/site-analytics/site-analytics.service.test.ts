@@ -5,7 +5,7 @@ const consentCreate = vi.fn();
 const userUpdate = vi.fn();
 vi.mock("./site-analytics.model.js", () => ({ TrackEvent: { insertMany }, ConsentRecord: { create: consentCreate } }));
 vi.mock("../user/user.model.js", () => ({ User: { updateOne: userUpdate } }));
-vi.mock("../../config/config.js", () => ({ default: { CLIENT_URL: "https://kollects.app", JWT_SECRET: "s" } }));
+vi.mock("../../config/config.js", () => ({ default: { CLIENT_URL: "https://kollects.app", IP_HASH_KEY: "s" } }));
 
 const { recordEvents, recordConsent, referrerHost } = await import("./site-analytics.service.js");
 const { parseUserAgent } = await import("../../utils/user-agent.js");

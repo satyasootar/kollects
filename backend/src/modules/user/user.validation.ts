@@ -26,6 +26,11 @@ export const userZodSchema = z.object({
 
   passwordResetExpiry: z.date().optional(),
 
+  lastVerificationEmailAt: z.date().optional(),
+  lastResetEmailAt: z.date().optional(),
+  failedLoginCount: z.number().optional(),
+  lockUntil: z.date().optional(),
+
   role: z.enum(["user", "admin"]).default("user"),
   isActive: z.boolean().default(true),
   branding: brandingInputSchema.optional(),

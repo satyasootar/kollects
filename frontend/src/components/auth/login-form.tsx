@@ -39,8 +39,7 @@ export function LoginForm({ onSuccess, onForgotPassword }: LoginFormProps) {
     setIsLoading(true);
     try {
       const response = await api.post("/auth/login", data);
-      const { user, accessToken } = response.data.data;
-      setAuth(user, accessToken);
+      setAuth(response.data.data.user);
       toast.success("Welcome back!");
       onSuccess();
     } catch (error) {

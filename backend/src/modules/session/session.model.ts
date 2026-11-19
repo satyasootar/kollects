@@ -10,11 +10,18 @@ const sessionSchema = new Schema<ISession>(
       index: true,
     },
 
-    refreshToken: {
+    // SHA-256 of the current refresh token; the raw token is never stored.
+    tokenHash: {
       type: String,
       required: true,
       unique: true,
     },
+
+    // The token this session rotated away from, kept briefly so a concurrent refresh
+    // from another tab isn't mistaken for token theft.
+    prevTokenHash: String,
+
+    rotatedAt: Date,
 
     expiresAt: {
       type: Date,

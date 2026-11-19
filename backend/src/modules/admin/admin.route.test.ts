@@ -6,9 +6,10 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 
 vi.mock("../../config/config.js", () => ({
-  default: { JWT_SECRET: "test-secret", ADMIN_EMAILS: ["satya.sootar06@gmail.com"], ENVIRONMENT: "test" },
+  default: { JWT_ACCESS_SECRET: "test-secret", ADMIN_EMAILS: ["satya.sootar06@gmail.com"], ENVIRONMENT: "test" },
 }));
 vi.mock("../user/user.model.js", () => ({ User: { findById: vi.fn() } }));
+vi.mock("../session/session.model.js", () => ({ Session: { exists: vi.fn(async () => ({ _id: "s1" })) } }));
 vi.mock("../billing/plan-request.service.js", () => ({
   listRequests: vi.fn(async () => []),
   approveSchema: { parse: (b: unknown) => b },
@@ -61,7 +62,7 @@ beforeEach(() => {
 });
 
 const get = (path: string, as?: string) =>
-  fetch(`${base}${path}`, as ? { headers: { Authorization: `Bearer ${jwt.sign({ _id: as }, "test-secret")}` } } : {});
+  fetch(`${base}${path}`, as ? { headers: { Authorization: `Bearer ${jwt.sign({ _id: as, sid: "s1", typ: "access" }, "test-secret")}` } } : {});
 
 describe("admin routes", () => {
   it("rejects anonymous requests", async () => {
@@ -80,7 +81,7 @@ describe("admin routes", () => {
   it("never lets a regular user reach the destructive cleanup endpoint", async () => {
     const res = await fetch(`${base}/cleanup/forms`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${jwt.sign({ _id: "regular" }, "test-secret")}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${jwt.sign({ _id: "regular", sid: "s1", typ: "access" }, "test-secret")}`, "Content-Type": "application/json" },
       body: JSON.stringify({ from: "2000-01-01", to: "2100-01-01", expectedForms: 1, confirm: "DELETE" }),
     });
     expect(res.status).toBe(404);
@@ -90,7 +91,7 @@ describe("admin routes", () => {
     const patch = (as: string) =>
       fetch(`${base}/users/u42/plan`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${jwt.sign({ _id: as }, "test-secret")}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${jwt.sign({ _id: as, sid: "s1", typ: "access" }, "test-secret")}`, "Content-Type": "application/json" },
         body: JSON.stringify({ plan: "plus" }),
       });
     expect((await patch("regular")).status).toBe(404);
@@ -103,7 +104,7 @@ describe("admin routes", () => {
     expect((await get("/plan-requests", "regular")).status).toBe(404);
     const res = await fetch(`${base}/plan-requests/r1/approve`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${jwt.sign({ _id: "regular" }, "test-secret")}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${jwt.sign({ _id: "regular", sid: "s1", typ: "access" }, "test-secret")}`, "Content-Type": "application/json" },
       body: "{}",
     });
     expect(res.status).toBe(404);

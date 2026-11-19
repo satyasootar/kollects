@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { getSocket, SOCKET_EVENTS } from "@/lib/socket";
-import { useAuthStore } from "@/store/use-auth-store";
 
 interface FormAnalyticsUpdatePayload {
   formId: string;
@@ -20,7 +19,6 @@ interface UseFormSocketOptions {
 }
 
 export function useFormSocket({ formId, onAnalyticsUpdate, onStatusChange }: UseFormSocketOptions) {
-  const { accessToken } = useAuthStore();
   const handlersRef = useRef({ onAnalyticsUpdate, onStatusChange });
   useEffect(() => {
     handlersRef.current = { onAnalyticsUpdate, onStatusChange };
@@ -31,7 +29,7 @@ export function useFormSocket({ formId, onAnalyticsUpdate, onStatusChange }: Use
 
   useEffect(() => {
     if (!formId) return;
-    const socket = getSocket(accessToken ?? undefined);
+    const socket = getSocket();
 
     const handleConnect = () => {
       setIsConnected(true);
@@ -63,7 +61,7 @@ export function useFormSocket({ formId, onAnalyticsUpdate, onStatusChange }: Use
       socket.off(SOCKET_EVENTS.FORM_STATUS_CHANGE, handleStatus);
       joinedRef.current = false;
     };
-  }, [formId, accessToken]);
+  }, [formId]);
 
   return { isConnected };
 }

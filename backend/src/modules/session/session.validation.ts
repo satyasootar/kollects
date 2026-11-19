@@ -4,7 +4,11 @@ import mongoose from "mongoose";
 export const sessionZodSchema = z.object({
   userId: z.custom<mongoose.Types.ObjectId>(),
 
-  refreshToken: z.string(),
+  tokenHash: z.string(),
+
+  prevTokenHash: z.string().optional(),
+
+  rotatedAt: z.date().optional(),
 
   expiresAt: z.date(),
 

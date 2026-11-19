@@ -54,7 +54,7 @@ const createOptionSchema = z.object({
 const createQuestionSchema = z.object({
   text: z.string().min(1),
   type: z.enum(["single_choice", "multiple_choice", "open_ended"]).default("single_choice"),
-  options: z.array(createOptionSchema).optional(),
+  options: z.array(createOptionSchema).max(100).optional(),
   isMandatory: z.boolean().default(true),
   order: z.number(),
 });
@@ -62,7 +62,7 @@ const createQuestionSchema = z.object({
 export const createPollSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().optional(),
-  questions: z.array(createQuestionSchema).min(1),
+  questions: z.array(createQuestionSchema).min(1).max(200),
   responseMode: z.enum(["anonymous", "authenticated"]),
   expiresAt: optionalExpiresAtSchema,
   settings: z.object({

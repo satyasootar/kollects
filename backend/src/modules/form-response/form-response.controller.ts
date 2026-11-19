@@ -4,7 +4,7 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { startAttemptSchema, submitFormResponseSchema } from "./form-response.validation.js";
 import { uploadBufferToCloudinary } from "../../config/cloudinary.js";
-import crypto from "crypto";
+import { hashIp } from "../../utils/ip-hash.js";
 import mongoose from "mongoose";
 import { Form } from "../form/form.model.js";
 import { consume, refund } from "../billing/billing.service.js";
@@ -15,7 +15,7 @@ export async function submitResponse(req: Request, res: Response) {
   const data = submitFormResponseSchema.parse(req.body);
 
   const ip = req.ip || req.socket.remoteAddress || "unknown";
-  const ipHash = crypto.createHash("sha256").update(ip).digest("hex");
+  const ipHash = hashIp(ip);
 
   const response = await FormResponseService.submitResponse(formId as string, data, {
     respondentId: user?._id?.toString(),

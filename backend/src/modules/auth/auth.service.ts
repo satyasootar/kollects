@@ -1,5 +1,4 @@
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import config from "../../config/config.js";
 import { User } from "../user/user.model.js";
@@ -23,52 +22,48 @@ import type {
 } from "./auth.validation.js";
 import { assertFeature } from "../billing/billing.service.js";
 import { BRAND_DEFAULTS } from "../branding/branding.validation.js";
+import { sha256, signAccessToken, signRefreshToken, verifyRefreshToken } from "./tokens.js";
 
-/**
- * Generates Access and Refresh tokens for a user and creates a new session in the database.
- */
+/** Creates a new session and returns its access + refresh token pair. */
 export async function generateAccessAndRefreshTokens(userId: string) {
-    try {
-        const accessToken = jwt.sign(
-            { _id: userId },
-            config.JWT_SECRET as string,
-            { expiresIn: config.ACCESS_TOKEN_EXPIRY || "15m" }
-        );
+    const expiresInDays = parseInt((config.REFRESH_TOKEN_EXPIRY as string || "7d").replace(/\D/g, "")) || 7;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
-        const refreshToken = jwt.sign(
-            { _id: userId },
-            config.JWT_SECRET as string,
-            { expiresIn: config.REFRESH_TOKEN_EXPIRY || "7d" }
-        );
+    const session = new Session({ userId, expiresAt, isActive: true });
+    const sid = session._id.toString();
+    const refreshToken = signRefreshToken(userId, sid);
+    session.tokenHash = sha256(refreshToken);
+    await session.save();
 
-        const expiresInDays = parseInt((config.REFRESH_TOKEN_EXPIRY as string || "7d").replace(/\D/g, "")) || 7;
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+    return { accessToken: signAccessToken(userId, sid), refreshToken };
+}
 
-        await Session.create({
-            userId,
-            refreshToken,
-            expiresAt,
-            isActive: true,
-        });
+const BCRYPT_COST = 12;
+const AUTH_EMAIL_COOLDOWN_MS = 60_000;
 
-        return { accessToken, refreshToken };
-    } catch (error) {
-        throw new ApiError(500, "Something went wrong while generating tokens");
-    }
+/** Atomically claims the right to send one auth email to this user; false while the cooldown runs. */
+async function claimEmailSlot(userId: unknown, field: "lastVerificationEmailAt" | "lastResetEmailAt") {
+    const res = await User.updateOne(
+        { _id: userId, $or: [{ [field]: { $exists: false } }, { [field]: { $lt: new Date(Date.now() - AUTH_EMAIL_COOLDOWN_MS) } }] },
+        { [field]: new Date() }
+    );
+    return res.modifiedCount > 0;
 }
 
 /**
  * Generates a verification token and sends an email to the user.
+ * Silently skips if one was sent to this address in the last minute.
  */
 export async function sendVerificationEmail(userId: string) {
+    if (!(await claimEmailSlot(userId, "lastVerificationEmailAt"))) return;
     const user = await User.findById(userId);
     if (!user) throw new ApiError(404, "User not found");
 
     const token = crypto.randomBytes(32).toString("hex");
     const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    user.emailVerificationToken = token;
+    user.emailVerificationToken = sha256(token); // only the emailed copy is usable
     user.emailVerificationExpiry = expiry;
     await user.save();
 
@@ -88,7 +83,8 @@ export async function sendVerificationEmail(userId: string) {
     });
 
     if (!success) {
-        throw new ApiError(500, `Failed to send verification email: ${JSON.stringify(error)}`);
+        console.error("Verification email failed:", error);
+        throw new ApiError(500, "Couldn't send the verification email. Please try again.");
     }
 }
 
@@ -101,7 +97,7 @@ export async function register(input: RegisterInput) {
         throw new ApiError(409, "User with this email already exists");
     }
 
-    const passwordHash = await bcrypt.hash(input.password, 10);
+    const passwordHash = await bcrypt.hash(input.password, BCRYPT_COST);
     const user = await User.create({
         name: input.name,
         email: input.email,
@@ -117,8 +113,12 @@ export async function register(input: RegisterInput) {
     return { user: createdUser, ...tokens };
 }
 
+const MAX_FAILED_LOGINS = 5;
+const LOGIN_LOCK_MS = 15 * 60 * 1000;
+
 /**
  * Authenticates a user with email and password.
+ * Five wrong passwords lock the account for 15 minutes, whichever IPs they came from.
  */
 export async function login(input: LoginInput) {
     const user = await User.findOne({ email: input.email }).select("+passwordHash");
@@ -127,8 +127,32 @@ export async function login(input: LoginInput) {
         throw new ApiError(401, "Invalid email or password");
     }
 
+    if (user.lockUntil && user.lockUntil > new Date()) {
+        throw new ApiError(429, "Too many failed sign-in attempts. Try again in 15 minutes.");
+    }
+
     const isPasswordValid = await bcrypt.compare(input.password, user.passwordHash);
-    if (!isPasswordValid) throw new ApiError(401, "Invalid email or password");
+    if (!isPasswordValid) {
+        const updated = await User.findByIdAndUpdate(user._id, { $inc: { failedLoginCount: 1 } }, { new: true });
+        if ((updated?.failedLoginCount ?? 0) >= MAX_FAILED_LOGINS) {
+            await User.updateOne({ _id: user._id }, { failedLoginCount: 0, lockUntil: new Date(Date.now() + LOGIN_LOCK_MS) });
+        }
+        throw new ApiError(401, "Invalid email or password");
+    }
+    if (user.failedLoginCount || user.lockUntil) {
+        await User.updateOne({ _id: user._id }, { $unset: { failedLoginCount: 1, lockUntil: 1 } });
+    }
+    // Upgrade hashes made with an older, cheaper cost now that we have the plaintext.
+    if (bcrypt.getRounds(user.passwordHash) < BCRYPT_COST) {
+        await User.updateOne({ _id: user._id }, { passwordHash: await bcrypt.hash(input.password, BCRYPT_COST) });
+    }
+
+    // Password login needs a proven inbox, so nobody can pre-register someone else's address
+    // and keep using it. The session created at sign-up is the only unverified one.
+    if (!user.isEmailVerified) {
+        sendVerificationEmail(user._id.toString()).catch(console.error);
+        throw new ApiError(403, "Please verify your email first. We've sent you a new verification link.");
+    }
 
     const loggedInUser = await User.findById(user._id).select("-passwordHash");
     const tokens = await generateAccessAndRefreshTokens(user._id.toString());
@@ -136,42 +160,50 @@ export async function login(input: LoginInput) {
     return { user: loggedInUser, ...tokens };
 }
 
-/**
- * Logs out a user by deleting their session from the database.
- */
+/** Logs out by deleting the session the refresh token belongs to. */
 export async function logout(refreshToken: string) {
-    if (!refreshToken) throw new ApiError(400, "Refresh token is required");
-    await Session.findOneAndDelete({ refreshToken });
+    const claims = verifyRefreshToken(refreshToken);
+    if (claims) await Session.deleteOne({ _id: claims.sid, userId: claims._id });
     return { success: true };
 }
 
+// A second tab may refresh with the token another tab just rotated; allow that briefly.
+const ROTATION_GRACE_MS = 30_000;
+
 /**
- * Implements token rotation by verifying the refresh token and generating a new pair.
+ * Rotates the refresh token. Presenting a token that was already rotated (outside the grace
+ * window) means it was stolen, so every session of that user is revoked.
+ * `refreshToken` is omitted from the result on the grace path: the caller already has the new one.
  */
-export async function refreshAccessToken(incomingRefreshToken: string) {
-    if (!incomingRefreshToken) throw new ApiError(401, "Refresh token is required");
+export async function refreshAccessToken(incomingRefreshToken: string | undefined) {
+    const claims = verifyRefreshToken(incomingRefreshToken);
+    if (!claims) throw new ApiError(401, "Refresh token is invalid or expired");
 
-    const session = await Session.findOne({ 
-        refreshToken: incomingRefreshToken,
-        isActive: true,
-        expiresAt: { $gt: new Date() }
-    });
+    const hash = sha256(incomingRefreshToken!);
+    const refreshToken = signRefreshToken(claims._id, claims.sid);
+    const rotated = await Session.findOneAndUpdate(
+        { _id: claims.sid, userId: claims._id, tokenHash: hash, isActive: true, expiresAt: { $gt: new Date() } },
+        { tokenHash: sha256(refreshToken), prevTokenHash: hash, rotatedAt: new Date() }
+    );
 
-    if (!session) throw new ApiError(401, "Refresh token is invalid or expired");
-
-    try {
-        jwt.verify(incomingRefreshToken, config.JWT_SECRET as string);
-    } catch (error) {
-        throw new ApiError(401, "Invalid refresh token");
+    let issued: { accessToken: string; refreshToken?: string };
+    if (rotated) {
+        issued = { accessToken: signAccessToken(claims._id, claims.sid), refreshToken };
+    } else {
+        const session = await Session.findOne({ _id: claims.sid, userId: claims._id });
+        const inGrace = session?.prevTokenHash === hash && !!session.rotatedAt
+            && Date.now() - session.rotatedAt.getTime() < ROTATION_GRACE_MS;
+        if (!session || !inGrace) {
+            // Reuse of a rotated token: assume theft and end every session of this user.
+            if (session) await Session.deleteMany({ userId: session.userId });
+            throw new ApiError(401, "Refresh token is invalid or expired");
+        }
+        issued = { accessToken: signAccessToken(claims._id, claims.sid) };
     }
 
-    await Session.findByIdAndDelete(session._id);
-
-    const tokens = await generateAccessAndRefreshTokens(session.userId.toString());
-    const user = await User.findById(session.userId).select("-passwordHash");
-    
-    if (!user) throw new ApiError(404, "User not found");
-    return { user, ...tokens };
+    const user = await User.findById(claims._id).select("-passwordHash");
+    if (!user) throw new ApiError(401, "Refresh token is invalid or expired");
+    return { user, ...issued };
 }
 
 /** Whether the account can sign in with a password (Google-only accounts have none yet). */
@@ -183,7 +215,7 @@ export async function hasPassword(userId: unknown) {
  * Changes the password for an authenticated user, or adds a first one to a Google-only
  * account (no old password exists to check; the signed-in session is the proof of identity).
  */
-export async function changePassword(userId: string, input: ChangePasswordInput) {
+export async function changePassword(userId: string, input: ChangePasswordInput, currentSessionId?: string) {
     const user = await User.findById(userId).select("+passwordHash");
     if (!user) throw new ApiError(404, "User not found");
 
@@ -194,8 +226,12 @@ export async function changePassword(userId: string, input: ChangePasswordInput)
         if (!isPasswordValid) throw new ApiError(400, "Invalid old password");
     }
 
-    user.passwordHash = await bcrypt.hash(input.newPassword, 10);
+    user.passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_COST);
     await user.save();
+
+    // Sign out every other device; the one making the change stays signed in.
+    await Session.deleteMany({ userId: user._id, ...(currentSessionId ? { _id: { $ne: currentSessionId } } : {}) });
+    if (!created) notifyPasswordChanged(user).catch(console.error);
 
     return { success: true, created };
 }
@@ -205,7 +241,7 @@ export async function changePassword(userId: string, input: ChangePasswordInput)
  */
 export async function verifyEmail(input: VerifyEmailInput) {
     const user = await User.findOne({
-        emailVerificationToken: input.token,
+        emailVerificationToken: sha256(input.token),
         emailVerificationExpiry: { $gt: new Date() },
     });
 
@@ -224,12 +260,13 @@ export async function verifyEmail(input: VerifyEmailInput) {
  */
 export async function forgotPassword(input: ForgotPasswordInput) {
     const user = await User.findOne({ email: input.email });
-    if (!user) return { success: true };
+    // Same response whether the address is unknown or still in its cooldown (no enumeration).
+    if (!user || !(await claimEmailSlot(user._id, "lastResetEmailAt"))) return { success: true };
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expiry = new Date(Date.now() + 1 * 60 * 60 * 1000);
+    const expiry = new Date(Date.now() + 30 * 60 * 1000);
 
-    user.passwordResetToken = token;
+    user.passwordResetToken = sha256(token); // only the emailed copy is usable
     user.passwordResetExpiry = expiry;
     await user.save();
 
@@ -243,13 +280,14 @@ export async function forgotPassword(input: ForgotPasswordInput) {
             heading: "Reset your password",
             bodyHtml: `<p style="margin:0 0 12px">Hi ${escapeHtml(user.name || "there")}, we got a request to reset your password. Choose a new one below.</p>`,
             cta: { label: "Reset password", url: resetUrl },
-            footnote: `The link works for 1 hour. If you didn't ask for this, ignore this email and your password stays the same.<br><a href="${escapeHtml(resetUrl)}" style="color:#71717a;word-break:break-all">${escapeHtml(resetUrl)}</a>`,
+            footnote: `The link works for 30 minutes. If you didn't ask for this, ignore this email and your password stays the same.<br><a href="${escapeHtml(resetUrl)}" style="color:#71717a;word-break:break-all">${escapeHtml(resetUrl)}</a>`,
         }),
-        text: `Reset your Kollects password (link valid for 1 hour): ${resetUrl}\nIf you didn't ask for this, ignore this email.`,
+        text: `Reset your Kollects password (link valid for 30 minutes): ${resetUrl}\nIf you didn't ask for this, ignore this email.`,
     });
 
     if (!success) {
-        throw new ApiError(500, `Failed to send reset email: ${JSON.stringify(error)}`);
+        console.error("Reset email failed:", error);
+        throw new ApiError(500, "Couldn't send the reset email. Please try again.");
     }
 
     return { success: true };
@@ -260,18 +298,41 @@ export async function forgotPassword(input: ForgotPasswordInput) {
  */
 export async function resetPassword(input: ResetPasswordInput) {
     const user = await User.findOne({
-        passwordResetToken: input.token,
+        passwordResetToken: sha256(input.token),
         passwordResetExpiry: { $gt: new Date() },
     });
 
     if (!user) throw new ApiError(400, "Invalid or expired reset token");
 
-    user.passwordHash = await bcrypt.hash(input.newPassword, 10);
+    user.passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_COST);
     user.passwordResetToken = undefined;
     user.passwordResetExpiry = undefined;
+    user.isEmailVerified = true; // the reset link proved they own the inbox
+    user.failedLoginCount = undefined;
+    user.lockUntil = undefined;
     await user.save();
 
+    // Whoever else was signed in (possibly the reason for the reset) is signed out.
+    await Session.deleteMany({ userId: user._id });
+    notifyPasswordChanged(user).catch(console.error);
+
     return { success: true };
+}
+
+/** Tells the owner their password changed, with a way back in if it wasn't them. */
+async function notifyPasswordChanged(user: { email: string; name?: string | null }) {
+    const resetUrl = `${config.CLIENT_URL}/auth/forgot-password`;
+    await sendEmail({
+        to: user.email,
+        subject: "Your Kollects password was changed",
+        html: renderEmail({
+            preheader: "Your password was just changed.",
+            heading: "Your password was changed",
+            bodyHtml: `<p style="margin:0 0 12px">Hi ${escapeHtml(user.name || "there")}, the password for your Kollects account was just changed and other devices were signed out.</p><p style="margin:0 0 12px">If this wasn't you, reset your password right away.</p>`,
+            cta: { label: "Reset password", url: resetUrl },
+        }),
+        text: `The password for your Kollects account was just changed. If this wasn't you, reset it now: ${resetUrl}`,
+    });
 }
 
 /**

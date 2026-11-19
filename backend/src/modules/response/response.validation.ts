@@ -2,10 +2,13 @@ import { z } from "zod";
 import mongoose from "mongoose";
 import { receiptStatusZod, receiptHistoryZod } from "../../utils/receipt.js";
 
+// Must be an id string: a bare z.custom() would let objects like {"$ne": null} through to queries.
+const objectIdZod = z.custom<mongoose.Types.ObjectId>((v) => mongoose.isObjectIdOrHexString(v), "Invalid id");
+
 const answerItemZodSchema = z.object({
-  questionId: z.custom<mongoose.Types.ObjectId>(),
-  selectedOptionId: z.custom<mongoose.Types.ObjectId>().nullable().optional(),
-  selectedOptionIds: z.array(z.custom<mongoose.Types.ObjectId>()).optional().default([]),
+  questionId: objectIdZod,
+  selectedOptionId: objectIdZod.nullable().optional(),
+  selectedOptionIds: z.array(objectIdZod).max(100).optional().default([]),
   textResponse: z.string().nullable().optional(),
   skipped: z.boolean(),
 });
@@ -29,7 +32,7 @@ export type IResponse = z.infer<typeof responseZodSchema>;
 // pollId comes from the route param; ipHash/userAgent/submittedAt are set server-side.
 export const submitResponseSchema = z.object({
   sessionToken: z.string().min(1),
-  answers: z.array(answerItemZodSchema).min(1),
+  answers: z.array(answerItemZodSchema).min(1).max(200),
   isComplete: z.boolean().default(true),
 });
 

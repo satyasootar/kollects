@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+/** An https image URL, or "" to clear it. Blocks javascript:/data: and plain-http links. */
+export const httpsUrlOrEmpty = z.union([z.literal(""), z.url({ protocol: /^https$/ }).max(1000)]);
+
 /**
  * A client-supplied expiry date/time. Treats "" the same as omitted/null (no
  * expiry) instead of failing — clients (including the AI-driven builders)

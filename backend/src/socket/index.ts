@@ -1,11 +1,26 @@
 import { Server as SocketServer } from "socket.io";
 import { Server as HttpServer } from "node:http";
-import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import { Poll } from "../modules/poll/poll.model.js";
 import { Form } from "../modules/form/form.model.js";
+import { Session } from "../modules/session/session.model.js";
+import { verifyAccessToken } from "../modules/auth/tokens.js";
 
 let io: SocketServer;
+
+// Abuse limits: open sockets per client IP, and incoming events per socket per window.
+// Generous on purpose: a whole classroom joining a live quiz often shares one NAT'd IP.
+const MAX_SOCKETS_PER_IP = 200;
+const MAX_EVENTS_PER_WINDOW = 30;
+const EVENT_WINDOW_MS = 10_000;
+const socketsPerIp = new Map<string, number>();
+
+/** Client IP behind Render's proxy: the last X-Forwarded-For hop, as Express does with trust proxy 1. */
+function clientIp(socket: { handshake: { headers: Record<string, string | string[] | undefined>; address: string } }) {
+  const xff = socket.handshake.headers["x-forwarded-for"];
+  const last = (Array.isArray(xff) ? xff.join(",") : xff)?.split(",").pop()?.trim();
+  return last || socket.handshake.address;
+}
 
 /**
  * Allowed CORS origins for the socket server.
@@ -22,6 +37,8 @@ const allowedOrigins =
  */
 export function initializeSocket(server: HttpServer) {
   io = new SocketServer(server, {
+    // Clients only send tiny room-join events; the 1 MB default invites memory abuse.
+    maxHttpBufferSize: 10_000,
     cors: {
       origin: allowedOrigins,
       methods: ["GET", "POST"],
@@ -29,31 +46,52 @@ export function initializeSocket(server: HttpServer) {
     },
   });
 
-  // Optional auth: decode the token if present and attach the userId to the socket.
+  // Optional auth from the httpOnly accessToken cookie (sent with `withCredentials`).
   // Anonymous connections are still allowed (public polls), but room joins are authorized below.
-  // The client-held token can be missing or stale (15-minute expiry), so also try the httpOnly
-  // accessToken cookie the API sets on login/refresh — it reaches us with `withCredentials`.
   io.use((socket, next) => {
+    const ip = clientIp(socket);
+    const open = socketsPerIp.get(ip) ?? 0;
+    if (open >= MAX_SOCKETS_PER_IP) return next(new Error("Too many connections"));
+    socketsPerIp.set(ip, open + 1);
+    socket.on("disconnect", () => {
+      const left = (socketsPerIp.get(ip) ?? 1) - 1;
+      if (left > 0) socketsPerIp.set(ip, left);
+      else socketsPerIp.delete(ip);
+    });
+    next();
+  });
+
+  io.use(async (socket, next) => {
     const cookieToken = socket.handshake.headers.cookie
       ?.split(";")
       .map((c) => c.trim())
       .find((c) => c.startsWith("accessToken="))
       ?.slice("accessToken=".length);
-    const candidates = [socket.handshake.auth?.token as string | undefined, cookieToken && decodeURIComponent(cookieToken)];
-    for (const token of candidates) {
-      if (!token) continue;
-      try {
-        const decoded = jwt.verify(token, config.JWT_SECRET as string) as { _id: string };
-        (socket as any).userId = decoded._id;
-        break;
-      } catch {
-        // Invalid/expired token — try the next one, else treat as anonymous rather than rejecting.
+    try {
+      const claims = verifyAccessToken(cookieToken && decodeURIComponent(cookieToken));
+      if (claims && (await Session.exists({ _id: claims.sid, userId: claims._id, isActive: true }))) {
+        (socket as any).userId = claims._id;
       }
+    } catch {
+      // Lookup failed: treat as anonymous rather than rejecting.
     }
     next();
   });
 
   io.on("connection", (socket) => {
+    // Drop events past the per-socket budget (room-join spam does a DB lookup each time).
+    let windowStart = Date.now();
+    let events = 0;
+    socket.use((_packet, next) => {
+      const now = Date.now();
+      if (now - windowStart > EVENT_WINDOW_MS) {
+        windowStart = now;
+        events = 0;
+      }
+      if (++events > MAX_EVENTS_PER_WINDOW) return;
+      next();
+    });
+
     socket.on("join-poll-room", async ({ pollId }: { pollId: string }) => {
       try {
         const poll = await Poll.findOne({ _id: pollId, isDeleted: false }).select(

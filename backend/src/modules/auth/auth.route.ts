@@ -2,27 +2,28 @@ import { Router } from "express";
 import passport from "passport";
 import * as AuthController from "./auth.controller.js";
 import { verifyJWT } from "../../middlewares/auth.middleware.js";
+import config from "../../config/config.js";
 
-import { authRateLimiter } from "../../middlewares/rateLimit.middleware.js";
+import { authRateLimiter, emailRateLimiter, refreshRateLimiter, tokenRateLimiter } from "../../middlewares/rateLimit.middleware.js";
 
 const authRouter = Router();
 
 authRouter.post("/register", authRateLimiter, AuthController.register);
 authRouter.post("/login", authRateLimiter, AuthController.login);
 authRouter.post("/logout", AuthController.logout);
-authRouter.post("/refresh-token", AuthController.refreshAccessToken);
+authRouter.post("/refresh-token", refreshRateLimiter, AuthController.refreshAccessToken);
 
 // Protected Routes
 authRouter.get("/me", verifyJWT, AuthController.getCurrentUser);
 authRouter.patch("/me", verifyJWT, AuthController.updateProfile);
 authRouter.post("/complete-onboarding", verifyJWT, AuthController.completeOnboarding);
-authRouter.post("/change-password", verifyJWT, AuthController.changePassword);
-authRouter.post("/request-verification", verifyJWT, AuthController.requestVerificationEmail);
+authRouter.post("/change-password", tokenRateLimiter, verifyJWT, AuthController.changePassword);
+authRouter.post("/request-verification", emailRateLimiter, verifyJWT, AuthController.requestVerificationEmail);
 
 // Email Verification & Password Reset (Public)
-authRouter.post("/verify-email", AuthController.verifyEmail);
-authRouter.post("/forgot-password", AuthController.forgotPassword);
-authRouter.post("/reset-password", AuthController.resetPassword);
+authRouter.post("/verify-email", tokenRateLimiter, AuthController.verifyEmail);
+authRouter.post("/forgot-password", emailRateLimiter, AuthController.forgotPassword);
+authRouter.post("/reset-password", tokenRateLimiter, AuthController.resetPassword);
 
 // Google OAuth Routes
 authRouter.get("/google", (req, res, next) => {
@@ -36,7 +37,7 @@ authRouter.get("/google", (req, res, next) => {
 
 authRouter.get(
     "/google/callback",
-    passport.authenticate("google", { failureRedirect: "/login", session: false }),
+    passport.authenticate("google", { failureRedirect: `${config.CLIENT_URL}/auth/login`, session: false }),
     AuthController.googleAuthCallback
 );
 

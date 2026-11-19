@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import bcrypt from "bcrypt";
 
 vi.mock("../user/user.model.js", () => ({ User: { findById: vi.fn(), exists: vi.fn() } }));
-vi.mock("../session/session.model.js", () => ({ Session: {} }));
+vi.mock("../session/session.model.js", () => ({ Session: { deleteMany: vi.fn() } }));
 vi.mock("../../utils/mail.js", () => ({ sendEmail: vi.fn() }));
 vi.mock("../billing/billing.service.js", () => ({ assertFeature: vi.fn() }));
 

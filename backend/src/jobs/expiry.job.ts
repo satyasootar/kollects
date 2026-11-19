@@ -37,7 +37,7 @@ export async function watchPollExpiry() {
         );
 
         for (const poll of expiredPolls) {
-            emitPollStatusChange(poll._id.toString(), {
+            emitPollStatusChange(String(poll._id), {
                 status: "closed",
                 closedAt,
                 reason: "expired",

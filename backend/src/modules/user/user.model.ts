@@ -44,6 +44,14 @@ const userSchema = new Schema<IUser>(
 
     passwordResetExpiry: Date,
 
+    // Per-address cooldown for outgoing auth emails (inbox flooding, provider cost).
+    lastVerificationEmailAt: Date,
+    lastResetEmailAt: Date,
+
+    // Per-account login throttling, independent of the caller's IP.
+    failedLoginCount: Number,
+    lockUntil: Date,
+
     role: {
       type: String,
       enum: ["user", "admin"],
