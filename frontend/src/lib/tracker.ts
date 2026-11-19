@@ -126,7 +126,7 @@ function send(events: TrackedEvent[]): boolean {
     method: "POST",
     credentials: "include", // lets the server link a signed-in user to their first-touch source
     keepalive: true, // survives navigating away
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Requested-With": "kollects" },
     body: JSON.stringify(body),
   }).catch(() => {});
   return true;

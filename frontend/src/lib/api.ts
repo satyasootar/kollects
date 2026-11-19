@@ -6,7 +6,8 @@ import { reconnectSocket } from "@/lib/socket";
 export const api = axios.create({
   baseURL: config.apiUrl,
   withCredentials: true,
-  headers: { "Content-Type": "application/json" },
+  // X-Requested-With is the API's CSRF check: cross-site forms can't set it.
+  headers: { "Content-Type": "application/json", "X-Requested-With": "kollects" },
 });
 
 // Single-flight refresh: concurrent 401s share one refresh call so rotating
@@ -29,7 +30,7 @@ api.interceptors.response.use(
       original._retry = true;
       try {
         refreshPromise ??= axios
-          .post(`${config.apiUrl}/auth/refresh-token`, {}, { withCredentials: true })
+          .post(`${config.apiUrl}/auth/refresh-token`, {}, { withCredentials: true, headers: { "X-Requested-With": "kollects" } })
           // The new access cookie only reaches the socket on a fresh handshake.
           .then(() => reconnectSocket())
           .finally(() => {
