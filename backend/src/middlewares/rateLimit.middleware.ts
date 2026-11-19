@@ -23,4 +23,6 @@ export const createRateLimiter = (
 };
 
 export const authRateLimiter = createRateLimiter(15 * 60 * 1000, 10, "Too many login attempts. Please try again in 15 minutes.");
+export const emailRateLimiter = createRateLimiter(60 * 60 * 1000, 5, "Too many requests. Please try again in an hour.");
+export const refreshRateLimiter = createRateLimiter(15 * 60 * 1000, 60);
 export const responseRateLimiter = createRateLimiter(1 * 60 * 1000, 5, "You are voting too fast. Please slow down.");

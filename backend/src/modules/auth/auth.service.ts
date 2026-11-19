@@ -39,10 +39,23 @@ export async function generateAccessAndRefreshTokens(userId: string) {
     return { accessToken: signAccessToken(userId, sid), refreshToken };
 }
 
+const AUTH_EMAIL_COOLDOWN_MS = 60_000;
+
+/** Atomically claims the right to send one auth email to this user; false while the cooldown runs. */
+async function claimEmailSlot(userId: unknown, field: "lastVerificationEmailAt" | "lastResetEmailAt") {
+    const res = await User.updateOne(
+        { _id: userId, $or: [{ [field]: { $exists: false } }, { [field]: { $lt: new Date(Date.now() - AUTH_EMAIL_COOLDOWN_MS) } }] },
+        { [field]: new Date() }
+    );
+    return res.modifiedCount > 0;
+}
+
 /**
  * Generates a verification token and sends an email to the user.
+ * Silently skips if one was sent to this address in the last minute.
  */
 export async function sendVerificationEmail(userId: string) {
+    if (!(await claimEmailSlot(userId, "lastVerificationEmailAt"))) return;
     const user = await User.findById(userId);
     if (!user) throw new ApiError(404, "User not found");
 
@@ -98,8 +111,12 @@ export async function register(input: RegisterInput) {
     return { user: createdUser, ...tokens };
 }
 
+const MAX_FAILED_LOGINS = 5;
+const LOGIN_LOCK_MS = 15 * 60 * 1000;
+
 /**
  * Authenticates a user with email and password.
+ * Five wrong passwords lock the account for 15 minutes, whichever IPs they came from.
  */
 export async function login(input: LoginInput) {
     const user = await User.findOne({ email: input.email }).select("+passwordHash");
@@ -108,8 +125,21 @@ export async function login(input: LoginInput) {
         throw new ApiError(401, "Invalid email or password");
     }
 
+    if (user.lockUntil && user.lockUntil > new Date()) {
+        throw new ApiError(429, "Too many failed sign-in attempts. Try again in 15 minutes.");
+    }
+
     const isPasswordValid = await bcrypt.compare(input.password, user.passwordHash);
-    if (!isPasswordValid) throw new ApiError(401, "Invalid email or password");
+    if (!isPasswordValid) {
+        const updated = await User.findByIdAndUpdate(user._id, { $inc: { failedLoginCount: 1 } }, { new: true });
+        if ((updated?.failedLoginCount ?? 0) >= MAX_FAILED_LOGINS) {
+            await User.updateOne({ _id: user._id }, { failedLoginCount: 0, lockUntil: new Date(Date.now() + LOGIN_LOCK_MS) });
+        }
+        throw new ApiError(401, "Invalid email or password");
+    }
+    if (user.failedLoginCount || user.lockUntil) {
+        await User.updateOne({ _id: user._id }, { $unset: { failedLoginCount: 1, lockUntil: 1 } });
+    }
 
     // Password login needs a proven inbox, so nobody can pre-register someone else's address
     // and keep using it. The session created at sign-up is the only unverified one.
@@ -220,7 +250,8 @@ export async function verifyEmail(input: VerifyEmailInput) {
  */
 export async function forgotPassword(input: ForgotPasswordInput) {
     const user = await User.findOne({ email: input.email });
-    if (!user) return { success: true };
+    // Same response whether the address is unknown or still in its cooldown (no enumeration).
+    if (!user || !(await claimEmailSlot(user._id, "lastResetEmailAt"))) return { success: true };
 
     const token = crypto.randomBytes(32).toString("hex");
     const expiry = new Date(Date.now() + 1 * 60 * 60 * 1000);
