@@ -1,8 +1,7 @@
 import type { Request, Response } from "express";
-import jwt from "jsonwebtoken";
-import config from "../../config/config.js";
 import { Session } from "../session/session.model.js";
 import * as SiteAnalytics from "./site-analytics.service.js";
+import { verifyRefreshToken } from "../auth/tokens.js";
 import { consentSchema, trackSchema } from "./site-analytics.validation.js";
 
 /**
@@ -11,15 +10,11 @@ import { consentSchema, trackSchema } from "./site-analytics.validation.js";
  */
 async function userId(req: Request): Promise<string | undefined> {
   const fromAccess = (req as any).user?._id?.toString();
-  const refreshToken = req.cookies?.refreshToken;
-  if (fromAccess || !refreshToken) return fromAccess;
-  try {
-    jwt.verify(refreshToken, config.JWT_SECRET);
-    const session = await Session.findOne({ refreshToken, isActive: true }).select("userId").lean();
-    return session?.userId?.toString();
-  } catch {
-    return undefined;
-  }
+  if (fromAccess) return fromAccess;
+  const claims = verifyRefreshToken(req.cookies?.refreshToken);
+  if (!claims) return undefined;
+  const session = await Session.exists({ _id: claims.sid, userId: claims._id, isActive: true });
+  return session ? claims._id : undefined;
 }
 
 const meta = async (req: Request) => ({

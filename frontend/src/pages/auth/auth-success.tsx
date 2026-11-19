@@ -12,25 +12,17 @@ export function AuthSuccessPage() {
 
   useEffect(() => {
     const handleAuth = async () => {
-      const accessToken = searchParams.get("accessToken");
-      const refreshToken = searchParams.get("refreshToken");
+      try {
+        // The backend set the httpOnly auth cookies before redirecting here; load the profile with them.
+        const response = await api.get<ApiResponse<User>>("/auth/me");
+        setAuth(response.data.data);
+        // Google sign-in and sign-up share this page; the server flags a just-created account.
+        track(searchParams.get("new") === "1" ? "signup" : "login", { method: "google" });
 
-      if (accessToken && refreshToken) {
-        try {
-          // Since cookies are already set by the backend redirect,
-          // we just need to fetch the user profile to populate the store.
-          const response = await api.get<ApiResponse<User>>("/auth/me");
-          setAuth(response.data.data, accessToken, refreshToken);
-          // Google sign-in and sign-up share this page; the server flags a just-created account.
-          track(searchParams.get("new") === "1" ? "signup" : "login", { method: "google" });
-          
-          const redirect = searchParams.get("state");
-          navigate(redirect || "/dashboard/overview", { replace: true });
-        } catch (error) {
-          console.error("Failed to sync auth state:", error);
-          navigate("/auth/login", { replace: true });
-        }
-      } else {
+        const redirect = searchParams.get("state");
+        navigate(redirect || "/dashboard/overview", { replace: true });
+      } catch (error) {
+        console.error("Failed to sync auth state:", error);
         navigate("/auth/login", { replace: true });
       }
     };

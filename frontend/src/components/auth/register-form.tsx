@@ -39,8 +39,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
     setIsLoading(true);
     try {
       const response = await api.post("/auth/register", data);
-      const { user, accessToken } = response.data.data;
-      setAuth(user, accessToken);
+      setAuth(response.data.data.user);
       toast.success("Account created successfully!");
       onSuccess();
     } catch (error) {

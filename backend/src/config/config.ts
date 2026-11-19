@@ -7,9 +7,9 @@ interface Config {
     PORT: number | string;
     ENVIRONMENT: string;
     MONGODB_URI: string;
-    JWT_SECRET: string;
+    JWT_ACCESS_SECRET: string;
+    JWT_REFRESH_SECRET: string;
     IP_HASH_SALT: string;
-    JWT_EXPIRES_IN: SignOptions["expiresIn"];
     ACCESS_TOKEN_EXPIRY: SignOptions["expiresIn"];
     REFRESH_TOKEN_EXPIRY: SignOptions["expiresIn"];
     COOKIE_OPTIONS: {
@@ -40,11 +40,11 @@ const config: Config = {
     PORT: PORT,
     ENVIRONMENT: process.env.ENVIRONMENT || "development",
     MONGODB_URI: process.env.MONGODB_URI || "",
-    JWT_SECRET: process.env.JWT_SECRET || "",
+    // Separate secrets so a refresh token can never verify as an access token.
+    JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || "",
+    JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || "",
     // Own salt so rotating JWT_SECRET doesn't break IP-hash continuity. Falls back for existing deploys.
     IP_HASH_SALT: process.env.IP_HASH_SALT || process.env.JWT_SECRET || "",
-    JWT_EXPIRES_IN:
-        (process.env.JWT_EXPIRES_IN as SignOptions["expiresIn"]) || "7d",
     ACCESS_TOKEN_EXPIRY:
         (process.env.ACCESS_TOKEN_EXPIRY as SignOptions["expiresIn"]) || "15m",
     REFRESH_TOKEN_EXPIRY:

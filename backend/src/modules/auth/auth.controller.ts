@@ -30,7 +30,7 @@ export async function register(req: Request, res: Response) {
     return res.status(201)
         .cookie("accessToken", accessToken, cookieOptions)
         .cookie("refreshToken", refreshToken, cookieOptions)
-        .json(new ApiResponse(201, { user, accessToken, refreshToken }, "User registered successfully. Verification email sent."));
+        .json(new ApiResponse(201, { user }, "User registered successfully. Verification email sent."));
 }
 
 /**
@@ -43,7 +43,7 @@ export async function login(req: Request, res: Response) {
     return res.status(200)
         .cookie("accessToken", accessToken, cookieOptions)
         .cookie("refreshToken", refreshToken, cookieOptions)
-        .json(new ApiResponse(200, { user, accessToken, refreshToken }, "User logged in successfully"));
+        .json(new ApiResponse(200, { user }, "User logged in successfully"));
 }
 
 /**
@@ -70,10 +70,10 @@ export async function refreshAccessToken(req: Request, res: Response) {
 
     const { user, accessToken, refreshToken } = await AuthService.refreshAccessToken(incomingRefreshToken);
 
-    return res.status(200)
-        .cookie("accessToken", accessToken, cookieOptions)
-        .cookie("refreshToken", refreshToken, cookieOptions)
-        .json(new ApiResponse(200, { user, accessToken, refreshToken }, "Access token refreshed successfully"));
+    res.cookie("accessToken", accessToken, cookieOptions);
+    // Absent when another tab already rotated it; that tab's cookie is the current one.
+    if (refreshToken) res.cookie("refreshToken", refreshToken, cookieOptions);
+    return res.status(200).json(new ApiResponse(200, { user }, "Access token refreshed successfully"));
 }
 
 /**
@@ -165,7 +165,7 @@ export async function requestVerificationEmail(req: Request, res: Response) {
 }
 
 /**
- * Handles the Google OAuth callback and redirects to the frontend with tokens.
+ * Handles the Google OAuth callback: sets the auth cookies and redirects to the frontend.
  */
 export async function googleAuthCallback(req: Request, res: Response) {
     const user = (req as any).user;
@@ -178,9 +178,8 @@ export async function googleAuthCallback(req: Request, res: Response) {
     const frontendUrl = process.env.CLIENT_URL || "http://localhost:5173";
     const state = req.query.state as string;
 
+    // Tokens travel only in the httpOnly cookies, never in the URL (history, logs, referrers).
     const redirectUrl = new URL(`${frontendUrl}/auth-success`);
-    redirectUrl.searchParams.set("accessToken", accessToken);
-    redirectUrl.searchParams.set("refreshToken", refreshToken);
     if (state) redirectUrl.searchParams.set("state", state);
     if (user.$locals?.isNew) redirectUrl.searchParams.set("new", "1");
 

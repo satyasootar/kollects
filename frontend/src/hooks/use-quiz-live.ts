@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { getSocket, SOCKET_EVENTS } from "@/lib/socket";
-import { useAuthStore } from "@/store/use-auth-store";
 import type { QuizLiveState } from "@/types";
 
 /**
@@ -8,7 +7,6 @@ import type { QuizLiveState } from "@/types";
  * quiz room for takers; the host's own form room receives the same event. Pass no formId to stay idle.
  */
 export function useQuizLiveSocket(formId: string | undefined, onState: (state: QuizLiveState) => void, joinRoom = true) {
-  const { accessToken } = useAuthStore();
   const handlerRef = useRef(onState);
   useEffect(() => {
     handlerRef.current = onState;
@@ -16,7 +14,7 @@ export function useQuizLiveSocket(formId: string | undefined, onState: (state: Q
 
   useEffect(() => {
     if (!formId) return;
-    const socket = getSocket(accessToken ?? undefined);
+    const socket = getSocket();
     const join = () => joinRoom && socket.emit(SOCKET_EVENTS.JOIN_QUIZ_ROOM, { formId });
     const handle = (data: QuizLiveState) => {
       if (data.formId === formId) handlerRef.current(data);
@@ -31,12 +29,11 @@ export function useQuizLiveSocket(formId: string | undefined, onState: (state: Q
       socket.off("connect", join);
       socket.off(SOCKET_EVENTS.QUIZ_LIVE_STATE, handle);
     };
-  }, [formId, accessToken, joinRoom]);
+  }, [formId, joinRoom]);
 }
 
 /** Host view: how many takers are waiting in a live quiz's lobby. */
 export function useQuizLobbyCount(formId: string | undefined, onCount: (count: number) => void) {
-  const { accessToken } = useAuthStore();
   const handlerRef = useRef(onCount);
   useEffect(() => {
     handlerRef.current = onCount;
@@ -44,7 +41,7 @@ export function useQuizLobbyCount(formId: string | undefined, onCount: (count: n
 
   useEffect(() => {
     if (!formId) return;
-    const socket = getSocket(accessToken ?? undefined);
+    const socket = getSocket();
     const handle = (data: { formId: string; count: number }) => {
       if (data.formId === formId) handlerRef.current(data.count);
     };
@@ -57,5 +54,5 @@ export function useQuizLobbyCount(formId: string | undefined, onCount: (count: n
       socket.off(SOCKET_EVENTS.QUIZ_LOBBY_COUNT, handle);
       socket.off("connect", ask);
     };
-  }, [formId, accessToken]);
+  }, [formId]);
 }

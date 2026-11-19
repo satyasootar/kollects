@@ -102,7 +102,6 @@ export interface CompleteOnboardingPayload {
 
 export interface AuthResult {
   user: User;
-  accessToken: string;
 }
 
 // ─── Poll Entities ────────────────────────────────────────────────────────────

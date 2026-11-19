@@ -14,8 +14,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: authApi.login,
     onSuccess: (res) => {
-      // Keep the token too: the socket needs it to join the creator's live analytics rooms.
-      setAuth(res.data.data.user, res.data.data.accessToken, res.data.data.refreshToken);
+      setAuth(res.data.data.user);
       track("login", { method: "password" });
       qc.invalidateQueries({ queryKey: ["me"] });
       const params = new URLSearchParams(window.location.search);
@@ -32,7 +31,7 @@ export function useRegister() {
   return useMutation({
     mutationFn: authApi.register,
     onSuccess: (res) => {
-      setAuth(res.data.data.user, res.data.data.accessToken, res.data.data.refreshToken);
+      setAuth(res.data.data.user);
       track("signup", { method: "password" });
       toast.success("Account created! A verification email has been sent to your inbox.");
       const params = new URLSearchParams(window.location.search);

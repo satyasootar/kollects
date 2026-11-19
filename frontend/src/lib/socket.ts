@@ -5,22 +5,13 @@ const SOCKET_URL = config.socketUrl;
 
 let socket: Socket | null = null;
 
-export function getSocket(accessToken?: string): Socket {
-  if (socket) {
-    const currentToken = (socket.auth as { token?: string })?.token;
-    if (currentToken !== accessToken) {
-      socket.auth = accessToken ? { token: accessToken } : {};
-      if (socket.connected) {
-        socket.disconnect().connect();
-      }
-    }
-    return socket;
-  }
+// Auth comes from the httpOnly accessToken cookie sent with the handshake (`withCredentials`).
+export function getSocket(): Socket {
+  if (socket) return socket;
 
   socket = io(SOCKET_URL, {
     withCredentials: true,
     transports: ["websocket", "polling"],
-    auth: accessToken ? { token: accessToken } : {},
     autoConnect: true,
     reconnection: true,
     reconnectionDelay: 1000,
@@ -33,6 +24,11 @@ export function getSocket(accessToken?: string): Socket {
   });
 
   return socket;
+}
+
+/** Re-handshakes with the current cookies (after login, logout or a token refresh). Room hooks re-join on "connect". */
+export function reconnectSocket() {
+  if (socket?.connected) socket.disconnect().connect();
 }
 
 export function disconnectSocket() {

@@ -1,9 +1,10 @@
 import { Server as SocketServer } from "socket.io";
 import { Server as HttpServer } from "node:http";
-import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import { Poll } from "../modules/poll/poll.model.js";
 import { Form } from "../modules/form/form.model.js";
+import { Session } from "../modules/session/session.model.js";
+import { verifyAccessToken } from "../modules/auth/tokens.js";
 
 let io: SocketServer;
 
@@ -29,26 +30,21 @@ export function initializeSocket(server: HttpServer) {
     },
   });
 
-  // Optional auth: decode the token if present and attach the userId to the socket.
+  // Optional auth from the httpOnly accessToken cookie (sent with `withCredentials`).
   // Anonymous connections are still allowed (public polls), but room joins are authorized below.
-  // The client-held token can be missing or stale (15-minute expiry), so also try the httpOnly
-  // accessToken cookie the API sets on login/refresh — it reaches us with `withCredentials`.
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const cookieToken = socket.handshake.headers.cookie
       ?.split(";")
       .map((c) => c.trim())
       .find((c) => c.startsWith("accessToken="))
       ?.slice("accessToken=".length);
-    const candidates = [socket.handshake.auth?.token as string | undefined, cookieToken && decodeURIComponent(cookieToken)];
-    for (const token of candidates) {
-      if (!token) continue;
-      try {
-        const decoded = jwt.verify(token, config.JWT_SECRET as string) as { _id: string };
-        (socket as any).userId = decoded._id;
-        break;
-      } catch {
-        // Invalid/expired token — try the next one, else treat as anonymous rather than rejecting.
+    try {
+      const claims = verifyAccessToken(cookieToken && decodeURIComponent(cookieToken));
+      if (claims && (await Session.exists({ _id: claims.sid, userId: claims._id, isActive: true }))) {
+        (socket as any).userId = claims._id;
       }
+    } catch {
+      // Lookup failed: treat as anonymous rather than rejecting.
     }
     next();
   });

@@ -1,6 +1,7 @@
 import axios, { type AxiosError } from "axios";
 import { toast } from "sonner";
 import { config } from "@/config/config";
+import { reconnectSocket } from "@/lib/socket";
 
 export const api = axios.create({
   baseURL: config.apiUrl,
@@ -29,11 +30,8 @@ api.interceptors.response.use(
       try {
         refreshPromise ??= axios
           .post(`${config.apiUrl}/auth/refresh-token`, {}, { withCredentials: true })
-          .then(async (res) => {
-            // Keep the stored token fresh so socket reconnects stay authorised.
-            const { useAuthStore } = await import("@/store/use-auth-store");
-            useAuthStore.setState({ accessToken: res.data?.data?.accessToken ?? null });
-          })
+          // The new access cookie only reaches the socket on a fresh handshake.
+          .then(() => reconnectSocket())
           .finally(() => {
             refreshPromise = null;
           });

@@ -1,5 +1,4 @@
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import config from "../../config/config.js";
 import { User } from "../user/user.model.js";
@@ -23,39 +22,21 @@ import type {
 } from "./auth.validation.js";
 import { assertFeature } from "../billing/billing.service.js";
 import { BRAND_DEFAULTS } from "../branding/branding.validation.js";
+import { sha256, signAccessToken, signRefreshToken, verifyRefreshToken } from "./tokens.js";
 
-/**
- * Generates Access and Refresh tokens for a user and creates a new session in the database.
- */
+/** Creates a new session and returns its access + refresh token pair. */
 export async function generateAccessAndRefreshTokens(userId: string) {
-    try {
-        const accessToken = jwt.sign(
-            { _id: userId },
-            config.JWT_SECRET as string,
-            { expiresIn: config.ACCESS_TOKEN_EXPIRY || "15m" }
-        );
+    const expiresInDays = parseInt((config.REFRESH_TOKEN_EXPIRY as string || "7d").replace(/\D/g, "")) || 7;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
-        const refreshToken = jwt.sign(
-            { _id: userId },
-            config.JWT_SECRET as string,
-            { expiresIn: config.REFRESH_TOKEN_EXPIRY || "7d" }
-        );
+    const session = new Session({ userId, expiresAt, isActive: true });
+    const sid = session._id.toString();
+    const refreshToken = signRefreshToken(userId, sid);
+    session.tokenHash = sha256(refreshToken);
+    await session.save();
 
-        const expiresInDays = parseInt((config.REFRESH_TOKEN_EXPIRY as string || "7d").replace(/\D/g, "")) || 7;
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + expiresInDays);
-
-        await Session.create({
-            userId,
-            refreshToken,
-            expiresAt,
-            isActive: true,
-        });
-
-        return { accessToken, refreshToken };
-    } catch (error) {
-        throw new ApiError(500, "Something went wrong while generating tokens");
-    }
+    return { accessToken: signAccessToken(userId, sid), refreshToken };
 }
 
 /**
@@ -136,42 +117,50 @@ export async function login(input: LoginInput) {
     return { user: loggedInUser, ...tokens };
 }
 
-/**
- * Logs out a user by deleting their session from the database.
- */
+/** Logs out by deleting the session the refresh token belongs to. */
 export async function logout(refreshToken: string) {
-    if (typeof refreshToken !== "string" || !refreshToken) throw new ApiError(400, "Refresh token is required");
-    await Session.findOneAndDelete({ refreshToken });
+    const claims = verifyRefreshToken(refreshToken);
+    if (claims) await Session.deleteOne({ _id: claims.sid, userId: claims._id });
     return { success: true };
 }
 
+// A second tab may refresh with the token another tab just rotated; allow that briefly.
+const ROTATION_GRACE_MS = 30_000;
+
 /**
- * Implements token rotation by verifying the refresh token and generating a new pair.
+ * Rotates the refresh token. Presenting a token that was already rotated (outside the grace
+ * window) means it was stolen, so every session of that user is revoked.
+ * `refreshToken` is omitted from the result on the grace path: the caller already has the new one.
  */
 export async function refreshAccessToken(incomingRefreshToken: string | undefined) {
-    if (!incomingRefreshToken) throw new ApiError(401, "Refresh token is required");
+    const claims = verifyRefreshToken(incomingRefreshToken);
+    if (!claims) throw new ApiError(401, "Refresh token is invalid or expired");
 
-    const session = await Session.findOne({ 
-        refreshToken: incomingRefreshToken,
-        isActive: true,
-        expiresAt: { $gt: new Date() }
-    });
+    const hash = sha256(incomingRefreshToken!);
+    const refreshToken = signRefreshToken(claims._id, claims.sid);
+    const rotated = await Session.findOneAndUpdate(
+        { _id: claims.sid, userId: claims._id, tokenHash: hash, isActive: true, expiresAt: { $gt: new Date() } },
+        { tokenHash: sha256(refreshToken), prevTokenHash: hash, rotatedAt: new Date() }
+    );
 
-    if (!session) throw new ApiError(401, "Refresh token is invalid or expired");
-
-    try {
-        jwt.verify(incomingRefreshToken, config.JWT_SECRET as string);
-    } catch (error) {
-        throw new ApiError(401, "Invalid refresh token");
+    let issued: { accessToken: string; refreshToken?: string };
+    if (rotated) {
+        issued = { accessToken: signAccessToken(claims._id, claims.sid), refreshToken };
+    } else {
+        const session = await Session.findOne({ _id: claims.sid, userId: claims._id });
+        const inGrace = session?.prevTokenHash === hash && !!session.rotatedAt
+            && Date.now() - session.rotatedAt.getTime() < ROTATION_GRACE_MS;
+        if (!session || !inGrace) {
+            // Reuse of a rotated token: assume theft and end every session of this user.
+            if (session) await Session.deleteMany({ userId: session.userId });
+            throw new ApiError(401, "Refresh token is invalid or expired");
+        }
+        issued = { accessToken: signAccessToken(claims._id, claims.sid) };
     }
 
-    await Session.findByIdAndDelete(session._id);
-
-    const tokens = await generateAccessAndRefreshTokens(session.userId.toString());
-    const user = await User.findById(session.userId).select("-passwordHash");
-    
-    if (!user) throw new ApiError(404, "User not found");
-    return { user, ...tokens };
+    const user = await User.findById(claims._id).select("-passwordHash");
+    if (!user) throw new ApiError(401, "Refresh token is invalid or expired");
+    return { user, ...issued };
 }
 
 /** Whether the account can sign in with a password (Google-only accounts have none yet). */
