@@ -62,7 +62,7 @@ export async function sendVerificationEmail(userId: string) {
     const token = crypto.randomBytes(32).toString("hex");
     const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    user.emailVerificationToken = token;
+    user.emailVerificationToken = sha256(token); // only the emailed copy is usable
     user.emailVerificationExpiry = expiry;
     await user.save();
 
@@ -209,7 +209,7 @@ export async function hasPassword(userId: unknown) {
  * Changes the password for an authenticated user, or adds a first one to a Google-only
  * account (no old password exists to check; the signed-in session is the proof of identity).
  */
-export async function changePassword(userId: string, input: ChangePasswordInput) {
+export async function changePassword(userId: string, input: ChangePasswordInput, currentSessionId?: string) {
     const user = await User.findById(userId).select("+passwordHash");
     if (!user) throw new ApiError(404, "User not found");
 
@@ -223,6 +223,10 @@ export async function changePassword(userId: string, input: ChangePasswordInput)
     user.passwordHash = await bcrypt.hash(input.newPassword, 10);
     await user.save();
 
+    // Sign out every other device; the one making the change stays signed in.
+    await Session.deleteMany({ userId: user._id, ...(currentSessionId ? { _id: { $ne: currentSessionId } } : {}) });
+    if (!created) notifyPasswordChanged(user).catch(console.error);
+
     return { success: true, created };
 }
 
@@ -231,7 +235,7 @@ export async function changePassword(userId: string, input: ChangePasswordInput)
  */
 export async function verifyEmail(input: VerifyEmailInput) {
     const user = await User.findOne({
-        emailVerificationToken: input.token,
+        emailVerificationToken: sha256(input.token),
         emailVerificationExpiry: { $gt: new Date() },
     });
 
@@ -254,9 +258,9 @@ export async function forgotPassword(input: ForgotPasswordInput) {
     if (!user || !(await claimEmailSlot(user._id, "lastResetEmailAt"))) return { success: true };
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expiry = new Date(Date.now() + 1 * 60 * 60 * 1000);
+    const expiry = new Date(Date.now() + 30 * 60 * 1000);
 
-    user.passwordResetToken = token;
+    user.passwordResetToken = sha256(token); // only the emailed copy is usable
     user.passwordResetExpiry = expiry;
     await user.save();
 
@@ -270,9 +274,9 @@ export async function forgotPassword(input: ForgotPasswordInput) {
             heading: "Reset your password",
             bodyHtml: `<p style="margin:0 0 12px">Hi ${escapeHtml(user.name || "there")}, we got a request to reset your password. Choose a new one below.</p>`,
             cta: { label: "Reset password", url: resetUrl },
-            footnote: `The link works for 1 hour. If you didn't ask for this, ignore this email and your password stays the same.<br><a href="${escapeHtml(resetUrl)}" style="color:#71717a;word-break:break-all">${escapeHtml(resetUrl)}</a>`,
+            footnote: `The link works for 30 minutes. If you didn't ask for this, ignore this email and your password stays the same.<br><a href="${escapeHtml(resetUrl)}" style="color:#71717a;word-break:break-all">${escapeHtml(resetUrl)}</a>`,
         }),
-        text: `Reset your Kollects password (link valid for 1 hour): ${resetUrl}\nIf you didn't ask for this, ignore this email.`,
+        text: `Reset your Kollects password (link valid for 30 minutes): ${resetUrl}\nIf you didn't ask for this, ignore this email.`,
     });
 
     if (!success) {
@@ -287,7 +291,7 @@ export async function forgotPassword(input: ForgotPasswordInput) {
  */
 export async function resetPassword(input: ResetPasswordInput) {
     const user = await User.findOne({
-        passwordResetToken: input.token,
+        passwordResetToken: sha256(input.token),
         passwordResetExpiry: { $gt: new Date() },
     });
 
@@ -296,9 +300,32 @@ export async function resetPassword(input: ResetPasswordInput) {
     user.passwordHash = await bcrypt.hash(input.newPassword, 10);
     user.passwordResetToken = undefined;
     user.passwordResetExpiry = undefined;
+    user.isEmailVerified = true; // the reset link proved they own the inbox
+    user.failedLoginCount = undefined;
+    user.lockUntil = undefined;
     await user.save();
 
+    // Whoever else was signed in (possibly the reason for the reset) is signed out.
+    await Session.deleteMany({ userId: user._id });
+    notifyPasswordChanged(user).catch(console.error);
+
     return { success: true };
+}
+
+/** Tells the owner their password changed, with a way back in if it wasn't them. */
+async function notifyPasswordChanged(user: { email: string; name?: string | null }) {
+    const resetUrl = `${config.CLIENT_URL}/auth/forgot-password`;
+    await sendEmail({
+        to: user.email,
+        subject: "Your Kollects password was changed",
+        html: renderEmail({
+            preheader: "Your password was just changed.",
+            heading: "Your password was changed",
+            bodyHtml: `<p style="margin:0 0 12px">Hi ${escapeHtml(user.name || "there")}, the password for your Kollects account was just changed and other devices were signed out.</p><p style="margin:0 0 12px">If this wasn't you, reset your password right away.</p>`,
+            cta: { label: "Reset password", url: resetUrl },
+        }),
+        text: `The password for your Kollects account was just changed. If this wasn't you, reset it now: ${resetUrl}`,
+    });
 }
 
 /**

@@ -34,6 +34,7 @@ export const verifyJWT = async (req: Request, _res: Response, next: NextFunction
         }
 
         (req as any).user = user;
+        (req as any).sessionId = claims.sid;
         next();
     } catch (error: any) {
         // Only our own messages reach the client; library errors stay generic.

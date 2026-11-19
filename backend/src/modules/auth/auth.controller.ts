@@ -99,7 +99,7 @@ export async function changePassword(req: Request, res: Response) {
     const user = (req as any).user;
     const parsedData = changePasswordSchema.parse(req.body);
     
-    const { created } = await AuthService.changePassword(user._id.toString(), parsedData);
+    const { created } = await AuthService.changePassword(user._id.toString(), parsedData, (req as any).sessionId);
 
     return res.status(200).json(new ApiResponse(200, { created }, created ? "Password added successfully" : "Password changed successfully"));
 }
