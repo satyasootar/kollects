@@ -9,6 +9,8 @@ export const errorHandler = (
   next: NextFunction
 ) => {
   let error = err;
+  // Admin metrics get the real message even when the client only sees a generic one.
+  let internalMessage: string | undefined;
 
   if (error instanceof ZodError) {
     const message = "Validation Error";
@@ -20,13 +22,16 @@ export const errorHandler = (
   } else if (!(error instanceof ApiError)) {
     const statusCode = error.statusCode || 500;
     // Unexpected errors (DB, SDKs) can carry internals; log them, send a generic message.
-    if (statusCode >= 500) console.error(err);
+    if (statusCode >= 500) {
+      console.error(err);
+      internalMessage = error.message;
+    }
     const message = statusCode >= 500 ? "Internal Server Error" : error.message || "Request failed";
     error = new ApiError(statusCode, message, [], err.stack);
   }
 
   // Picked up by metricsMiddleware so per-endpoint stats show what failed.
-  res.locals.errorMessage = error.message;
+  res.locals.errorMessage = internalMessage || error.message;
 
   const response = {
     success: false,

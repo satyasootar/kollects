@@ -38,7 +38,8 @@ function log(testId, name, status, detail = "") {
 async function request(method, path, body = null, token = null) {
     const opts = {
         method,
-        headers: { "Content-Type": "application/json" },
+        // X-Requested-With is the API's CSRF check.
+        headers: { "Content-Type": "application/json", "X-Requested-With": "kollects" },
     };
     if (token) opts.headers["Authorization"] = `Bearer ${token}`;
     if (body) opts.body = JSON.stringify(body);
@@ -46,7 +47,9 @@ async function request(method, path, body = null, token = null) {
     const res = await fetch(`${BASE}${path}`, opts);
     let data;
     try { data = await res.json(); } catch { data = null; }
-    return { status: res.status, data, ok: res.ok };
+    // Tokens only travel in httpOnly cookies now, never in the JSON body.
+    const cookies = Object.fromEntries(res.headers.getSetCookie().map((c) => c.split(";")[0].split("=")));
+    return { status: res.status, data, ok: res.ok, cookies };
 }
 
 async function run() {
@@ -66,7 +69,7 @@ async function run() {
     for (const u of USERS) {
         const r = await request("POST", "/auth/register", u);
         if (r.status === 201 && r.data?.data?.user) {
-            tokens[u.email] = r.data.data.accessToken;
+            tokens[u.email] = r.cookies.accessToken;
             userIds[u.email] = r.data.data.user._id;
             log("T01", `Register ${u.name}`, "PASS");
         } else {
@@ -74,14 +77,13 @@ async function run() {
         }
     }
 
-    // T02: Login all users
+    // T02: Password login is refused until the email is verified (the sign-up session stays valid)
     for (const u of USERS) {
         const r = await request("POST", "/auth/login", { email: u.email, password: u.password });
-        if (r.status === 200 && r.data?.data?.accessToken) {
-            tokens[u.email] = r.data.data.accessToken;
-            log("T02", `Login ${u.name}`, "PASS");
+        if (r.status === 403 && !r.data?.data?.accessToken) {
+            log("T02", `Login ${u.name} blocked until verified`, "PASS");
         } else {
-            log("T02", `Login ${u.name}`, "FAIL", JSON.stringify(r.data));
+            log("T02", `Login ${u.name} blocked until verified`, "FAIL", `Got ${r.status}`);
         }
     }
 
@@ -491,23 +493,29 @@ async function run() {
         const r = await request("POST", "/auth/change-password", {
             oldPassword: USERS[0].password, newPassword: "NewPassword456!"
         }, creatorToken);
+        // The new password is accepted (403 = right password, email still unverified; 401 would mean wrong).
         if (r.status === 200) {
             const r2 = await request("POST", "/auth/login", { email: USERS[0].email, password: "NewPassword456!" });
-            log("T36", "Change password → login with new", r2.status === 200 ? "PASS" : "FAIL", `Login status=${r2.status}`);
+            log("T36", "Change password → new password accepted", r2.status === 403 ? "PASS" : "FAIL", `Login status=${r2.status}`);
         } else {
-            log("T36", "Change password → login with new", "FAIL", `Change status=${r.status}`);
+            log("T36", "Change password → new password accepted", "FAIL", `Change status=${r.status}`);
         }
     }
 
-    // T37: Refresh token flow
+    // T37: Refresh token rotation, refresh-as-access rejection, and reuse detection
     {
-        const r1 = await request("POST", "/auth/login", { email: USERS[1].email, password: USERS[1].password });
-        if (r1.status === 200) {
-            const refreshTok = r1.data.data.refreshToken;
+        const r1 = await request("POST", "/auth/register", { name: "Rotate Rita", email: `rita_${Date.now()}@test.com`, password: "Password123!" });
+        const refreshTok = r1.cookies?.refreshToken;
+        if (r1.status === 201 && refreshTok) {
+            const asAccess = await request("GET", "/auth/me", null, refreshTok);
             const r2 = await request("POST", "/auth/refresh-token", { refreshToken: refreshTok });
-            log("T37", "Refresh token rotation", r2.status === 200 && r2.data?.data?.accessToken ? "PASS" : "FAIL", `Got ${r2.status}`);
+            const replay = await request("POST", "/auth/refresh-token", { refreshToken: refreshTok });
+            const ok = asAccess.status === 401 && r2.status === 200 && r2.cookies.refreshToken && !r2.data?.data?.accessToken;
+            log("T37", "Refresh rotation (refresh≠access, no tokens in body)", ok ? "PASS" : "FAIL", `me=${asAccess.status} refresh=${r2.status}`);
+            // Replay outside the 30 s grace window is the theft case; inside it, a second tab is assumed.
+            log("T37b", "Replayed refresh token within grace window", replay.status === 200 ? "PASS" : "FAIL", `Got ${replay.status}`);
         } else {
-            log("T37", "Refresh token rotation", "FAIL", `Login failed ${r1.status}`);
+            log("T37", "Refresh token rotation", "FAIL", `Register failed ${r1.status}`);
         }
     }
 

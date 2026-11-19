@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { receiptStatusZod, receiptHistoryZod } from "../../utils/receipt.js";
 
 // Must be an id string: a bare z.custom() would let objects like {"$ne": null} through to queries.
-const objectIdZod = z.custom<mongoose.Types.ObjectId>((v) => typeof v === "string" && mongoose.isValidObjectId(v), "Invalid id");
+const objectIdZod = z.custom<mongoose.Types.ObjectId>((v) => mongoose.isObjectIdOrHexString(v), "Invalid id");
 
 const answerItemZodSchema = z.object({
   questionId: objectIdZod,
