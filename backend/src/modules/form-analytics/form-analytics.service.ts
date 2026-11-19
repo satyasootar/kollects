@@ -6,6 +6,7 @@ import { aggregateTimeline, fillSeries, type Granularity } from "../../utils/tim
 import mongoose from "mongoose";
 import config from "../../config/config.js";
 import { sendSubmissionCopy, type Receipt } from "../../utils/receipt.js";
+import { csvCell } from "../../utils/csv.js";
 import { resolveBrand } from "../branding/branding.service.js";
 
 /** Response timeline bucketed by the requested granularity, zero-filled for a continuous chart. */
@@ -254,13 +255,12 @@ export async function exportCsv(formId: string): Promise<string> {
     .sort({ submittedAt: -1 })
     .lean();
 
-  const esc = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const header = ["Submitted At", "Respondent", "Email", ...questions.map((q: any) => q.title)];
   if (form.isQuiz) header.push("Score");
   const hasPayment = questions.some((q: any) => q.payment?.enabled);
   if (hasPayment) header.push("Amount Due (INR)", "Payment Note");
 
-  const rows = [header.map(esc).join(",")];
+  const rows = [header.map(csvCell).join(",")];
   for (const r of responses as any[]) {
     const answersById = new Map(r.answers.map((a: any) => [a.questionId.toString(), a]));
     const row = [
@@ -271,7 +271,7 @@ export async function exportCsv(formId: string): Promise<string> {
     ];
     if (form.isQuiz) row.push(`${r.score ?? 0}/${r.totalPoints ?? 0}`);
     if (hasPayment) row.push(r.payment?.totalAmount ? r.payment.totalAmount.toFixed(2) : "", r.payment?.message ?? "");
-    rows.push(row.map(esc).join(","));
+    rows.push(row.map(csvCell).join(","));
   }
   return rows.join("\n");
 }

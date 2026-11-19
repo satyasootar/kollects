@@ -8,6 +8,19 @@ import { verifyAccessToken } from "../modules/auth/tokens.js";
 
 let io: SocketServer;
 
+// Abuse limits: open sockets per client IP, and incoming events per socket per window.
+const MAX_SOCKETS_PER_IP = 20;
+const MAX_EVENTS_PER_WINDOW = 30;
+const EVENT_WINDOW_MS = 10_000;
+const socketsPerIp = new Map<string, number>();
+
+/** Client IP behind Render's proxy: the last X-Forwarded-For hop, as Express does with trust proxy 1. */
+function clientIp(socket: { handshake: { headers: Record<string, string | string[] | undefined>; address: string } }) {
+  const xff = socket.handshake.headers["x-forwarded-for"];
+  const last = (Array.isArray(xff) ? xff.join(",") : xff)?.split(",").pop()?.trim();
+  return last || socket.handshake.address;
+}
+
 /**
  * Allowed CORS origins for the socket server.
  * A wildcard cannot be combined with credentials, so we mirror the HTTP app CORS.
@@ -34,6 +47,19 @@ export function initializeSocket(server: HttpServer) {
 
   // Optional auth from the httpOnly accessToken cookie (sent with `withCredentials`).
   // Anonymous connections are still allowed (public polls), but room joins are authorized below.
+  io.use((socket, next) => {
+    const ip = clientIp(socket);
+    const open = socketsPerIp.get(ip) ?? 0;
+    if (open >= MAX_SOCKETS_PER_IP) return next(new Error("Too many connections"));
+    socketsPerIp.set(ip, open + 1);
+    socket.on("disconnect", () => {
+      const left = (socketsPerIp.get(ip) ?? 1) - 1;
+      if (left > 0) socketsPerIp.set(ip, left);
+      else socketsPerIp.delete(ip);
+    });
+    next();
+  });
+
   io.use(async (socket, next) => {
     const cookieToken = socket.handshake.headers.cookie
       ?.split(";")
@@ -52,6 +78,19 @@ export function initializeSocket(server: HttpServer) {
   });
 
   io.on("connection", (socket) => {
+    // Drop events past the per-socket budget (room-join spam does a DB lookup each time).
+    let windowStart = Date.now();
+    let events = 0;
+    socket.use((_packet, next) => {
+      const now = Date.now();
+      if (now - windowStart > EVENT_WINDOW_MS) {
+        windowStart = now;
+        events = 0;
+      }
+      if (++events > MAX_EVENTS_PER_WINDOW) return;
+      next();
+    });
+
     socket.on("join-poll-room", async ({ pollId }: { pollId: string }) => {
       try {
         const poll = await Poll.findOne({ _id: pollId, isDeleted: false }).select(

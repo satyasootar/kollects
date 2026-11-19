@@ -1,6 +1,7 @@
 import { z } from "zod";
 import mongoose from "mongoose";
 import { receiptStatusZod, receiptHistoryZod } from "../../utils/receipt.js";
+import { assetFromUrl } from "../../config/cloudinary.js";
 
 // A single answer. Only the value block matching the question's type is populated.
 const gridValueZodSchema = z.object({
@@ -8,8 +9,10 @@ const gridValueZodSchema = z.object({
   columns: z.array(z.string()).max(50).default([]),
 });
 
+// Only files we uploaded (our Cloudinary cloud, kollects/ folder): a respondent can't plant
+// an arbitrary (phishing) link in the creator's dashboard by skipping the upload endpoint.
 const fileValueZodSchema = z.object({
-  url: z.string(),
+  url: z.string().max(1000).refine((u) => assetFromUrl(u) !== null, "File must be uploaded through Kollects"),
   name: z.string(),
   size: z.number(),
   mimeType: z.string(),

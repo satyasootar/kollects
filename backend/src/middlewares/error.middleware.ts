@@ -19,7 +19,9 @@ export const errorHandler = (
     error = new ApiError(400, message, errors);
   } else if (!(error instanceof ApiError)) {
     const statusCode = error.statusCode || 500;
-    const message = error.message || "Internal Server Error";
+    // Unexpected errors (DB, SDKs) can carry internals; log them, send a generic message.
+    if (statusCode >= 500) console.error(err);
+    const message = statusCode >= 500 ? "Internal Server Error" : error.message || "Request failed";
     error = new ApiError(statusCode, message, [], err.stack);
   }
 

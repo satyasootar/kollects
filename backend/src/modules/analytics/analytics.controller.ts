@@ -6,6 +6,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import { parseGranularity } from "../../utils/timeline.js";
 import { Poll } from "../poll/poll.model.js";
 import { ResponseModel } from "../response/response.model.js";
+import { csvCell } from "../../utils/csv.js";
 
 /** Loads the poll only if the requester owns it. 404 (not 403) so other users' polls aren't confirmed to exist. */
 async function ownedPoll(req: Request) {
@@ -161,13 +162,13 @@ export async function exportData(req: Request, res: Response) {
         
         snapshot.questionSummaries.forEach((q: any) => {
             // Question row
-            csvRows.push(`"${q.text.replace(/"/g, '""')}",${q.totalVotes || 0},100%`);
+            csvRows.push(`${csvCell(q.text)},${q.totalVotes || 0},100%`);
             
             // Option rows (if applicable)
             if (q.options && q.options.length > 0) {
                 q.options.forEach((opt: any) => {
                     const percentage = opt.percentage ? `${opt.percentage.toFixed(1)}%` : '0%';
-                    csvRows.push(`"  - ${opt.text.replace(/"/g, '""')}",${opt.voteCount || 0},${percentage}`);
+                    csvRows.push(`${csvCell(`  - ${opt.text}`)},${opt.voteCount || 0},${percentage}`);
                 });
             } else if (q.type === "open_ended") {
                 csvRows.push(`"  - [Open Ended Responses]",${q.totalVotes || 0},N/A`);

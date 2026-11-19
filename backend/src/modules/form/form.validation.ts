@@ -1,6 +1,6 @@
 import { z } from "zod";
 import mongoose from "mongoose";
-import { optionalExpiresAtSchema } from "../../utils/zod-helpers.js";
+import { httpsUrlOrEmpty, optionalExpiresAtSchema } from "../../utils/zod-helpers.js";
 import { DEFAULT_PAYMENT_MESSAGE, UPI_ID_REGEX } from "./payment.util.js";
 import { formBrandingSchema } from "../branding/branding.validation.js";
 
@@ -182,7 +182,7 @@ const createOptionSchema = z.object({
   _id: z.string().optional(),
   text: z.string().min(1),
   order: z.number(),
-  imageUrl: z.string().optional(),
+  imageUrl: httpsUrlOrEmpty.optional(),
   amount: z.number().min(0).max(1000000).optional(),
 });
 
@@ -198,7 +198,7 @@ const createQuestionSchema = z
     type: z.enum(QUESTION_TYPES),
     title: z.string().min(1),
     description: z.string().optional(),
-    imageUrl: z.string().optional(),
+    imageUrl: httpsUrlOrEmpty.optional(),
     isRequired: z.boolean().default(false),
     options: z.array(createOptionSchema).max(100).optional(),
     payment: paymentConfigZodSchema.optional(),
@@ -257,7 +257,7 @@ export const createFormSchema = z.object({
     .min(3)
     .max(80)
     .optional(),
-  coverImageUrl: z.string().optional(),
+  coverImageUrl: httpsUrlOrEmpty.optional(),
   branding: formBrandingSchema.optional(),
   isQuiz: z.boolean().optional(),
   responseMode: z.enum(RESPONSE_MODES),

@@ -2,6 +2,7 @@ import express from "express"
 import type { Application } from "express"
 import cookieParser from "cookie-parser"
 import cors from "cors"
+import helmet from "helmet"
 import rootRouter from "../routes/index.js"
 import { errorHandler } from "../middlewares/error.middleware.js"
 import passport from "../config/passport.js"
@@ -14,6 +15,8 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
 export function createServerApplication(): Application {
     const app = express()
     app.set('trust proxy', 1); 
+    // Security headers. Cross-origin resource policy stays open: the SPA lives on another site.
+    app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }))
     app.use(cors({
         origin: config.ENVIRONMENT === "production" 
             ? config.CLIENT_URL 

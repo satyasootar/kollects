@@ -83,7 +83,8 @@ export async function sendVerificationEmail(userId: string) {
     });
 
     if (!success) {
-        throw new ApiError(500, `Failed to send verification email: ${JSON.stringify(error)}`);
+        console.error("Verification email failed:", error);
+        throw new ApiError(500, "Couldn't send the verification email. Please try again.");
     }
 }
 
@@ -285,7 +286,8 @@ export async function forgotPassword(input: ForgotPasswordInput) {
     });
 
     if (!success) {
-        throw new ApiError(500, `Failed to send reset email: ${JSON.stringify(error)}`);
+        console.error("Reset email failed:", error);
+        throw new ApiError(500, "Couldn't send the reset email. Please try again.");
     }
 
     return { success: true };
