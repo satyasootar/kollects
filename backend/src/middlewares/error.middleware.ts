@@ -31,7 +31,8 @@ export const errorHandler = (
     statusCode: error.statusCode,
     message: error.message,
     errors: error.errors,
-    ...(process.env.ENVIRONMENT === "development" ? { stack: error.stack } : {}),
+    // Both must agree it's a dev box: a missing/mistyped ENVIRONMENT never leaks stacks in prod.
+    ...(process.env.ENVIRONMENT === "development" && process.env.NODE_ENV !== "production" ? { stack: error.stack } : {}),
   };
 
   res.status(error.statusCode).json(response);

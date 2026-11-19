@@ -2,8 +2,12 @@ services:
   mongo:
     image: mongo:7
     container_name: kollects-mongo
+    # Localhost only, with a password: never reachable from the rest of the network.
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-kollects}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-kollects-local-dev}
     volumes:
       - mongo-data:/data/db
     restart: unless-stopped

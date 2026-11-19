@@ -1,7 +1,43 @@
 import dotenv from "dotenv";
+import { z } from "zod";
 import type { SignOptions } from "jsonwebtoken";
 
 dotenv.config();
+
+const secret = z.string().min(32, "must be at least 32 characters");
+const envSchema = z
+    .object({
+        ENVIRONMENT: z.enum(["development", "test", "production"]),
+        MONGODB_URI: z.string().min(1),
+        JWT_ACCESS_SECRET: secret,
+        JWT_REFRESH_SECRET: secret,
+        IP_HASH_KEY: secret,
+        CLIENT_URL: z.url().optional(),
+        BACKEND_URL: z.url().optional(),
+    })
+    .superRefine((env, ctx) => {
+        if (new Set([env.JWT_ACCESS_SECRET, env.JWT_REFRESH_SECRET, env.IP_HASH_KEY]).size < 3) {
+            ctx.addIssue({ code: "custom", message: "JWT_ACCESS_SECRET, JWT_REFRESH_SECRET and IP_HASH_KEY must all be different" });
+        }
+        if (env.ENVIRONMENT === "production") {
+            for (const key of ["CLIENT_URL", "BACKEND_URL"] as const) {
+                if (!env[key]) ctx.addIssue({ code: "custom", path: [key], message: "is required in production" });
+            }
+        }
+    });
+
+/**
+ * Called first thing at startup: a missing or weak setting stops the server with a readable
+ * message instead of silently falling back to something insecure.
+ */
+export function assertValidEnv() {
+    const result = envSchema.safeParse(process.env);
+    if (!result.success) {
+        console.error(`Invalid environment configuration:
+${z.prettifyError(result.error)}`);
+        process.exit(1);
+    }
+}
 
 interface Config {
     PORT: number | string;
@@ -38,7 +74,7 @@ const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${PORT}`;
 
 const config: Config = {
     PORT: PORT,
-    ENVIRONMENT: process.env.ENVIRONMENT || "development",
+    ENVIRONMENT: process.env.ENVIRONMENT || "", // required; see assertValidEnv
     MONGODB_URI: process.env.MONGODB_URI || "",
     // Separate secrets so a refresh token can never verify as an access token.
     JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || "",
@@ -67,8 +103,8 @@ const config: Config = {
     MISTRAL_API_KEY: process.env.MISTRAL_API_KEY || "",
     MISTRAL_BASE_URL: process.env.MISTRAL_BASE_URL || "https://api.mistral.ai/v1",
     MISTRAL_MODEL: process.env.MISTRAL_MODEL || "mistral-small-latest",
-    // Comma-separated. Only these (verified) accounts can reach /api/admin.
-    ADMIN_EMAILS: (process.env.ADMIN_EMAILS || "satya.sootar06@gmail.com")
+    // Comma-separated. Only these (verified) accounts can reach /api/admin. Unset = no admins.
+    ADMIN_EMAILS: (process.env.ADMIN_EMAILS || "")
         .split(",")
         .map((e) => e.trim().toLowerCase())
         .filter(Boolean),

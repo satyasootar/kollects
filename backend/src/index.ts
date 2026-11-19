@@ -1,5 +1,5 @@
 import http from "node:http"
-import config from "./config/config.js"
+import config, { assertValidEnv } from "./config/config.js"
 import { createServerApplication } from "./app/index.js"
 import { connectDB } from "./app/db/db.js"
 import { initializeSocket } from "./socket/index.js"
@@ -7,6 +7,7 @@ import { startExpiryWatcher } from "./jobs/expiry.job.js"
 
 
 async function main(){
+    assertValidEnv()
     try {
         await connectDB()
         
