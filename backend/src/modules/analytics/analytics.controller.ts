@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { isValidObjectId } from "mongoose";
 import * as AnalyticsService from "./analytics.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
@@ -6,12 +7,22 @@ import { parseGranularity } from "../../utils/timeline.js";
 import { Poll } from "../poll/poll.model.js";
 import { ResponseModel } from "../response/response.model.js";
 
+/** Loads the poll only if the requester owns it. 404 (not 403) so other users' polls aren't confirmed to exist. */
+async function ownedPoll(req: Request) {
+    const { pollId } = req.params;
+    const user = (req as any).user;
+    if (!isValidObjectId(pollId)) throw new ApiError(404, "Poll not found");
+    const poll = await Poll.findOne({ _id: pollId, creatorId: user._id, isDeleted: false });
+    if (!poll) throw new ApiError(404, "Poll not found");
+    return poll;
+}
+
 /**
  * Controller for handling analytics-related requests.
  */
 export async function getWordCloud(req: Request, res: Response) {
     const { pollId, questionId } = req.params;
-    
+    await ownedPoll(req);
     const data = await AnalyticsService.getWordCloudData(pollId as string, questionId as string);
 
     return res.status(200).json(
@@ -21,6 +32,7 @@ export async function getWordCloud(req: Request, res: Response) {
 
 export async function getSnapshot(req: Request, res: Response) {
     const { pollId } = req.params;
+    await ownedPoll(req);
     const data = await AnalyticsService.getPollAnalyticsSnapshot(pollId as string);
     
     return res.status(200).json(
@@ -30,8 +42,8 @@ export async function getSnapshot(req: Request, res: Response) {
 
 export async function getFullAnalytics(req: Request, res: Response) {
     const { pollId } = req.params;
+    const poll = await ownedPoll(req) as any;
     const snapshot = await AnalyticsService.getPollAnalyticsSnapshot(pollId as string);
-    const poll = await Poll.findById(pollId) as any;
 
     // Fetch word cloud data for each open-ended question and attach it to questions
     const questions = await Promise.all(snapshot.questionSummaries.map(async (q: any) => {
@@ -97,31 +109,23 @@ export async function getFullAnalytics(req: Request, res: Response) {
  */
 export async function getRespondents(req: Request, res: Response) {
     const { pollId } = req.params;
-    const user = (req as any).user;
-
-    const poll = await Poll.findOne({ _id: pollId, creatorId: user._id, isDeleted: false });
-    if (!poll) {
-        throw new ApiError(404, "Poll not found or unauthorized");
-    }
-
+    await ownedPoll(req);
     const data = await AnalyticsService.getPollRespondents(pollId as string);
     return res.status(200).json(new ApiResponse(200, data, "Respondents fetched successfully"));
 }
 
 /** Sends (or re-sends) a respondent their copy of a response. */
 export async function resendReceipt(req: Request, res: Response) {
-    const { pollId, responseId } = req.params;
-    const user = (req as any).user;
-    const poll = await Poll.findOne({ _id: pollId, creatorId: user._id, isDeleted: false });
-    if (!poll) throw new ApiError(404, "Poll not found or unauthorized");
+    const { responseId } = req.params;
+    const poll = await ownedPoll(req);
     const status = await AnalyticsService.resendPollReceipt(poll, responseId as string);
     return res.status(200).json(new ApiResponse(200, status, status?.status === "sent" ? "Copy sent" : "Email could not be sent"));
 }
 
 export async function getSummary(req: Request, res: Response) {
     const { pollId } = req.params;
+    const poll = await ownedPoll(req);
     const snapshot = await AnalyticsService.getPollAnalyticsSnapshot(pollId as string);
-    const poll = await Poll.findById(pollId);
     
     return res.status(200).json(
         new ApiResponse(200, {
@@ -134,6 +138,7 @@ export async function getSummary(req: Request, res: Response) {
 
 export async function getTimeline(req: Request, res: Response) {
     const { pollId } = req.params;
+    await ownedPoll(req);
     const groupBy = parseGranularity(req.query.groupBy);
     const data = await AnalyticsService.getPollTimeline(pollId as string, groupBy);
 
@@ -145,7 +150,7 @@ export async function getTimeline(req: Request, res: Response) {
 export async function exportData(req: Request, res: Response) {
     const { pollId } = req.params;
     const { format } = req.query;
-    
+    await ownedPoll(req);
     const snapshot = await AnalyticsService.getPollAnalyticsSnapshot(pollId as string);
     
     if (format === "csv") {
