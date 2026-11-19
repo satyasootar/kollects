@@ -9,7 +9,7 @@ interface Config {
     MONGODB_URI: string;
     JWT_ACCESS_SECRET: string;
     JWT_REFRESH_SECRET: string;
-    IP_HASH_SALT: string;
+    IP_HASH_KEY: string;
     ACCESS_TOKEN_EXPIRY: SignOptions["expiresIn"];
     REFRESH_TOKEN_EXPIRY: SignOptions["expiresIn"];
     COOKIE_OPTIONS: {
@@ -43,8 +43,8 @@ const config: Config = {
     // Separate secrets so a refresh token can never verify as an access token.
     JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || "",
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || "",
-    // Own salt so rotating JWT_SECRET doesn't break IP-hash continuity. Falls back for existing deploys.
-    IP_HASH_SALT: process.env.IP_HASH_SALT || process.env.JWT_SECRET || "",
+    // HMAC key for IP hashes; its own key, never shared with the JWT secrets.
+    IP_HASH_KEY: process.env.IP_HASH_KEY || "",
     ACCESS_TOKEN_EXPIRY:
         (process.env.ACCESS_TOKEN_EXPIRY as SignOptions["expiresIn"]) || "15m",
     REFRESH_TOKEN_EXPIRY:

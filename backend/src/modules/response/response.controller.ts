@@ -3,7 +3,7 @@ import * as ResponseService from "./response.service.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { submitResponseSchema } from "./response.validation.js";
-import crypto from "crypto";
+import { hashIp } from "../../utils/ip-hash.js";
 
 /**
  * Handles submission of a poll response.
@@ -16,7 +16,7 @@ export async function submitResponse(req: Request, res: Response) {
     const validatedData = submitResponseSchema.parse(req.body);
 
     const ip = req.ip || req.socket.remoteAddress || "unknown";
-    const ipHash = crypto.createHash("sha256").update(ip).digest("hex");
+    const ipHash = hashIp(ip);
 
     const response = await ResponseService.submitResponse(
         pollId as string,

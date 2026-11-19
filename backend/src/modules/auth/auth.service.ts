@@ -39,6 +39,7 @@ export async function generateAccessAndRefreshTokens(userId: string) {
     return { accessToken: signAccessToken(userId, sid), refreshToken };
 }
 
+const BCRYPT_COST = 12;
 const AUTH_EMAIL_COOLDOWN_MS = 60_000;
 
 /** Atomically claims the right to send one auth email to this user; false while the cooldown runs. */
@@ -95,7 +96,7 @@ export async function register(input: RegisterInput) {
         throw new ApiError(409, "User with this email already exists");
     }
 
-    const passwordHash = await bcrypt.hash(input.password, 10);
+    const passwordHash = await bcrypt.hash(input.password, BCRYPT_COST);
     const user = await User.create({
         name: input.name,
         email: input.email,
@@ -139,6 +140,10 @@ export async function login(input: LoginInput) {
     }
     if (user.failedLoginCount || user.lockUntil) {
         await User.updateOne({ _id: user._id }, { $unset: { failedLoginCount: 1, lockUntil: 1 } });
+    }
+    // Upgrade hashes made with an older, cheaper cost now that we have the plaintext.
+    if (bcrypt.getRounds(user.passwordHash) < BCRYPT_COST) {
+        await User.updateOne({ _id: user._id }, { passwordHash: await bcrypt.hash(input.password, BCRYPT_COST) });
     }
 
     // Password login needs a proven inbox, so nobody can pre-register someone else's address
@@ -220,7 +225,7 @@ export async function changePassword(userId: string, input: ChangePasswordInput,
         if (!isPasswordValid) throw new ApiError(400, "Invalid old password");
     }
 
-    user.passwordHash = await bcrypt.hash(input.newPassword, 10);
+    user.passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_COST);
     await user.save();
 
     // Sign out every other device; the one making the change stays signed in.
@@ -297,7 +302,7 @@ export async function resetPassword(input: ResetPasswordInput) {
 
     if (!user) throw new ApiError(400, "Invalid or expired reset token");
 
-    user.passwordHash = await bcrypt.hash(input.newPassword, 10);
+    user.passwordHash = await bcrypt.hash(input.newPassword, BCRYPT_COST);
     user.passwordResetToken = undefined;
     user.passwordResetExpiry = undefined;
     user.isEmailVerified = true; // the reset link proved they own the inbox

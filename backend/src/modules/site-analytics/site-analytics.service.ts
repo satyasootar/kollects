@@ -1,4 +1,4 @@
-import crypto from "crypto";
+import { hashIp } from "../../utils/ip-hash.js";
 import config from "../../config/config.js";
 import { User } from "../user/user.model.js";
 import { parseUserAgent } from "../../utils/user-agent.js";
@@ -11,8 +11,6 @@ interface RequestMeta {
   userAgent: string;
 }
 
-/** Salted so the stored hash can't be matched against a list of IPs. */
-const hashIp = (ip: string) => crypto.createHash("sha256").update(`${config.IP_HASH_SALT}:${ip}`).digest("hex");
 
 /** Host of a URL, or undefined for junk / our own site (internal navigation isn't a referral). */
 export function referrerHost(url: string | undefined): string | undefined {
