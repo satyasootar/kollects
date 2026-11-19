@@ -82,11 +82,11 @@ const validationRuleZodSchema = z.object({
 const fileConfigZodSchema = z.object({
   maxFiles: z.number().default(1),
   maxSizeMb: z.number().default(10),
-  allowedTypes: z.array(z.string()).default([]),
+  allowedTypes: z.array(z.string()).max(50).default([]),
 });
 
 const answerKeyZodSchema = z.object({
-  correctOptionIds: z.array(z.string()).optional(),
+  correctOptionIds: z.array(z.string()).max(100).optional(),
   correctText: z.string().optional(),
   feedback: z.string().optional(),
 });
@@ -200,7 +200,7 @@ const createQuestionSchema = z
     description: z.string().optional(),
     imageUrl: z.string().optional(),
     isRequired: z.boolean().default(false),
-    options: z.array(createOptionSchema).optional(),
+    options: z.array(createOptionSchema).max(100).optional(),
     payment: paymentConfigZodSchema.optional(),
     // maps an option key -> target section key | "submit"
     optionNavigation: z.record(z.string(), z.string()).optional(),
@@ -208,8 +208,8 @@ const createQuestionSchema = z
     scaleMax: z.number().optional(),
     scaleMinLabel: z.string().optional(),
     scaleMaxLabel: z.string().optional(),
-    rows: z.array(z.string()).optional(),
-    columns: z.array(z.string()).optional(),
+    rows: z.array(z.string()).max(50).optional(),
+    columns: z.array(z.string()).max(50).optional(),
     fileConfig: fileConfigZodSchema.partial().optional(),
     validation: validationRuleZodSchema.optional(),
     points: z.number().min(0).optional(),
@@ -238,7 +238,7 @@ const createSectionSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
   order: z.number(),
-  questions: z.array(createQuestionSchema),
+  questions: z.array(createQuestionSchema).max(200),
   navigation: z
     .object({
       type: z.enum(["next", "submit", "byAnswer"]),
@@ -264,7 +264,7 @@ export const createFormSchema = z.object({
   expiresAt: optionalExpiresAtSchema,
   quizTimer: quizTimerSchema.optional(),
   settings: formSettingsZodSchema.partial().optional(),
-  sections: z.array(createSectionSchema).min(1),
+  sections: z.array(createSectionSchema).min(1).max(50),
 });
 
 export const updateFormSchema = createFormSchema.partial();

@@ -24,7 +24,7 @@ export function createServerApplication(): Application {
     
     app.use(metricsMiddleware)
     // JSON only: no urlencoded parser, so a cross-site <form> can't produce a body we accept.
-    app.use(express.json())
+    app.use(express.json({ limit: "200kb" }))
     app.use(cookieParser())
 
     // CSRF: auth cookies are SameSite=None in production, so require a header a cross-site form can't

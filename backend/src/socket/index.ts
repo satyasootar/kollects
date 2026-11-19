@@ -23,6 +23,8 @@ const allowedOrigins =
  */
 export function initializeSocket(server: HttpServer) {
   io = new SocketServer(server, {
+    // Clients only send tiny room-join events; the 1 MB default invites memory abuse.
+    maxHttpBufferSize: 10_000,
     cors: {
       origin: allowedOrigins,
       methods: ["GET", "POST"],

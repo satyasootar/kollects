@@ -5,7 +5,7 @@ import { receiptStatusZod, receiptHistoryZod } from "../../utils/receipt.js";
 // A single answer. Only the value block matching the question's type is populated.
 const gridValueZodSchema = z.object({
   row: z.string(),
-  columns: z.array(z.string()).default([]),
+  columns: z.array(z.string()).max(50).default([]),
 });
 
 const fileValueZodSchema = z.object({
@@ -69,10 +69,10 @@ const submitAnswerSchema = z.object({
   textValue: z.string().nullable().optional(),
   numberValue: z.number().nullable().optional(),
   dateValue: z.string().nullable().optional(),
-  selectedOptionIds: z.array(z.string()).optional().default([]),
+  selectedOptionIds: z.array(z.string()).max(100).optional().default([]),
   scaleValue: z.number().nullable().optional(),
-  gridValues: z.array(gridValueZodSchema).optional().default([]),
-  fileUrls: z.array(fileValueZodSchema).optional().default([]),
+  gridValues: z.array(gridValueZodSchema).max(50).optional().default([]),
+  fileUrls: z.array(fileValueZodSchema).max(10).optional().default([]),
   skipped: z.boolean().default(false),
 });
 
@@ -82,7 +82,7 @@ export const submitFormResponseSchema = z.object({
   respondentName: z.string().trim().max(60).optional(),
   // Sent by the client when the quiz timer ran out mid-attempt: submit whatever was answered.
   timedOut: z.boolean().optional(),
-  answers: z.array(submitAnswerSchema).min(1),
+  answers: z.array(submitAnswerSchema).min(1).max(500),
   isComplete: z.boolean().default(true),
 });
 
